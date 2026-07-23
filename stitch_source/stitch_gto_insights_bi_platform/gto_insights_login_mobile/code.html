@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+
+<html class="light" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Login | GTO Insights</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "on-secondary": "#ffffff",
+                "error": "#ba1a1a",
+                "on-surface-variant": "#434655",
+                "surface-container": "#e7eeff",
+                "surface-variant": "#d8e3fb",
+                "secondary-container": "#6cf8bb",
+                "surface-container-lowest": "#ffffff",
+                "on-tertiary-fixed-variant": "#7d2d00",
+                "secondary": "#006c49",
+                "primary": "#004ac6",
+                "on-secondary-container": "#00714d",
+                "error-container": "#ffdad6",
+                "primary-fixed-dim": "#b4c5ff",
+                "tertiary-fixed": "#ffdbcd",
+                "secondary-fixed": "#6ffbbe",
+                "tertiary-container": "#bc4800",
+                "surface-dim": "#cfdaf2",
+                "on-primary": "#ffffff",
+                "on-secondary-fixed-variant": "#005236",
+                "tertiary-fixed-dim": "#ffb596",
+                "inverse-primary": "#b4c5ff",
+                "on-tertiary-fixed": "#360f00",
+                "on-error-container": "#93000a",
+                "on-background": "#111c2d",
+                "surface-container-high": "#dee8ff",
+                "on-secondary-fixed": "#002113",
+                "on-error": "#ffffff",
+                "outline": "#737686",
+                "inverse-on-surface": "#ecf1ff",
+                "primary-container": "#2563eb",
+                "surface-tint": "#0053db",
+                "outline-variant": "#c3c6d7",
+                "surface-bright": "#f9f9ff",
+                "on-tertiary": "#ffffff",
+                "on-surface": "#111c2d",
+                "tertiary": "#943700",
+                "surface": "#f9f9ff",
+                "background": "#f9f9ff",
+                "on-primary-fixed": "#00174b",
+                "inverse-surface": "#263143",
+                "primary-fixed": "#dbe1ff",
+                "on-primary-fixed-variant": "#003ea8",
+                "on-primary-container": "#eeefff",
+                "surface-container-low": "#f0f3ff",
+                "on-tertiary-container": "#ffede6",
+                "surface-container-highest": "#d8e3fb",
+                "secondary-fixed-dim": "#4edea3"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+            },
+            "spacing": {
+                "sidebar-width": "260px",
+                "container-padding": "32px",
+                "base": "4px",
+                "lg": "24px",
+                "xl": "32px",
+                "xs": "8px",
+                "md": "16px",
+                "sm": "12px",
+                "grid-gutter": "20px"
+            },
+            "fontFamily": {
+                "body-md": ["Inter"],
+                "label-md": ["Inter"],
+                "headline-sm": ["Inter"],
+                "display-lg": ["Inter"],
+                "headline-md": ["Inter"],
+                "data-mono": ["JetBrains Mono"],
+                "body-lg": ["Inter"],
+                "headline-md-mobile": ["Inter"]
+            },
+            "fontSize": {
+                "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                "headline-sm": ["18px", {"lineHeight": "28px", "fontWeight": "600"}],
+                "display-lg": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                "data-mono": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                "headline-md-mobile": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .glass-card {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+      }
+      .primary-gradient-btn {
+        background: linear-gradient(135deg, #0053db 0%, #004ac6 100%);
+        box-shadow: 0 4px 12px rgba(0, 83, 219, 0.25);
+      }
+      .bg-soft-pattern {
+        background-color: #f9f9ff;
+        background-image: radial-gradient(#dbe1ff 0.5px, transparent 0.5px);
+        background-size: 16px 16px;
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background font-body-md text-on-surface overflow-x-hidden">
+<!-- Auth Layout Wrapper -->
+<main class="relative min-h-screen flex items-center justify-center p-md bg-soft-pattern">
+<!-- Background Elements for Atmospheric Effect -->
+<div class="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+<div class="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[100px]"></div>
+<div class="absolute bottom-[5%] right-[5%] w-[30%] h-[30%] bg-secondary/5 rounded-full blur-[80px]"></div>
+</div>
+<!-- Login Container -->
+<div class="w-full max-w-[400px] flex flex-col items-center gap-xl relative z-10">
+<!-- Logo Section -->
+<header class="flex flex-col items-center text-center animate-fade-in">
+<div class="w-16 h-16 bg-primary flex items-center justify-center rounded-xl mb-md shadow-lg">
+<span class="material-symbols-outlined text-on-primary text-[40px]" data-icon="insights">insights</span>
+</div>
+<h1 class="font-headline-md-mobile text-headline-md-mobile text-on-surface tracking-tight">GTO Insights</h1>
+<p class="font-label-md text-label-md text-outline mt-xs uppercase tracking-widest">BI Platform</p>
+</header>
+<!-- Login Card -->
+<section class="w-full glass-card p-xl rounded-xl shadow-sm border border-outline-variant/30 flex flex-col gap-lg">
+<div class="text-center">
+<p class="font-body-md text-on-surface-variant italic">"Panorama em tempo real para tomada de decisão."</p>
+</div>
+<form class="flex flex-col gap-md" onsubmit="event.preventDefault();">
+<!-- Email Field -->
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-label-md text-on-surface-variant px-1" for="email">E-MAIL</label>
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-md top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors" data-icon="alternate_email">alternate_email</span>
+<input class="w-full h-12 pl-11 pr-md bg-surface border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-body-md" id="email" placeholder="seu@email.com" required="" type="email"/>
+</div>
+</div>
+<!-- Password Field -->
+<div class="flex flex-col gap-xs">
+<div class="flex justify-between items-center px-1">
+<label class="font-label-md text-label-md text-on-surface-variant uppercase" for="password">SENHA</label>
+<a class="font-label-md text-label-md text-primary hover:underline transition-all" href="#">Esqueceu?</a>
+</div>
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-md top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors" data-icon="lock">lock</span>
+<input class="w-full h-12 pl-11 pr-11 bg-surface border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-body-md" id="password" placeholder="••••••••" required="" type="password"/>
+<button class="absolute right-md top-1/2 -translate-y-1/2 text-outline hover:text-on-surface-variant" onclick="togglePassword()" type="button">
+<span class="material-symbols-outlined" data-icon="visibility" id="toggle-icon">visibility</span>
+</button>
+</div>
+</div>
+<!-- Options -->
+<div class="flex items-center gap-xs px-1">
+<input class="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary" id="remember" type="checkbox"/>
+<label class="font-body-md text-body-md text-on-surface-variant" for="remember">Manter conectado</label>
+</div>
+<!-- Submit Button -->
+<button class="primary-gradient-btn w-full h-12 mt-md rounded-lg text-on-primary font-headline-sm flex items-center justify-center gap-xs hover:brightness-110 active:scale-[0.98] transition-all" type="submit">
+<span>Entrar</span>
+<span class="material-symbols-outlined text-[20px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</form>
+<!-- Footer Divider -->
+<div class="flex items-center gap-sm mt-xs">
+<div class="h-[1px] flex-1 bg-outline-variant/30"></div>
+<span class="font-label-md text-label-md text-outline">OU ACESSE COM</span>
+<div class="h-[1px] flex-1 bg-outline-variant/30"></div>
+</div>
+<!-- SSO Button -->
+<button class="w-full h-12 rounded-lg border border-outline-variant bg-white flex items-center justify-center gap-sm hover:bg-surface-container transition-colors active:scale-[0.98]">
+<img class="w-5 h-5" data-alt="A high-quality logo of Google for corporate single sign-on services. The icon is isolated on a transparent background, featuring the classic multi-color brand colors of Google. Minimalist, professional software service design aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDAnAbItgDRRD1DPd-5SuqPkFOoRleP7Hti839sLeAFHZOVSC7n023Qn01sfQy5tEV26PyUTgvWQ_7oPB8BU4zhRYmx_g5PKRs0dAaHeqGdSCOVrtGwL1epyY1FMtqAkShI63mpUmdhY-vrEw5AgOCTjWWTfbgRiuuEGqm5BzqJpVe50kGJ9_MPnzYNsQtFMXc4LJDHgksFFGjbwubbHSiqeC-uxzIE_aK2MI8sVbtbloVFV8zI_kggDwKuSA3qml4xa7vkzXgR4RA"/>
+<span class="font-body-md text-on-surface-variant">Continuar com Google</span>
+</button>
+</section>
+<!-- Bottom Support Text -->
+<footer class="text-center animate-fade-in delay-200">
+<p class="font-body-md text-body-md text-outline">
+                    Ainda não tem conta? <a class="text-primary font-bold hover:underline" href="#">Solicite acesso</a>
+</p>
+<div class="mt-xl opacity-20">
+<img class="w-full h-24 object-contain" data-alt="A clean, minimalist abstract background visual representing data flow and connectivity. Features thin, elegant lines and soft bokeh circles in shades of corporate blue and slate gray. High-end SaaS product background design with a calm, professional mood." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCvvEWm9Wr_Z4BLhK4SgMal2GkjDC4S21NKdWBtaJBRYrXAzK7fsBzT2kJQ9hBrhW1tcsttcm69hgZ2pHxqj6swr0EOhk1IiMpg6wFeqmZZJ8gz6-h51ebkH2fUtcWH637UXcMSdBCES6B9GAsMfEt091lLcMeKDgs8ySqIdfu7QyyL47XUZrMV6TCs85zenZfxmI0phkJ0_-5074_-fmVWfrYLxuxwUlV8RuAYnb0Fp3db2BsOR3AK5kcCbC11aj8OKGMOBDHOgrY"/>
+</div>
+</footer>
+</div>
+</main>
+<script>
+        // Micro-interaction for password toggle
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.getElementById('toggle-icon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.innerText = 'visibility_off';
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.innerText = 'visibility';
+            }
+        }
+
+        // Add simple fade-in animations
+        document.addEventListener('DOMContentLoaded', () => {
+            const elements = document.querySelectorAll('.animate-fade-in');
+            elements.forEach((el, index) => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(10px)';
+                el.style.transition = `all 0.5s ease-out ${index * 0.15}s`;
+                
+                setTimeout(() => {
+                    el.style.opacity = '1';
+                    el.style.transform = 'translateY(0)';
+                }, 10);
+            });
+        });
+    </script>
+</body></html>

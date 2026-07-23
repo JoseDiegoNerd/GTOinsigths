@@ -1,0 +1,2514 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GTO Insights BI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Symbols+Outlined:wght@400&display=swap" rel="stylesheet" />
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; font-family: Inter, system-ui, sans-serif; background: #f8fafc; color: #111c2d; }
+      button, input, select { font: inherit; }
+      button { border: 0; border-radius: 8px; background: #2563eb; color: white; padding: 10px 14px; font-weight: 700; cursor: pointer; }
+      button.secondary { background: white; color: #334155; border: 1px solid #cbd5e1; }
+      input, select { border: 1px solid #d8e3fb; border-radius: 8px; padding: 10px 12px; background: white; }
+      label { display: grid; gap: 6px; color: #475569; font-size: 12px; font-weight: 800; text-transform: uppercase; }
+      code { font-size: 12px; }
+      .material-symbols-outlined { font-family: "Material Symbols Outlined"; line-height: 1; }
+      .login { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+      .login-card { width: min(420px, 100%); display: grid; gap: 16px; background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 28px; box-shadow: 0 12px 30px rgba(15,23,42,.1); }
+      .brand { width: 44px; height: 44px; border-radius: 10px; display: grid; place-items: center; background: #2563eb; color: white; font-weight: 800; }
+      .shell { display: grid; grid-template-columns: 260px minmax(0, 1fr); min-height: 100vh; }
+      aside { background: #0f172a; color: white; padding: 18px 12px; display: flex; flex-direction: column; gap: 22px; }
+      .side-brand { display: flex; align-items: center; gap: 12px; padding: 0 10px; }
+      aside h1 { margin: 0; font-size: 18px; }
+      aside small, aside span { color: #cbd5e1; }
+      nav { display: grid; gap: 6px; }
+      nav button { display: flex; gap: 10px; align-items: center; justify-content: flex-start; background: transparent; color: #cbd5e1; border-left: 3px solid transparent; }
+      nav button.active, nav button:hover { background: rgba(37,99,235,.12); color: white; border-left-color: #2563eb; }
+      .profile { margin-top: auto; display: grid; gap: 8px; border-top: 1px solid rgba(255,255,255,.12); padding: 12px; }
+      .profile button { background: rgba(255,255,255,.08); }
+      header { min-height: 64px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 32px; background: white; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 2; }
+      main { min-width: 0; }
+      .content { padding: 32px; display: grid; gap: 24px; min-width: 0; }
+      .content > * { min-width: 0; }
+      .page-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; align-items: end; }
+      .page-head h2 { margin: 4px 0; font-size: 30px; overflow-wrap: anywhere; }
+      .muted { color: #64748b; }
+      .eyebrow { color: #2563eb; font-size: 12px; text-transform: uppercase; font-weight: 800; letter-spacing: .05em; }
+      .filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+      .grid { display: grid; gap: 20px; min-width: 0; }
+      .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .cols { grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr); }
+      .card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(15,23,42,.08); min-width: 0; }
+      .kpi { min-height: 126px; display: grid; align-content: space-between; }
+      .kpi-top { display: flex; justify-content: space-between; color: #64748b; font-size: 12px; font-weight: 800; text-transform: uppercase; }
+      .kpi strong { font-size: 26px; overflow-wrap: anywhere; line-height: 1.15; }
+      .alert { border: 1px solid #bfdbfe; background: #eff6ff; color: #1d4ed8; border-radius: 10px; padding: 12px; }
+      .alert.error { border-color: #fecaca; background: #fef2f2; color: #b91c1c; }
+      .alert.success { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
+      .status-pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 6px 10px; font-size: 12px; font-weight: 800; }
+      .status-pill.active { background: #dcfce7; color: #166534; }
+      .status-pill.inactive { background: #fee2e2; color: #991b1b; }
+      .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+      .actions button { white-space: nowrap; }
+      table { width: 100%; border-collapse: collapse; font-size: 14px; }
+      th, td { border-bottom: 1px solid #e2e8f0; padding: 12px; text-align: left; white-space: nowrap; }
+      th { background: #f1f5f9; color: #64748b; font-size: 12px; text-transform: uppercase; }
+      .table-wrap { overflow-x: auto; }
+      .bars { display: grid; gap: 16px; }
+      .bar-row { display: grid; grid-template-columns: 220px 1fr 80px; gap: 16px; align-items: center; }
+      .track { height: 12px; border-radius: 999px; background: #e7eeff; overflow: hidden; }
+      .fill { height: 100%; background: #2563eb; border-radius: inherit; }
+      .insight-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
+      .insight-panel { border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; background: #f8fafc; min-width: 0; }
+      .insight-panel h4 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; color: #475569; }
+      .insight-panel ul { margin: 0; padding-left: 18px; display: grid; gap: 8px; color: #334155; }
+      .copy-sample { white-space: normal; line-height: 1.55; color: #334155; background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; }
+      .drop { position: relative; display: grid; gap: 8px; place-items: center; min-height: 190px; border: 2px dashed #93c5fd; border-radius: 12px; background: #eff6ff; text-align: center; padding: 20px; }
+      .drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+      .hidden { display: none !important; }
+      .review-card { border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; background: #f8fafc; display: grid; gap: 8px; }
+      .review-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+      .stars { color: #f59e0b; white-space: nowrap; }
+      .stars .material-symbols-outlined { font-size: 16px; vertical-align: middle; }
+      .stars .off { color: #cbd5e1; }
+      .review-reply { border-left: 3px solid #2563eb; background: white; border-radius: 8px; padding: 10px 12px; margin-top: 4px; }
+      .reply-box { display: grid; gap: 8px; margin-top: 8px; }
+      .reply-box textarea { border: 1px solid #d8e3fb; border-radius: 8px; padding: 10px 12px; font: inherit; min-height: 72px; resize: vertical; }
+      .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
+      .photo-thumb { aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: #e2e8f0; }
+      .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .edit-row td { background: #f8fafc; }
+      .edit-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; align-items: end; }
+      input:focus, select:focus, textarea:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.15); }
+      thead th { position: sticky; top: 0; z-index: 1; }
+      tbody tr:hover { background: #f1f5f9; }
+      tbody tr:nth-child(even) { background: #fafbfd; }
+      tbody tr:nth-child(even):hover { background: #f1f5f9; }
+      .insight-card { display: flex; gap: 12px; align-items: flex-start; border: 1px solid #e2e8f0; border-left: 4px solid #94a3b8; border-radius: 10px; padding: 14px 16px; background: white; }
+      .insight-card .material-symbols-outlined { font-size: 22px; }
+      .insight-card p { margin: 0; color: #334155; line-height: 1.5; }
+      .insight-card.info { border-left-color: #2563eb; }
+      .insight-card.info .material-symbols-outlined { color: #2563eb; }
+      .insight-card.success { border-left-color: #16a34a; }
+      .insight-card.success .material-symbols-outlined { color: #16a34a; }
+      .insight-card.warning { border-left-color: #d97706; }
+      .insight-card.warning .material-symbols-outlined { color: #d97706; }
+      .insight-card.danger { border-left-color: #dc2626; }
+      .insight-card.danger .material-symbols-outlined { color: #dc2626; }
+      .insight-cards { display: grid; gap: 10px; }
+      .pills { display: flex; gap: 8px; flex-wrap: wrap; }
+      .pill { border-radius: 999px; padding: 8px 16px; background: white; border: 1px solid #d8e3fb; color: #475569; font-weight: 700; font-size: 13px; cursor: pointer; }
+      .pill.active { background: #2563eb; color: white; border-color: #2563eb; }
+      .segmented { display: inline-flex; background: #eef2ff; border-radius: 999px; padding: 4px; gap: 2px; }
+      .segmented button { background: transparent; color: #475569; padding: 8px 16px; border-radius: 999px; font-size: 13px; }
+      .segmented button.active { background: white; color: #2563eb; box-shadow: 0 1px 3px rgba(15,23,42,.12); }
+      .login-split { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
+      .login-hero { background: linear-gradient(160deg, #0f172a, #1e3a8a); color: white; padding: 48px; display: flex; flex-direction: column; justify-content: space-between; }
+      .login-hero h1 { font-size: 34px; line-height: 1.2; margin: 0 0 16px; }
+      .login-hero p { color: #cbd5e1; font-size: 16px; max-width: 440px; }
+      .login-hero .side-brand { padding: 0; }
+      .login-form-side { display: flex; align-items: center; justify-content: center; padding: 24px; }
+      @media (max-width: 860px) { .login-split { grid-template-columns: 1fr; } .login-hero { padding: 32px 24px; } }
+      @media (max-width: 980px) { .shell, .kpis, .cols, .insight-grid { grid-template-columns: 1fr; } aside { min-height: auto; } .page-head, .filters { flex-direction: column; align-items: stretch; } .bar-row { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <div id="app" class="login">
+      <section class="login-card">
+        <div class="brand">GTO</div>
+        <h1>GTO Insights</h1>
+        <p class="muted">Carregando aplicação local...</p>
+      </section>
+    </div>
+    <script type="module">
+      import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+
+      const SUPABASE_URL = "https://ysreenjwihmwzockyrls.supabase.co";
+      const SUPABASE_KEY = "sb_publishable_M2aagozrBrtNnfZhbu9qrw_5Nhz5MN7";
+      const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+      const app = document.querySelector("#app");
+      const marcas = ["Todas", "Tesoura de Ouro", "Magazine da Economia", "Free Center Calçados"];
+      const sourceTables = {
+        credsystem_emissoes: "dados_cartoes_credsystem",
+        credsystem_propostas: "stage_credsystem_propostas",
+        rd_station: "stage_rd_station_marketing",
+        meta_business: "stage_meta_business_analytics",
+        google_business_profile: "stage_google_business_profile",
+        social_format_metrics: "stage_social_format_metrics"
+      };
+
+      let state = { session: null, perfil: null, page: "dashboard", marca: "Todas", periodo: "30d", rows: [], rd: [], meta: [], google: null, propostas: [], bi: null, channels: null, email: null, emailSelectedId: null, social: null, socialFormat: null, socialTab: "geral", connections: [] };
+
+      const fmt = new Intl.NumberFormat("pt-BR");
+      const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+      const avg = (arr) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+      const num = (v) => Number.isFinite(Number(v)) ? Number(v) : 0;
+      function parseJsonField(value) {
+        if (!value) return {};
+        if (typeof value === "object") return value;
+        try {
+          const parsed = JSON.parse(value);
+          return parsed && typeof parsed === "object" ? parsed : {};
+        } catch {
+          return {};
+        }
+      }
+
+      async function init() {
+        const recoveryHandled = await handleRecoveryUrl();
+        if (recoveryHandled) return;
+
+        const { data } = await supabase.auth.getSession();
+        state.session = data.session;
+        if (state.session) await loadPerfil();
+        const queryPage = new URLSearchParams(location.search).get("page");
+        if (queryPage === "connections") state.page = "connections";
+        if (queryPage === "google_business") state.page = "google_business";
+        render();
+      }
+
+      function appRedirectUrl() {
+        if (location.protocol === "file:") return "http://127.0.0.1:5173/";
+        return `${location.origin}${location.pathname}`;
+      }
+
+      async function handleRecoveryUrl() {
+        const hash = new URLSearchParams(location.hash.replace(/^#/, ""));
+        const query = new URLSearchParams(location.search);
+        const hashType = hash.get("type");
+        const queryType = query.get("type");
+        const errorDescription = hash.get("error_description") || query.get("error_description");
+
+        if (errorDescription) {
+          renderLogin(decodeURIComponent(errorDescription.replace(/\+/g, " ")));
+          return true;
+        }
+
+        if (query.get("code")) {
+          const { error } = await supabase.auth.exchangeCodeForSession(query.get("code"));
+          if (error) {
+            renderLogin(error.message);
+            return true;
+          }
+          if (queryType === "recovery") {
+            renderResetPassword();
+            return true;
+          }
+        }
+
+        if (hash.get("access_token") && hashType === "recovery") {
+          const { error } = await supabase.auth.setSession({
+            access_token: hash.get("access_token"),
+            refresh_token: hash.get("refresh_token")
+          });
+          if (error) {
+            renderLogin(error.message);
+            return true;
+          }
+          renderResetPassword();
+          return true;
+        }
+
+        return false;
+      }
+
+      async function loadPerfil() {
+        const { data } = await supabase.from("perfis").select("*").eq("id", state.session.user.id).maybeSingle();
+        state.perfil = data;
+      }
+
+      async function signIn(event) {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        const { error } = await supabase.auth.signInWithPassword({ email: form.get("email"), password: form.get("password") });
+        if (error) return renderLogin(error.message);
+        await init();
+      }
+
+      async function sendRecoveryEmail(event) {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        const email = form.get("email");
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: appRedirectUrl()
+        });
+
+        if (error) return renderLogin(error.message);
+        renderLogin("Enviamos um novo link de recuperação para o seu email. Use o link mais recente.");
+      }
+
+      async function updatePassword(event) {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        const password = form.get("password");
+        const confirmPassword = form.get("confirmPassword");
+
+        if (password !== confirmPassword) {
+          renderResetPassword("As senhas não conferem.");
+          return;
+        }
+
+        const { error } = await supabase.auth.updateUser({ password });
+        if (error) {
+          renderResetPassword(error.message);
+          return;
+        }
+
+        history.replaceState({}, document.title, location.pathname);
+        renderLogin("Senha atualizada com sucesso. Entre novamente.");
+      }
+
+      async function signOut() {
+        await supabase.auth.signOut();
+        state = { ...state, session: null, perfil: null, rows: [], rd: [], meta: [] };
+        render();
+      }
+
+      function fromDate() {
+        if (state.periodo === "all") return null;
+        const d = new Date();
+        if (state.periodo === "7d") d.setDate(d.getDate() - 7);
+        if (state.periodo === "30d") d.setDate(d.getDate() - 30);
+        if (state.periodo === "1y") d.setFullYear(d.getFullYear() - 1);
+        return d.toISOString().slice(0, 10);
+      }
+
+      async function loadDashboard() {
+        let q = supabase.from("dados_cartoes_credsystem").select("*").order("data_emissao", { ascending: false }).limit(500);
+        if (state.marca !== "Todas") q = q.eq("marca", state.marca);
+        const date = fromDate();
+        if (date) q = q.gte("data_emissao", date);
+        const [cards, rd, meta, propostas] = await Promise.all([
+          q,
+          supabase.from("stage_rd_station_marketing").select("marca,enviados,taxa_abertura,taxa_clique,data_referencia").limit(500),
+          supabase.from("stage_meta_business_analytics").select("marca,alcance_facebook,engajamento_total,data_referencia").limit(500),
+          fetchAllRows("stage_credsystem_propostas", "marca,proposta_aprov,proposta_rejei,motivo,dt_proposta", state.marca),
+          loadGoogleBI().catch(() => {})
+        ]);
+        if (cards.error) throw cards.error;
+        if (rd.error) throw rd.error;
+        if (meta.error) throw meta.error;
+        state.rows = cards.data || [];
+        state.rd = rd.data || [];
+        state.meta = meta.data || [];
+        state.propostas = propostas || [];
+      }
+
+      async function loadCredsystemBI() {
+        let resumo = supabase.from("vw_credsystem_resumo_geral").select("*");
+        let lojas = supabase.from("vw_credsystem_por_loja").select("*").order("total_propostas", { ascending: false }).limit(20);
+        let motivos = supabase.from("vw_credsystem_motivos_rejeicao").select("*").order("total", { ascending: false }).limit(20);
+        let funil = supabase.from("vw_credsystem_funil_propostas_emissoes").select("*");
+
+        if (state.marca !== "Todas") {
+          resumo = resumo.eq("marca", state.marca);
+          lojas = lojas.eq("marca", state.marca);
+          motivos = motivos.eq("marca", state.marca);
+          funil = funil.eq("marca", state.marca);
+        }
+
+        const [resumoResult, lojasResult, motivosResult, funilResult] = await Promise.all([resumo, lojas, motivos, funil]);
+        const firstError = resumoResult.error || lojasResult.error || motivosResult.error || funilResult.error;
+        if (firstError) throw firstError;
+
+        state.bi = {
+          resumo: resumoResult.data || [],
+          lojas: lojasResult.data || [],
+          motivos: motivosResult.data || [],
+          funil: funilResult.data || []
+        };
+      }
+
+      async function loadCredsystemBIFallback(reason = null) {
+        // Busca sem limite (fetchAllRows pagina de 1000 em 1000) — loadDashboard() usa
+        // .limit(500) por ser uma lista "mais recentes" para outra tela; aqui precisamos
+        // do total real, senão os KPIs saem sub-contados quando esse fallback é acionado.
+        const [rows, propostas] = await Promise.all([
+          fetchAllRows("dados_cartoes_credsystem", "marca,loja_operacao,data_ativacao,valor_compra_inicial,frequencia_recorrencia", state.marca),
+          fetchAllRows("stage_credsystem_propostas", "marca,nm_loja,cd_loja_cs,proposta_aprov,proposta_rejei,motivo", state.marca)
+        ]);
+        const marcasVisiveis = state.marca === "Todas"
+          ? Array.from(new Set([...rows.map((r) => r.marca), ...propostas.map((r) => r.marca)].filter(Boolean)))
+          : [state.marca];
+
+        const resumo = marcasVisiveis.map((marca) => {
+          const brandRows = rows.filter((r) => r.marca === marca);
+          const brandProps = propostas.filter((r) => r.marca === marca);
+          const totalPropostas = brandProps.length;
+          const aprovadas = brandProps.reduce((s, r) => s + num(r.proposta_aprov), 0);
+          const rejeitadas = brandProps.reduce((s, r) => s + num(r.proposta_rejei), 0);
+          return {
+            marca,
+            total_cartoes: brandRows.length,
+            cartoes_ativados: brandRows.filter((r) => r.data_ativacao).length,
+            ticket_medio: avg(brandRows.map((r) => num(r.valor_compra_inicial))),
+            recorrencia_media: avg(brandRows.map((r) => num(r.frequencia_recorrencia))),
+            total_propostas: totalPropostas,
+            propostas_aprovadas: aprovadas,
+            propostas_rejeitadas: rejeitadas,
+            taxa_aprovacao: totalPropostas ? (aprovadas / totalPropostas) * 100 : 0
+          };
+        });
+
+        const lojaMap = {};
+        rows.forEach((r) => {
+          const key = `${r.marca}|${r.loja_operacao || "Nao informado"}`;
+          lojaMap[key] ||= { marca: r.marca, loja: r.loja_operacao || "Nao informado", total_cartoes: 0, cartoes_ativados: 0, total_propostas: 0, propostas_aprovadas: 0, propostas_rejeitadas: 0 };
+          lojaMap[key].total_cartoes += 1;
+          if (r.data_ativacao) lojaMap[key].cartoes_ativados += 1;
+        });
+        propostas.forEach((r) => {
+          const loja = r.nm_loja || r.cd_loja_cs || "Nao informado";
+          const key = `${r.marca}|${loja}`;
+          lojaMap[key] ||= { marca: r.marca, loja, total_cartoes: 0, cartoes_ativados: 0, total_propostas: 0, propostas_aprovadas: 0, propostas_rejeitadas: 0 };
+          lojaMap[key].total_propostas += 1;
+          lojaMap[key].propostas_aprovadas += num(r.proposta_aprov);
+          lojaMap[key].propostas_rejeitadas += num(r.proposta_rejei);
+        });
+        const lojas = Object.values(lojaMap)
+          .map((r) => ({ ...r, taxa_aprovacao: r.total_propostas ? (r.propostas_aprovadas / r.total_propostas) * 100 : 0 }))
+          .sort((a, b) => b.total_propostas - a.total_propostas)
+          .slice(0, 20);
+
+        const motivoMap = {};
+        propostas.forEach((r) => {
+          const motivo = r.motivo || "SEM MOTIVO";
+          const key = `${r.marca}|${motivo}`;
+          motivoMap[key] ||= { marca: r.marca, motivo, total: 0, propostas_aprovadas: 0, propostas_rejeitadas: 0 };
+          motivoMap[key].total += 1;
+          motivoMap[key].propostas_aprovadas += num(r.proposta_aprov);
+          motivoMap[key].propostas_rejeitadas += num(r.proposta_rejei);
+        });
+        const totalPorMarca = propostas.reduce((acc, r) => {
+          acc[r.marca] = (acc[r.marca] || 0) + 1;
+          return acc;
+        }, {});
+        const motivos = Object.values(motivoMap)
+          .map((r) => ({ ...r, participacao: totalPorMarca[r.marca] ? (r.total / totalPorMarca[r.marca]) * 100 : 0 }))
+          .sort((a, b) => b.total - a.total)
+          .slice(0, 20);
+
+        const funil = resumo.map((r) => ({
+          marca: r.marca,
+          total_propostas: r.total_propostas,
+          propostas_aprovadas: r.propostas_aprovadas,
+          propostas_rejeitadas: r.propostas_rejeitadas,
+          cartoes_emitidos: r.total_cartoes,
+          cartoes_ativados: r.cartoes_ativados,
+          taxa_aprovacao: r.taxa_aprovacao,
+          taxa_emissao_sobre_propostas: r.total_propostas ? (r.total_cartoes / r.total_propostas) * 100 : 0,
+          taxa_ativacao: r.total_cartoes ? (r.cartoes_ativados / r.total_cartoes) * 100 : 0
+        }));
+
+        state.bi = {
+          resumo,
+          lojas,
+          motivos,
+          funil,
+          fallback: true,
+          fallbackReason: reason?.message || String(reason || "")
+        };
+      }
+
+
+      async function loadEmailBI() {
+        let campanhas = supabase
+          .from("vw_email_marketing_campanhas")
+          .select("*")
+          .order("data_referencia", { ascending: false });
+        let resumo = supabase.from("vw_email_marketing_resumo_marca").select("*").order("marca");
+
+        if (state.marca !== "Todas") {
+          campanhas = campanhas.eq("marca", state.marca);
+          resumo = resumo.eq("marca", state.marca);
+        }
+
+        const [campanhasResult, resumoResult] = await Promise.all([campanhas, resumo]);
+        const firstError = campanhasResult.error || resumoResult.error;
+        if (firstError) throw firstError;
+
+        state.email = {
+          campanhas: campanhasResult.data || [],
+          resumo: resumoResult.data || []
+        };
+      }
+
+      function analyzeCopy(row) {
+        const subject = row.assunto_email || "";
+        const preheader = row.preheader || "";
+        const body = row.corpo_copy || "";
+        const hasCopy = subject || preheader || body;
+        let score = hasCopy ? 45 : 35;
+        const issues = [];
+
+        if (!hasCopy) issues.push("Copy não informada");
+        if (subject.length >= 25 && subject.length <= 70) score += 20;
+        else if (subject.length >= 10 && subject.length <= 90) score += 10;
+        else if (hasCopy) issues.push("Revisar assunto");
+        if (preheader) score += 15;
+        else if (hasCopy) issues.push("Adicionar preheader");
+        if (/(compre|confira|acesse|garanta|aproveite|clique|venha|saiba)/i.test(body)) score += 10;
+        else if (hasCopy) issues.push("Fortalecer chamada para ação");
+        if (num(row.taxa_abertura) >= 20) score += 5;
+        if (num(row.taxa_clique) >= 2) score += 5;
+
+        const diagnostic = issues[0] || (score >= 80 ? "Boa" : "Precisa melhorar");
+        const recommendation = diagnostic === "Boa"
+          ? "Manter estrutura e testar variações para ganho incremental."
+          : diagnostic === "Copy não informada"
+            ? "Importe assunto, preheader e corpo para uma análise melhor."
+            : diagnostic === "Adicionar preheader"
+              ? "Inclua um preheader que complemente o assunto e antecipe a oferta."
+              : diagnostic === "Fortalecer chamada para ação"
+                ? "Inclua uma chamada para ação clara, com verbo e próximo passo."
+                : "Use benefício claro, urgência moderada e uma promessa fácil de entender.";
+
+        return {
+          score_copy: Math.max(0, Math.min(score, 100)),
+          diagnostico_copy: diagnostic,
+          recomendacao_copy: recommendation
+        };
+      }
+
+      function campaignKey(row) {
+        return row.id || row.id_campanha || row.nome_campanha || "";
+      }
+
+      function copyPerformanceLabel(row) {
+        const open = num(row.taxa_abertura);
+        const click = num(row.taxa_clique);
+        if (open >= 25 && click >= 3) return "Forte";
+        if (open >= 18 && click >= 1.5) return "Saudável";
+        if (open < 15 || click < 1) return "Atenção";
+        return "Regular";
+      }
+
+      function buildCopyDetail(row) {
+        const subject = row?.assunto_email || "";
+        const preheader = row?.preheader || "";
+        const body = row?.corpo_copy || "";
+        const brand = row?.marca || "Marca";
+        const campaignName = row?.nome_campanha || "campanha";
+        const hasCopy = subject || preheader || body;
+        const score = num(row?.score_copy);
+        const open = num(row?.taxa_abertura);
+        const click = num(row?.taxa_clique);
+
+        const strengths = [];
+        const risks = [];
+        const actions = [];
+
+        if (open >= 25) strengths.push("Boa capacidade de gerar abertura pelo histórico da campanha.");
+        if (click >= 3) strengths.push("Clique acima do básico, indicando oferta ou CTA com tração.");
+        if (subject.length >= 25 && subject.length <= 70) strengths.push("Assunto em tamanho adequado para leitura rápida.");
+        if (preheader) strengths.push("Preheader preenchido, ajudando a complementar o assunto.");
+        if (/(compre|confira|acesse|garanta|aproveite|clique|venha|saiba)/i.test(body)) strengths.push("Corpo possui chamada para ação explícita.");
+
+        if (!hasCopy) risks.push("A campanha não tem assunto, preheader ou corpo importados para análise textual.");
+        if (subject && subject.length < 10) risks.push("Assunto curto demais para comunicar valor.");
+        if (subject && subject.length > 90) risks.push("Assunto longo demais, com risco de corte no inbox.");
+        if (!preheader && hasCopy) risks.push("Sem preheader, a campanha perde uma segunda chance de convencimento.");
+        if (body && !/(compre|confira|acesse|garanta|aproveite|clique|venha|saiba)/i.test(body)) risks.push("CTA pouco evidente no corpo da mensagem.");
+        if (open < 15) risks.push("Taxa de abertura baixa: o gancho inicial precisa ser mais forte.");
+        if (click < 1) risks.push("Taxa de clique baixa: oferta, link ou chamada para ação precisam ficar mais claros.");
+
+        if (!hasCopy) actions.push("Na próxima importação RD, inclua as colunas assunto_email, preheader e corpo_copy.");
+        if (!subject || subject.length < 25 || subject.length > 70) actions.push("Reescrever o assunto com benefício claro em uma frase curta.");
+        if (!preheader) actions.push("Adicionar preheader com complemento direto da promessa do assunto.");
+        actions.push("Deixar apenas uma ação principal para reduzir dispersão do clique.");
+        actions.push("Testar variação A/B com urgência moderada versus benefício econômico.");
+
+        if (strengths.length === 0) strengths.push("Há dados suficientes de performance para priorizar melhorias na copy.");
+        if (risks.length === 0) risks.push("Nenhum risco crítico detectado pelas regras atuais.");
+
+        const subjectBase = campaignName.replace(/^campanha\s*/i, "").trim() || brand;
+        const temCta = /(compre|confira|acesse|garanta|aproveite|clique|venha|saiba)/i.test(body);
+        const rewrites = [];
+
+        if (!subject || subject.length > 90) {
+          rewrites.push({ label: "Assunto direto", text: `${brand}: confira oportunidades selecionadas para você` });
+        }
+        if (!subject || subject.length < 25 || (subject.length > 70 && subject.length <= 90)) {
+          rewrites.push({ label: "Assunto com benefício", text: `${subjectBase}: aproveite condições especiais por tempo limitado` });
+        }
+        if (!preheader) {
+          rewrites.push({ label: "Preheader", text: "Veja os destaques da campanha e escolha a melhor oferta para o seu momento." });
+        }
+        if (!temCta) {
+          rewrites.push({ label: "CTA", text: "Acesse agora e confira as opções disponíveis." });
+        }
+        if (!rewrites.length) {
+          rewrites.push({ label: "Estrutura atual", text: "Assunto, preheader e CTA já atendem as regras básicas — testar apenas pequenas variações de tom." });
+        }
+
+        return {
+          performance: copyPerformanceLabel(row),
+          score,
+          strengths,
+          risks,
+          actions,
+          rewrites,
+          current: {
+            subject: subject || "Assunto não informado",
+            preheader: preheader || "Preheader não informado",
+            body: body || "Corpo da copy não informado"
+          }
+        };
+      }
+
+      function listItems(items) {
+        return items.map((item) => `<li>${item}</li>`).join("");
+      }
+
+      function insightCardsHtml(items, variant = "info", icon = "lightbulb") {
+        if (!items?.length) return `<p class="muted">Sem itens no momento.</p>`;
+        return `<div class="insight-cards">${items.map((item) => `<div class="insight-card ${variant}"><span class="material-symbols-outlined">${icon}</span><p>${item}</p></div>`).join("")}</div>`;
+      }
+
+      async function loadEmailBIFallback(reason = null) {
+        const rdRows = await fetchAllRows(
+          "stage_rd_station_marketing",
+          "id,marca,id_campanha,nome_campanha,enviados,entregues,taxa_abertura,taxa_clique,descadastros,assunto_email,preheader,corpo_copy,data_referencia,origem_api",
+          state.marca
+        );
+
+        const campanhas = rdRows.map((row) => {
+          const copy = analyzeCopy(row);
+          return {
+            ...row,
+            abertos_estimados: Math.round(num(row.entregues) * num(row.taxa_abertura) / 100),
+            cliques_estimados: Math.round(num(row.entregues) * num(row.taxa_clique) / 100),
+            score_copy: copy.score_copy,
+            diagnostico_copy: copy.diagnostico_copy,
+            recomendacao_copy: copy.recomendacao_copy
+          };
+        });
+
+        const marcasVisiveis = state.marca === "Todas"
+          ? Array.from(new Set(campanhas.map((r) => r.marca).filter(Boolean)))
+          : [state.marca];
+
+        const resumo = marcasVisiveis.map((marca) => {
+          const rows = campanhas.filter((r) => r.marca === marca);
+          return {
+            marca,
+            total_campanhas: rows.length,
+            total_enviados: rows.reduce((s, r) => s + num(r.enviados), 0),
+            total_entregues: rows.reduce((s, r) => s + num(r.entregues), 0),
+            total_abertos_estimados: rows.reduce((s, r) => s + num(r.abertos_estimados), 0),
+            total_cliques_estimados: rows.reduce((s, r) => s + num(r.cliques_estimados), 0),
+            taxa_abertura_media: avg(rows.map((r) => num(r.taxa_abertura))),
+            taxa_clique_media: avg(rows.map((r) => num(r.taxa_clique))),
+            score_copy_medio: avg(rows.map((r) => num(r.score_copy)))
+          };
+        });
+
+        state.email = {
+          campanhas,
+          resumo,
+          fallback: true,
+          fallbackReason: reason?.message || String(reason || "")
+        };
+      }
+
+      async function loadSocialBI() {
+        const metricRows = await fetchAllRows("stage_social_format_metrics", "*", state.marca).catch(() => []);
+        if (metricRows.length) {
+          await buildSocialBIFromFormatRows(metricRows);
+          return;
+        }
+
+        let resumo = supabase.from("vw_meta_social_resumo_marca").select("*").order("marca");
+        let periodos = supabase.from("vw_meta_social_periodos").select("*").order("data_referencia", { ascending: false });
+        let ranking = supabase.from("vw_meta_social_ranking_conteudo").select("*").order("engajamento_total", { ascending: false }).limit(20);
+
+        if (state.marca !== "Todas") {
+          resumo = resumo.eq("marca", state.marca);
+          periodos = periodos.eq("marca", state.marca);
+          ranking = ranking.eq("marca", state.marca);
+        }
+
+        const [resumoResult, periodosResult, rankingResult] = await Promise.all([resumo, periodos, ranking]);
+        const firstError = resumoResult.error || periodosResult.error || rankingResult.error;
+        if (firstError) throw firstError;
+
+        state.social = {
+          resumo: resumoResult.data || [],
+          periodos: resumoResult.data?.length ? (periodosResult.data || []) : [],
+          ranking: rankingResult.data || []
+        };
+      }
+
+      function analyzeSocialRow(row) {
+        const alcance = num(row.alcance_facebook);
+        const engajamento = num(row.engajamento_total);
+        const taxa = alcance ? (engajamento / alcance) * 100 : 0;
+        const diagnostico = alcance >= 50000 && engajamento >= 4000
+          ? "Forte"
+          : alcance >= 15000 && engajamento >= 1000
+            ? "Saudável"
+            : alcance === 0 && engajamento === 0
+              ? "Sem dados"
+              : "Atenção";
+        const recomendacao = diagnostico === "Forte"
+          ? "Manter formato do destaque e testar variações por marca."
+          : diagnostico === "Saudável"
+            ? "Reforçar CTA e replicar tema em novos criativos."
+            : !row.post_destaque_semana_url
+              ? "Importar URL do post destaque para facilitar leitura editorial."
+              : "Revisar gancho, formato do criativo e chamada para interação.";
+
+        return {
+          ...row,
+          taxa_engajamento: taxa,
+          diagnostico_conteudo: diagnostico,
+          recomendacao_conteudo: recomendacao
+        };
+      }
+
+      async function buildSocialBIFromFormatRows(metricRows, reason = null) {
+        const periodos = metricRows.map((row) => {
+          const alcance = num(row.alcance);
+          const engajamento = num(row.engajamento) || num(row.curtidas) + num(row.comentarios) + num(row.compartilhamentos) + num(row.salvos);
+          const referencia = row.data_publicacao || row.data_referencia || row.criado_em;
+          const temMetricas = alcance > 0 || engajamento > 0 || num(row.visualizacoes) > 0 || num(row.cliques) > 0;
+          return {
+            id: row.id,
+            marca: row.marca,
+            rede_social: row.rede_social,
+            conta_nome: row.conta_nome,
+            data_referencia: referencia,
+            seguidores_instagram: 0,
+            alcance_facebook: row.rede_social === "Facebook" ? alcance : 0,
+            alcance_instagram: row.rede_social === "Instagram" ? alcance : 0,
+            engajamento_total: engajamento,
+            taxa_engajamento: alcance ? (engajamento / alcance) * 100 : 0,
+            diagnostico_conteudo: temMetricas ? "Com insights" : "Post capturado",
+            recomendacao_conteudo: temMetricas
+              ? "Usar este conteúdo no ranking por alcance e engajamento."
+              : "A Meta retornou o post, mas não liberou métricas detalhadas para ele nesta sincronização.",
+            post_destaque_semana_url: row.post_url,
+            tema: row.tema || row.tipo_conteudo || "Conteúdo Meta"
+          };
+        }).sort((a, b) => num(b.engajamento_total) - num(a.engajamento_total) || num(b.alcance_facebook) - num(a.alcance_facebook));
+
+        const marcasVisiveis = state.marca === "Todas"
+          ? Array.from(new Set(periodos.map((r) => r.marca).filter(Boolean)))
+          : [state.marca];
+
+        const seguidoresRows = await fetchAllRows("stage_meta_business_analytics", "marca,seguidores_instagram,data_referencia", state.marca).catch(() => []);
+        const seguidoresPorMarca = new Map();
+        for (const row of seguidoresRows) {
+          const atual = seguidoresPorMarca.get(row.marca);
+          if (!atual || String(row.data_referencia || "") >= String(atual.data || "")) {
+            seguidoresPorMarca.set(row.marca, { valor: num(row.seguidores_instagram), data: row.data_referencia });
+          }
+        }
+
+        const resumo = marcasVisiveis.map((marca) => {
+          const rows = periodos.filter((r) => r.marca === marca);
+          const alcance = rows.reduce((s, r) => s + num(r.alcance_facebook), 0);
+          const engajamento = rows.reduce((s, r) => s + num(r.engajamento_total), 0);
+          return {
+            marca,
+            total_periodos: rows.length,
+            seguidores_instagram: seguidoresPorMarca.get(marca)?.valor || 0,
+            alcance_facebook: alcance,
+            engajamento_total: engajamento,
+            taxa_engajamento: alcance ? (engajamento / alcance) * 100 : 0,
+            ultima_referencia: rows.map((r) => r.data_referencia).filter(Boolean).sort().at(-1) || null
+          };
+        });
+
+        state.social = {
+          resumo,
+          periodos,
+          ranking: periodos.slice(0, 20),
+          fallback: true,
+          usingMetaStage: true,
+          fallbackReason: reason?.message || String(reason || "")
+        };
+      }
+
+      async function loadSocialBIFallback(reason = null) {
+        const metricRows = await fetchAllRows("stage_social_format_metrics", "*", state.marca).catch(() => []);
+        if (metricRows.length) {
+          await buildSocialBIFromFormatRows(metricRows, reason);
+          return;
+        }
+
+        const periodos = (await fetchAllRows(
+          "stage_meta_business_analytics",
+          "id,marca,data_referencia,seguidores_instagram,alcance_facebook,engajamento_total,post_destaque_semana_url",
+          state.marca
+        )).map(analyzeSocialRow);
+
+        const marcasVisiveis = state.marca === "Todas"
+          ? Array.from(new Set(periodos.map((r) => r.marca).filter(Boolean)))
+          : [state.marca];
+
+        const resumo = marcasVisiveis.map((marca) => {
+          const rows = periodos.filter((r) => r.marca === marca);
+          const alcance = rows.reduce((s, r) => s + num(r.alcance_facebook), 0);
+          const engajamento = rows.reduce((s, r) => s + num(r.engajamento_total), 0);
+          return {
+            marca,
+            total_periodos: rows.length,
+            seguidores_instagram: rows.reduce((s, r) => s + num(r.seguidores_instagram), 0),
+            alcance_facebook: alcance,
+            engajamento_total: engajamento,
+            taxa_engajamento: alcance ? (engajamento / alcance) * 100 : 0,
+            ultima_referencia: rows.map((r) => r.data_referencia).sort().at(-1) || null
+          };
+        });
+
+        const ranking = [...periodos].sort((a, b) => num(b.engajamento_total) - num(a.engajamento_total)).slice(0, 20);
+
+        state.social = {
+          resumo,
+          periodos,
+          ranking,
+          fallback: true,
+          fallbackReason: reason?.message || String(reason || "")
+        };
+      }
+
+      async function loadSocialFormatBI(rede) {
+        const view = rede === "Instagram" ? "vw_instagram_metricas_formato" : "vw_facebook_metricas_formato";
+        let query = supabase.from(view).select("*").order("formato");
+        if (state.marca !== "Todas") query = query.eq("marca", state.marca);
+        const { data, error } = await query;
+        if (error) throw error;
+        state.socialFormat = { rede, rows: data || [] };
+      }
+
+      async function loadSocialFormatFallback(rede, reason = null) {
+        const rows = await fetchAllRows("stage_social_format_metrics", "*", state.marca);
+        state.socialFormat = {
+          rede,
+          rows: aggregateSocialFormatRows(rows.filter((row) => row.rede_social === rede), rede),
+          fallback: true,
+          fallbackReason: reason?.message || String(reason || "")
+        };
+      }
+
+      function aggregateSocialFormatRows(rows, rede) {
+        const groups = {};
+        rows.forEach((row) => {
+          const key = `${row.marca}|${row.formato}|${row.objetivo || ""}|${row.tema || ""}`;
+          groups[key] ||= {
+            marca: row.marca,
+            formato: row.formato,
+            objetivo: row.objetivo,
+            tema: row.tema,
+            melhor_sticker_tema: row.melhor_sticker_tema,
+            conta_nome: row.conta_nome,
+            post_url: row.post_url,
+            post_id: row.post_id,
+            tipo_conteudo: row.tipo_conteudo,
+            data_publicacao: row.data_publicacao,
+            ultima_referencia: row.data_publicacao || row.data_referencia,
+            total_registros: 0
+          };
+          const target = groups[key];
+          target.total_registros += 1;
+          target.conta_nome ||= row.conta_nome;
+          target.post_url ||= row.post_url;
+          target.post_id ||= row.post_id;
+          target.tipo_conteudo ||= row.tipo_conteudo;
+          target.data_publicacao ||= row.data_publicacao;
+          if (rede === "Instagram") {
+            ["alcance", "engajamento", "total_visualizacoes", "compartilhamentos", "salvamentos", "salvos", "curtidas", "comentarios", "melhor_sticker_interacoes", "respostas_dm", "cliques_sticker_link", "alcance_segunda_visualizacao", "comentarios_qualificados"].forEach((field) => target[field] = num(target[field]) + num(row[field]));
+            ["tempo_medio_visualizacao", "taxa_rejeicao_inicial", "percentual_assistido_final", "alcance_seguidores_pct", "alcance_nao_seguidores_pct", "media_visualizacoes_unicas_story", "taxa_retencao_diaria", "taxa_compartilhamento_feed"].forEach((field) => target[`${field}_sum`] = num(target[`${field}_sum`]) + num(row[field]));
+            target.melhor_sticker_tema ||= row.melhor_sticker_tema;
+          } else {
+            ["alcance", "engajamento", "visualizacoes_unicas_midia", "compartilhamentos_publicos_timeline", "cliques_link", "cliques_ver_mais", "compartilhamentos_grupos", "visualizacoes_unicas", "toques_avancar", "toques_voltar"].forEach((field) => target[field] = num(target[field]) + num(row[field]));
+            ["retencao_qualificada_5s", "tempo_resposta_comentarios_horas"].forEach((field) => target[`${field}_sum`] = num(target[`${field}_sum`]) + num(row[field]));
+          }
+          const referencia = row.data_publicacao || row.data_referencia;
+          if (!target.ultima_referencia || referencia > target.ultima_referencia) target.ultima_referencia = referencia;
+        });
+
+        return Object.values(groups).map((row) => {
+          const count = Math.max(num(row.total_registros), 1);
+          if (rede === "Instagram") {
+            ["tempo_medio_visualizacao", "taxa_rejeicao_inicial", "percentual_assistido_final", "alcance_seguidores_pct", "alcance_nao_seguidores_pct", "media_visualizacoes_unicas_story", "taxa_retencao_diaria", "taxa_compartilhamento_feed"].forEach((field) => row[field] = num(row[`${field}_sum`]) / count);
+          } else {
+            ["retencao_qualificada_5s", "tempo_resposta_comentarios_horas"].forEach((field) => row[field] = num(row[`${field}_sum`]) / count);
+          }
+          row.insight_social = socialFormatInsight(row, rede);
+          return row;
+        });
+      }
+
+      function socialFormatInsight(row, rede) {
+        if (rede === "Instagram") {
+          if (row.formato === "instagram_reels" && num(row.taxa_rejeicao_inicial) < 30 && num(row.alcance_nao_seguidores_pct) >= 60) return "Reels com bom potencial de descoberta.";
+          if (row.formato === "instagram_stories" && num(row.taxa_retencao_diaria) >= 60) return "Stories com relacionamento sustentado.";
+          if (row.formato === "instagram_feed" && num(row.salvamentos) > 0) return "Feed com sinais de autoridade e consideracao.";
+          return "Ajustar gancho, retencao ou chamada de interacao.";
+        }
+        if (row.formato === "facebook_reels" && num(row.retencao_qualificada_5s) >= 50) return "Reels com distribuicao aberta saudavel.";
+        if (row.formato === "facebook_feed" && num(row.cliques_link) > 0) return "Feed contribuindo para trafego externo.";
+        if (row.formato === "facebook_stories" && num(row.visualizacoes_unicas) > 0) return "Stories sustentando lembranca de marca.";
+        return "Revisar distribuicao, trafego ou resposta da comunidade.";
+      }
+
+      function loginHeroHtml() {
+        return `
+          <div class="login-hero">
+            <div class="side-brand"><div class="brand">GTO</div><div><strong>GTO Insights</strong></div></div>
+            <div>
+              <h1>Panorama em tempo real para tomada de decisão</h1>
+              <p>Acesse métricas consolidadas de CredSystem, RD Station, Meta e Google Business Profile das três marcas em uma única interface.</p>
+            </div>
+            <small class="muted" style="color:#94a3b8">© ${new Date().getFullYear()} GTO Insights</small>
+          </div>`;
+      }
+
+      function renderLogin(error = "") {
+        app.className = "login-split";
+        app.innerHTML = `
+          ${loginHeroHtml()}
+          <div class="login-form-side">
+            <section class="login-card">
+              <h1>Acesse sua conta</h1>
+              <p class="muted">Entre com um usuário do Supabase Auth ativo em public.perfis.</p>
+              <form id="loginForm" class="grid" style="gap:14px">
+                <label>Email<input name="email" type="email" required /></label>
+                <label>Senha<input name="password" type="password" required /></label>
+                ${error ? `<div class="alert error">${error}</div>` : ""}
+                <button>Entrar</button>
+              </form>
+              <form id="recoveryForm" class="grid" style="gap:10px">
+                <label>Recuperar senha<input name="email" type="email" placeholder="seu@email.com" required /></label>
+                <button class="secondary" type="submit">Enviar novo link de senha</button>
+              </form>
+            </section>
+          </div>`;
+        document.querySelector("#loginForm").addEventListener("submit", signIn);
+        document.querySelector("#recoveryForm").addEventListener("submit", sendRecoveryEmail);
+      }
+
+      function renderResetPassword(error = "") {
+        app.className = "login-split";
+        app.innerHTML = `
+          ${loginHeroHtml()}
+          <div class="login-form-side">
+            <section class="login-card">
+              <h1>Definir nova senha</h1>
+              <p class="muted">Digite uma nova senha para concluir a recuperação de acesso.</p>
+              <form id="resetPasswordForm" class="grid" style="gap:14px">
+                <label>Nova senha<input name="password" type="password" minlength="6" required /></label>
+                <label>Confirmar senha<input name="confirmPassword" type="password" minlength="6" required /></label>
+                ${error ? `<div class="alert error">${error}</div>` : ""}
+                <button>Salvar nova senha</button>
+              </form>
+            </section>
+          </div>`;
+        document.querySelector("#resetPasswordForm").addEventListener("submit", updatePassword);
+      }
+
+      async function render() {
+        if (!state.session) return renderLogin();
+        app.className = "shell";
+        app.innerHTML = `
+          <aside>
+            <div class="side-brand"><div class="brand">G</div><div><h1>GTO Insights</h1><small>BI Platform</small></div></div>
+            <nav>
+              <button id="navDash" class="${state.page === "dashboard" ? "active" : ""}"><span class="material-symbols-outlined">dashboard</span>Dashboard Geral</button>
+              <button id="navCred" class="${state.page === "credsystem" ? "active" : ""}"><span class="material-symbols-outlined">credit_card</span>Cartão Próprio</button>
+              <button id="navEmail" class="${state.page === "email" ? "active" : ""}"><span class="material-symbols-outlined">mail</span>Email Marketing</button>
+              <button id="navSocial" class="${state.page === "social" ? "active" : ""}"><span class="material-symbols-outlined">diversity_3</span>Redes Sociais</button>
+              <button id="navConnections" class="${state.page === "connections" ? "active" : ""}"><span class="material-symbols-outlined">link</span>Conexões</button>
+              <button id="navGMN" class="${state.page === "google_business" ? "active" : ""}"><span class="material-symbols-outlined">store</span>Google Meu Negócio</button>
+              <button id="navImport" class="${state.page === "import" ? "active" : ""}"><span class="material-symbols-outlined">upload_file</span>Importar Planilhas</button>
+            </nav>
+            <div class="profile"><strong>${state.perfil?.nome || state.session.user.email}</strong><span>${state.perfil?.cargo || "Perfil"} · ${state.perfil?.marca_vinculada || "Todas as marcas"}</span><button id="logout">Sair</button></div>
+          </aside>
+          <main>
+            <header><div><strong>${pageTitle()}</strong><br><span class="muted">Supabase com RLS por marca</span></div><span class="alert success">Authenticated</span></header>
+            <div class="content" id="content"></div>
+          </main>`;
+        document.querySelector("#logout").onclick = signOut;
+        document.querySelector("#navDash").onclick = () => { state.page = "dashboard"; render(); };
+        document.querySelector("#navCred").onclick = () => { state.page = "credsystem"; render(); };
+        document.querySelector("#navEmail").onclick = () => { state.page = "email"; render(); };
+        document.querySelector("#navSocial").onclick = () => { state.page = "social"; render(); };
+        document.querySelector("#navConnections").onclick = () => { state.page = "connections"; render(); };
+        document.querySelector("#navGMN").onclick = () => { state.page = "google_business"; render(); };
+        document.querySelector("#navImport").onclick = () => { state.page = "import"; render(); };
+        if (state.page === "dashboard") await renderDashboard();
+        if (state.page === "credsystem") await renderCredsystemBI();
+        if (state.page === "email") await renderEmailBI();
+        if (state.page === "social") {
+          if (state.socialTab === "instagram") await renderSocialFormatPage("Instagram");
+          else if (state.socialTab === "facebook") await renderSocialFormatPage("Facebook");
+          else await renderSocialBI();
+        }
+        if (state.page === "connections") await renderConnections();
+        if (state.page === "google_business") await renderGoogleBusiness();
+        if (state.page === "import") renderImport();
+      }
+
+      function pageTitle() {
+        if (state.page === "dashboard") return "Visão consolidada";
+        if (state.page === "credsystem") return "Cartão Próprio CredSystem";
+        if (state.page === "email") return "Email Marketing";
+        if (state.page === "social") return "Redes Sociais";
+        if (state.page === "connections") return "Conexões";
+        if (state.page === "google_business") return "Google Meu Negócio";
+        return "Pipeline de importação";
+      }
+
+      async function renderDashboard() {
+        const content = document.querySelector("#content");
+        content.innerHTML = `<div class="alert">Carregando dados reais do Supabase...</div>`;
+        try { await loadDashboard(); } catch (error) { content.innerHTML = `<div class="alert error">${error.message}</div>`; return; }
+        const rows = state.rows;
+        const summary = {
+          total: rows.length,
+          ativos: rows.filter((r) => r.data_ativacao).length,
+          ticket: avg(rows.map((r) => num(r.valor_compra_inicial))),
+          campanhas: state.rd.length,
+          abertura: avg(state.rd.map((r) => num(r.taxa_abertura))),
+          clique: avg(state.rd.map((r) => num(r.taxa_clique))),
+          alcance: state.meta.reduce((s, r) => s + num(r.alcance_facebook), 0),
+          engajamento: state.meta.reduce((s, r) => s + num(r.engajamento_total), 0),
+          propostas: state.propostas.length,
+          aprovadas: state.propostas.reduce((s, r) => s + num(r.proposta_aprov), 0),
+          rejeitadas: state.propostas.reduce((s, r) => s + num(r.proposta_rejei), 0),
+          totalUnidadesGoogle: state.google?.kpis?.totalUnidades || 0,
+          avaliacaoMediaGoogle: state.google?.kpis?.avaliacaoMedia || 0
+        };
+        summary.taxaAprovacao = summary.propostas ? (summary.aprovadas / summary.propostas) * 100 : 0;
+        const byBrand = {};
+        rows.forEach((r) => { byBrand[r.marca] ||= []; byBrand[r.marca].push(r); });
+        const max = Math.max(...Object.values(byBrand).map((v) => v.length), 1);
+        const motivos = {};
+        state.propostas.forEach((row) => {
+          const motivo = row.motivo || "SEM MOTIVO";
+          motivos[motivo] = (motivos[motivo] || 0) + 1;
+        });
+        const topMotivos = Object.entries(motivos)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 8);
+        content.innerHTML = `
+          <div class="page-head">
+            <div><div class="eyebrow">Dados reais do Supabase</div><h2>Dashboard Geral</h2><p class="muted">KPIs calculados a partir das tabelas protegidas por RLS.</p></div>
+            <div class="filters">
+              ${marcaPillsHtml()}
+              <div class="segmented" id="periodo">${[["7d", "7D"], ["30d", "30D"], ["1y", "1A"], ["all", "Tudo"]].map(([value, label]) => `<button type="button" class="periodo-opt ${state.periodo === value ? "active" : ""}" data-periodo="${value}">${label}</button>`).join("")}</div>
+              <button id="refresh">Atualizar</button>
+            </div>
+          </div>
+          <div class="grid kpis">
+            ${kpi("Total de cartões", fmt.format(summary.total), "credit_card")}
+            ${kpi("Cartões ativados", fmt.format(summary.ativos), "verified")}
+            ${kpi("Ticket médio", money.format(summary.ticket), "payments")}
+            ${kpi("Campanhas RD", fmt.format(summary.campanhas), "campaign")}
+            ${kpi("Taxa abertura", `${summary.abertura.toFixed(2).replace(".", ",")}%`, "mail")}
+            ${kpi("Taxa clique", `${summary.clique.toFixed(2).replace(".", ",")}%`, "ads_click")}
+            ${kpi("Alcance Facebook", fmt.format(summary.alcance), "sensors")}
+            ${kpi("Engajamento", fmt.format(summary.engajamento), "favorite")}
+            ${kpi("Unidades Google", fmt.format(summary.totalUnidadesGoogle), "storefront")}
+            ${kpi("Avaliação Google", summary.avaliacaoMediaGoogle ? `${summary.avaliacaoMediaGoogle.toFixed(1)} / 5.0` : "-", "grade")}
+            ${kpi("Propostas", fmt.format(summary.propostas), "assignment")}
+            ${kpi("Aprovadas", fmt.format(summary.aprovadas), "check_circle")}
+            ${kpi("Rejeitadas", fmt.format(summary.rejeitadas), "cancel")}
+            ${kpi("Taxa aprovação", `${summary.taxaAprovacao.toFixed(1).replace(".", ",")}%`, "percent")}
+          </div>
+          <div class="grid cols">
+            <section class="card"><h3>Performance por marca</h3><p class="muted">A policy do banco limita automaticamente o que cada usuário pode ver.</p><div class="bars" style="margin-top:16px">${Object.entries(byBrand).map(([marca, list]) => `<div class="bar-row"><strong>${marca}</strong><div class="track"><div class="fill" style="width:${(list.length / max) * 100}%"></div></div><b>${fmt.format(list.length)}</b></div>`).join("") || `<p class="muted">Sem dados para os filtros atuais.</p>`}</div></section>
+            <section class="card"><h3>Controle de acesso</h3><p class="muted">O front filtra por <code>marca</code>, mas a regra definitiva está no PostgreSQL: <code>public.gto_tem_acesso_marca(marca)</code>.</p></section>
+          </div>
+          <section class="card">
+            <h3>Principais motivos das propostas</h3>
+            <p class="muted">Ranking vindo de <code>stage_credsystem_propostas</code>.</p>
+            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Motivo</th><th>Total</th><th>Participação</th></tr></thead><tbody>${topMotivos.map(([motivo, total]) => `<tr><td>${motivo}</td><td>${fmt.format(total)}</td><td>${summary.propostas ? ((total / summary.propostas) * 100).toFixed(1).replace(".", ",") : "0,0"}%</td></tr>`).join("") || `<tr><td colspan="3">Sem propostas importadas.</td></tr>`}</tbody></table></div>
+          </section>
+          <section class="card"><h3>Últimos registros CredSystem</h3><div class="table-wrap"><table><thead><tr><th>Marca</th><th>Emissão</th><th>Ativação</th><th>Loja</th><th>Cliente</th><th>Valor inicial</th></tr></thead><tbody>${rows.slice(0, 12).map((r) => `<tr><td>${r.marca}</td><td>${r.data_emissao}</td><td>${r.data_ativacao || "-"}</td><td>${r.loja_operacao}</td><td>${r.nome_cliente || "-"}</td><td>${money.format(num(r.valor_compra_inicial))}</td></tr>`).join("")}</tbody></table></div></section>`;
+        wireMarcaPills(renderDashboard);
+        document.querySelectorAll(".periodo-opt").forEach((button) => {
+          button.onclick = () => { state.periodo = button.dataset.periodo; renderDashboard(); };
+        });
+        document.querySelector("#refresh").onclick = renderDashboard;
+      }
+
+      function kpi(label, value, icon) {
+        return `<article class="card kpi"><div class="kpi-top"><span>${label}</span><span class="material-symbols-outlined">${icon}</span></div><strong>${value}</strong><small class="muted">Registros visíveis pelo perfil</small></article>`;
+      }
+
+      function marcaPillsHtml(restrictTodas = false) {
+        const opcoes = restrictTodas
+          ? marcas.filter((m) => m !== "Todas" || state.perfil?.cargo === "Admin" || state.perfil?.cargo === "Gestor")
+          : marcas;
+        return `<div class="pills">${opcoes.map((m) => `<button type="button" class="pill marca-pill ${m === state.marca ? "active" : ""}" data-marca="${m}">${m}</button>`).join("")}</div>`;
+      }
+
+      function wireMarcaPills(onSelect) {
+        document.querySelectorAll(".marca-pill").forEach((button) => {
+          button.onclick = () => {
+            state.marca = button.dataset.marca;
+            onSelect();
+          };
+        });
+      }
+
+      function socialTabsHtml(active) {
+        const tabs = [["geral", "Visão Geral"], ["instagram", "Instagram"], ["facebook", "Facebook"]];
+        return `<div class="segmented">${tabs.map(([key, label]) => `<button type="button" class="social-tab ${active === key ? "active" : ""}" data-tab="${key}">${label}</button>`).join("")}</div>`;
+      }
+
+      function wireSocialTabs() {
+        document.querySelectorAll(".social-tab").forEach((button) => {
+          button.onclick = () => {
+            state.socialTab = button.dataset.tab;
+            if (state.socialTab === "instagram") renderSocialFormatPage("Instagram");
+            else if (state.socialTab === "facebook") renderSocialFormatPage("Facebook");
+            else renderSocialBI();
+          };
+        });
+      }
+
+      async function renderCredsystemBI() {
+        const content = document.querySelector("#content");
+        content.innerHTML = `<div class="alert">Carregando views BI do CredSystem...</div>`;
+
+        try {
+          await loadCredsystemBI();
+        } catch (error) {
+          try {
+            await loadCredsystemBIFallback(error);
+          } catch (fallbackError) {
+            content.innerHTML = `
+              <div class="alert error">
+                ${fallbackError.message}<br><br>
+                Aplique primeiro a migration <code>supabase/migrations/20260706_004_credsystem_bi_views.sql</code> no SQL Editor do Supabase.
+              </div>`;
+            return;
+          }
+        }
+
+        const bi = state.bi || { resumo: [], lojas: [], motivos: [], funil: [] };
+        const totals = bi.resumo.reduce((acc, row) => ({
+          total_cartoes: acc.total_cartoes + num(row.total_cartoes),
+          cartoes_ativados: acc.cartoes_ativados + num(row.cartoes_ativados),
+          total_propostas: acc.total_propostas + num(row.total_propostas),
+          propostas_aprovadas: acc.propostas_aprovadas + num(row.propostas_aprovadas),
+          propostas_rejeitadas: acc.propostas_rejeitadas + num(row.propostas_rejeitadas)
+        }), { total_cartoes: 0, cartoes_ativados: 0, total_propostas: 0, propostas_aprovadas: 0, propostas_rejeitadas: 0 });
+        totals.taxa_aprovacao = totals.total_propostas ? (totals.propostas_aprovadas / totals.total_propostas) * 100 : 0;
+        totals.taxa_ativacao = totals.total_cartoes ? (totals.cartoes_ativados / totals.total_cartoes) * 100 : 0;
+
+        content.innerHTML = `
+          <div class="page-head">
+            <div><div class="eyebrow">Views BI do Supabase</div><h2>Cartão Próprio</h2><p class="muted">Indicadores consolidados por views SQL com RLS por marca.</p></div>
+            <div class="filters">
+              ${marcaPillsHtml()}
+              <button id="refresh">Atualizar</button>
+            </div>
+          </div>
+          ${bi.fallback ? `<div class="alert">Usando cálculo local temporário porque a API ainda recusou as views BI. Detalhe: <code>${bi.fallbackReason || "sem detalhe retornado"}</code>. Rode o check completo <code>supabase/checks/20260706_check_credsystem_bi_views.sql</code> e depois clique em Atualizar.</div>` : ""}
+          <div class="grid kpis">
+            ${kpi("Propostas", fmt.format(totals.total_propostas), "assignment")}
+            ${kpi("Aprovadas", fmt.format(totals.propostas_aprovadas), "check_circle")}
+            ${kpi("Rejeitadas", fmt.format(totals.propostas_rejeitadas), "cancel")}
+            ${kpi("Taxa aprovação", `${totals.taxa_aprovacao.toFixed(1).replace(".", ",")}%`, "percent")}
+            ${kpi("Cartões emitidos", fmt.format(totals.total_cartoes), "credit_card")}
+            ${kpi("Cartões ativados", fmt.format(totals.cartoes_ativados), "verified")}
+            ${kpi("Taxa ativação", `${totals.taxa_ativacao.toFixed(1).replace(".", ",")}%`, "trending_up")}
+            ${kpi("Marcas visíveis", fmt.format(bi.resumo.length), "storefront")}
+          </div>
+          <section class="card">
+            <h3>Funil por marca</h3>
+            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Propostas</th><th>Aprovadas</th><th>Emitidos</th><th>Ativados</th><th>Taxa aprovação</th><th>Taxa ativação</th></tr></thead><tbody>${bi.funil.map((r) => `<tr><td>${r.marca}</td><td>${fmt.format(num(r.total_propostas))}</td><td>${fmt.format(num(r.propostas_aprovadas))}</td><td>${fmt.format(num(r.cartoes_emitidos))}</td><td>${fmt.format(num(r.cartoes_ativados))}</td><td>${num(r.taxa_aprovacao).toFixed(1).replace(".", ",")}%</td><td>${num(r.taxa_ativacao).toFixed(1).replace(".", ",")}%</td></tr>`).join("") || `<tr><td colspan="7">Sem dados para o filtro atual.</td></tr>`}</tbody></table></div>
+          </section>
+          <section class="card">
+            <h3>Ranking por loja</h3>
+            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Loja</th><th>Marca</th><th>Propostas</th><th>Aprovadas</th><th>Rejeitadas</th><th>Cartões</th><th>Taxa aprovação</th></tr></thead><tbody>${bi.lojas.map((r) => `<tr><td>${r.loja}</td><td>${r.marca}</td><td>${fmt.format(num(r.total_propostas))}</td><td>${fmt.format(num(r.propostas_aprovadas))}</td><td>${fmt.format(num(r.propostas_rejeitadas))}</td><td>${fmt.format(num(r.total_cartoes))}</td><td>${num(r.taxa_aprovacao).toFixed(1).replace(".", ",")}%</td></tr>`).join("") || `<tr><td colspan="7">Sem lojas para o filtro atual.</td></tr>`}</tbody></table></div>
+          </section>
+          <section class="card">
+            <h3>Motivos de proposta</h3>
+            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Motivo</th><th>Marca</th><th>Total</th><th>Aprovadas</th><th>Rejeitadas</th><th>Participação</th></tr></thead><tbody>${bi.motivos.slice(0, 12).map((r) => `<tr><td>${r.motivo}</td><td>${r.marca}</td><td>${fmt.format(num(r.total))}</td><td>${fmt.format(num(r.propostas_aprovadas))}</td><td>${fmt.format(num(r.propostas_rejeitadas))}</td><td>${num(r.participacao).toFixed(1).replace(".", ",")}%</td></tr>`).join("") || `<tr><td colspan="6">Sem motivos para o filtro atual.</td></tr>`}</tbody></table></div>
+          </section>`;
+
+        wireMarcaPills(renderCredsystemBI);
+        document.querySelector("#refresh").onclick = renderCredsystemBI;
+      }
+
+      async function renderEmailBI() {
+        const content = document.querySelector("#content");
+        content.innerHTML = `<div class="alert">Carregando campanhas de email marketing...</div>`;
+
+        try {
+          await loadEmailBI();
+        } catch (error) {
+          try {
+            await loadEmailBIFallback(error);
+          } catch (fallbackError) {
+            content.innerHTML = `<div class="alert error">${fallbackError.message}</div>`;
+            return;
+          }
+        }
+
+        const email = state.email || { campanhas: [], resumo: [] };
+        const campaigns = email.campanhas || [];
+        if (!state.emailSelectedId && campaigns[0]) state.emailSelectedId = campaignKey(campaigns[0]);
+        const selectedCampaign = campaigns.find((row) => campaignKey(row) === state.emailSelectedId) || campaigns[0] || null;
+        if (selectedCampaign) state.emailSelectedId = campaignKey(selectedCampaign);
+        const copyDetail = selectedCampaign ? buildCopyDetail(selectedCampaign) : null;
+        const totals = (email.resumo || []).reduce((acc, row) => ({
+          total_campanhas: acc.total_campanhas + num(row.total_campanhas),
+          total_enviados: acc.total_enviados + num(row.total_enviados),
+          total_entregues: acc.total_entregues + num(row.total_entregues),
+          total_abertos_estimados: acc.total_abertos_estimados + num(row.total_abertos_estimados),
+          total_cliques_estimados: acc.total_cliques_estimados + num(row.total_cliques_estimados)
+        }), { total_campanhas: 0, total_enviados: 0, total_entregues: 0, total_abertos_estimados: 0, total_cliques_estimados: 0 });
+        totals.taxa_abertura_media = avg((email.resumo || []).map((r) => num(r.taxa_abertura_media)));
+        totals.taxa_clique_media = avg((email.resumo || []).map((r) => num(r.taxa_clique_media)));
+        totals.score_copy_medio = avg(campaigns.map((r) => num(r.score_copy)));
+
+        content.innerHTML = `
+          <div class="page-head">
+            <div><div class="eyebrow">RD Station</div><h2>Email Marketing</h2><p class="muted">Campanhas por marca, entregas, aberturas, cliques e análise de copy.</p></div>
+            <div class="filters">
+              ${marcaPillsHtml()}
+              <button id="refresh">Atualizar</button>
+            </div>
+          </div>
+          ${email.fallback ? `<div class="alert">Usando cálculo local temporário. Para ativar as views oficiais, rode <code>supabase/migrations/20260707_006_email_marketing_bi_views.sql</code>. Detalhe: <code>${email.fallbackReason || "sem detalhe retornado"}</code></div>` : ""}
+          <div class="grid kpis">
+            ${kpi("Campanhas", fmt.format(totals.total_campanhas), "campaign")}
+            ${kpi("Emails enviados", fmt.format(totals.total_enviados), "outgoing_mail")}
+            ${kpi("Emails recebidos", fmt.format(totals.total_entregues), "mail")}
+            ${kpi("Abertos estimados", fmt.format(totals.total_abertos_estimados), "drafts")}
+            ${kpi("Cliques estimados", fmt.format(totals.total_cliques_estimados), "ads_click")}
+            ${kpi("Taxa abertura", `${totals.taxa_abertura_media.toFixed(2).replace(".", ",")}%`, "mark_email_read")}
+            ${kpi("Taxa clique", `${totals.taxa_clique_media.toFixed(2).replace(".", ",")}%`, "touch_app")}
+            ${kpi("Score copy", `${totals.score_copy_medio.toFixed(0)}/100`, "psychology")}
+          </div>
+          <section class="card">
+            <h3>Campanhas</h3>
+            <p class="muted">Abertos e cliques são estimados a partir das taxas recebidas da RD Station.</p>
+            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Campanha</th><th>Enviados</th><th>Recebidos</th><th>Abertos</th><th>Cliques</th><th>Abertura</th><th>Clique</th><th>Copy</th></tr></thead><tbody>${campaigns.map((r) => `<tr><td>${r.marca}</td><td>${r.nome_campanha}</td><td>${fmt.format(num(r.enviados))}</td><td>${fmt.format(num(r.entregues))}</td><td>${fmt.format(num(r.abertos_estimados))}</td><td>${fmt.format(num(r.cliques_estimados))}</td><td>${num(r.taxa_abertura).toFixed(2).replace(".", ",")}%</td><td>${num(r.taxa_clique).toFixed(2).replace(".", ",")}%</td><td>${r.diagnostico_copy || "Sem análise"}</td></tr>`).join("") || `<tr><td colspan="9">Sem campanhas importadas.</td></tr>`}</tbody></table></div>
+          </section>
+          <section class="card">
+            <h3>Analista de copy</h3>
+            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Campanha</th><th>Marca</th><th>Score</th><th>Diagnóstico</th><th>Recomendação</th><th>Assunto</th></tr></thead><tbody>${campaigns.map((r) => `<tr><td>${r.nome_campanha}</td><td>${r.marca}</td><td>${fmt.format(num(r.score_copy))}/100</td><td>${r.diagnostico_copy || "-"}</td><td>${r.recomendacao_copy || "-"}</td><td>${r.assunto_email || "-"}</td></tr>`).join("") || `<tr><td colspan="6">Sem copies para análise.</td></tr>`}</tbody></table></div>
+          </section>
+          <section class="card">
+            <div class="page-head" style="align-items:start">
+              <div>
+                <h3>Análise detalhada da copy</h3>
+                <p class="muted">Selecione uma campanha para ver leitura crítica, riscos e sugestões de reescrita.</p>
+              </div>
+              <div class="filters">
+                <select id="copyCampaign">${campaigns.map((r) => `<option value="${campaignKey(r)}" ${campaignKey(r) === state.emailSelectedId ? "selected" : ""}>${r.nome_campanha} · ${r.marca}</option>`).join("")}</select>
+              </div>
+            </div>
+            ${copyDetail ? `
+              <div class="grid kpis" style="margin-top:16px">
+                ${kpi("Campanha", selectedCampaign.nome_campanha, "campaign")}
+                ${kpi("Marca", selectedCampaign.marca, "storefront")}
+                ${kpi("Performance", copyDetail.performance, "monitoring")}
+                ${kpi("Score copy", `${copyDetail.score}/100`, "psychology")}
+              </div>
+              <div class="insight-grid">
+                <div class="insight-panel">
+                  <h4>Copy atual</h4>
+                  <div class="copy-sample"><strong>Assunto:</strong> ${copyDetail.current.subject}<br><strong>Preheader:</strong> ${copyDetail.current.preheader}<br><strong>Corpo:</strong> ${copyDetail.current.body}</div>
+                </div>
+                <div class="insight-panel">
+                  <h4>Sugestões de reescrita</h4>
+                  <ul>${copyDetail.rewrites.map((item) => `<li><strong>${item.label}:</strong> ${item.text}</li>`).join("")}</ul>
+                </div>
+                <div class="insight-panel">
+                  <h4>Forças</h4>
+                  ${insightCardsHtml(copyDetail.strengths, "success", "check_circle")}
+                </div>
+                <div class="insight-panel">
+                  <h4>Riscos</h4>
+                  ${insightCardsHtml(copyDetail.risks, "danger", "warning")}
+                </div>
+                <div class="insight-panel">
+                  <h4>Próximas ações</h4>
+                  ${insightCardsHtml(copyDetail.actions, "info", "arrow_forward")}
+                </div>
+                <div class="insight-panel">
+                  <h4>Leitura do funil</h4>
+                  <ul>
+                    <li>Abertura: ${num(selectedCampaign.taxa_abertura).toFixed(2).replace(".", ",")}% com ${fmt.format(num(selectedCampaign.abertos_estimados))} abertos estimados.</li>
+                    <li>Clique: ${num(selectedCampaign.taxa_clique).toFixed(2).replace(".", ",")}% com ${fmt.format(num(selectedCampaign.cliques_estimados))} cliques estimados.</li>
+                    <li>Entregabilidade: ${fmt.format(num(selectedCampaign.entregues))} recebidos de ${fmt.format(num(selectedCampaign.enviados))} enviados.</li>
+                  </ul>
+                </div>
+              </div>
+            ` : `<p class="muted">Importe uma campanha RD para habilitar a análise detalhada.</p>`}
+          </section>
+          <section class="card">
+            <h3>Resumo por marca</h3>
+            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Campanhas</th><th>Enviados</th><th>Recebidos</th><th>Abertos</th><th>Cliques</th><th>Score copy</th></tr></thead><tbody>${(email.resumo || []).map((r) => `<tr><td>${r.marca}</td><td>${fmt.format(num(r.total_campanhas))}</td><td>${fmt.format(num(r.total_enviados))}</td><td>${fmt.format(num(r.total_entregues))}</td><td>${fmt.format(num(r.total_abertos_estimados))}</td><td>${fmt.format(num(r.total_cliques_estimados))}</td><td>${num(r.score_copy_medio).toFixed(0)}/100</td></tr>`).join("") || `<tr><td colspan="7">Sem resumo por marca.</td></tr>`}</tbody></table></div>
+          </section>`;
+
+        wireMarcaPills(() => { state.emailSelectedId = null; renderEmailBI(); });
+        document.querySelector("#refresh").onclick = renderEmailBI;
+        const copyCampaign = document.querySelector("#copyCampaign");
+        if (copyCampaign) copyCampaign.onchange = (event) => { state.emailSelectedId = event.target.value; renderEmailBI(); };
+      }
+
+      async function renderSocialFormatPage(rede) {
+        const content = document.querySelector("#content");
+        content.innerHTML = `<div class="alert">Carregando metricas de ${rede}...</div>`;
+
+        try {
+          await loadSocialFormatBI(rede);
+        } catch (error) {
+          try {
+            await loadSocialFormatFallback(rede, error);
+          } catch (fallbackError) {
+            content.innerHTML = `<div class="alert error">${fallbackError.message}<br><br>Aplique a migration <code>supabase/migrations/20260708_008_social_format_metrics.sql</code> e rode <code>notify pgrst, 'reload schema';</code>.</div>`;
+            return;
+          }
+        }
+
+        const data = state.socialFormat || { rows: [] };
+        const rows = data.rows || [];
+        const isInstagram = rede === "Instagram";
+        const totals = isInstagram ? instagramTotals(rows) : facebookTotals(rows);
+        const title = isInstagram ? "Instagram" : "Facebook";
+        const subtitle = isInstagram
+          ? "Rede principal: descoberta, relacionamento e autoridade por formato."
+          : "Rede secundaria: distribuicao, trafego externo e lembranca de marca.";
+
+        content.innerHTML = `
+          <div class="page-head">
+            <div><div class="eyebrow">${isInstagram ? "Rede principal" : "Rede secundaria"}</div><h2>${title}</h2><p class="muted">${subtitle}</p></div>
+            <div class="filters">
+              ${marcaPillsHtml()}
+              <button id="refresh">Atualizar</button>
+            </div>
+          </div>
+          ${socialTabsHtml(isInstagram ? "instagram" : "facebook")}
+          ${data.fallback && rows.length ? `<div class="alert success">Dados carregados da tabela <code>stage_social_format_metrics</code>. ${hasDetailedSocialMetrics(rows, rede) ? "Métricas detalhadas disponíveis para a rede." : "Posts capturados, mas a Meta ainda não liberou métricas detalhadas para esses conteúdos."}</div>` : ""}
+          ${rows.length ? "" : `<div class="alert">Ainda nao ha metricas granulares de ${rede}. Confirme a pagina correta em <strong>Conexoes</strong> e clique em <strong>Sincronizar confirmadas</strong>.</div>`}
+          ${isInstagram ? instagramSummaryHtml(totals) : facebookSummaryHtml(totals)}
+          ${isInstagram ? instagramSectionsHtml(rows) : facebookSectionsHtml(rows)}
+          <section class="card">
+            <h3>Insights e proximos passos</h3>
+            <div class="insight-grid">
+              <div class="insight-panel"><h4>O que funcionou melhor</h4>${insightCardsHtml(bestSocialSignals(rows, rede), "success", "trending_up")}</div>
+              <div class="insight-panel"><h4>O que precisa ajuste</h4>${insightCardsHtml(nextSocialActions(rows, rede), "warning", "priority_high")}</div>
+            </div>
+          </section>`;
+
+        wireMarcaPills(() => renderSocialFormatPage(rede));
+        wireSocialTabs();
+        document.querySelector("#refresh").onclick = () => renderSocialFormatPage(rede);
+      }
+
+      function instagramTotals(rows) {
+        return {
+          registros: rows.reduce((s, r) => s + num(r.total_registros), 0),
+          views: rows.reduce((s, r) => s + num(r.total_visualizacoes), 0),
+          watchTime: avg(rows.map((r) => num(r.tempo_medio_visualizacao)).filter(Boolean)),
+          skipRate: avg(rows.map((r) => num(r.taxa_rejeicao_inicial)).filter(Boolean)),
+          completion: avg(rows.map((r) => num(r.percentual_assistido_final)).filter(Boolean)),
+          nonFollowers: avg(rows.map((r) => num(r.alcance_nao_seguidores_pct)).filter(Boolean)),
+          shares: rows.reduce((s, r) => s + num(r.compartilhamentos), 0),
+          saves: rows.reduce((s, r) => s + num(r.salvamentos), 0),
+          dms: rows.reduce((s, r) => s + num(r.respostas_dm), 0),
+          linkClicks: rows.reduce((s, r) => s + num(r.cliques_sticker_link), 0)
+        };
+      }
+
+      function facebookTotals(rows) {
+        return {
+          registros: rows.reduce((s, r) => s + num(r.total_registros), 0),
+          mediaViews: rows.reduce((s, r) => s + num(r.visualizacoes_unicas_midia), 0),
+          retention: avg(rows.map((r) => num(r.retencao_qualificada_5s)).filter(Boolean)),
+          publicShares: rows.reduce((s, r) => s + num(r.compartilhamentos_publicos_timeline), 0),
+          linkClicks: rows.reduce((s, r) => s + num(r.cliques_link), 0),
+          seeMore: rows.reduce((s, r) => s + num(r.cliques_ver_mais), 0),
+          groupShares: rows.reduce((s, r) => s + num(r.compartilhamentos_grupos), 0),
+          responseHours: avg(rows.map((r) => num(r.tempo_resposta_comentarios_horas)).filter(Boolean)),
+          storyViews: rows.reduce((s, r) => s + num(r.visualizacoes_unicas), 0)
+        };
+      }
+
+      function instagramSummaryHtml(t) {
+        return `<div class="grid kpis">
+          ${kpi("Registros", fmt.format(t.registros), "dataset")}
+          ${kpi("Views Reels", fmt.format(t.views), "play_circle")}
+          ${kpi("Tempo medio", `${t.watchTime.toFixed(1).replace(".", ",")}s`, "timer")}
+          ${kpi("Skip rate 3s", `${t.skipRate.toFixed(1).replace(".", ",")}%`, "move_selection_left")}
+          ${kpi("Assistiu ate o fim", `${t.completion.toFixed(1).replace(".", ",")}%`, "task_alt")}
+          ${kpi("Nao seguidores", `${t.nonFollowers.toFixed(1).replace(".", ",")}%`, "travel_explore")}
+          ${kpi("Compartilhamentos", fmt.format(t.shares), "share")}
+          ${kpi("Salvamentos", fmt.format(t.saves), "bookmark")}
+        </div>`;
+      }
+
+      function facebookSummaryHtml(t) {
+        return `<div class="grid kpis">
+          ${kpi("Registros", fmt.format(t.registros), "dataset")}
+          ${kpi("Views unicas", fmt.format(t.mediaViews), "play_circle")}
+          ${kpi("Retencao 5s", `${t.retention.toFixed(1).replace(".", ",")}%`, "timer")}
+          ${kpi("Shares timeline", fmt.format(t.publicShares), "share")}
+          ${kpi("Cliques link", fmt.format(t.linkClicks), "link")}
+          ${kpi("Ver mais", fmt.format(t.seeMore), "read_more")}
+          ${kpi("Shares grupos", fmt.format(t.groupShares), "groups")}
+          ${kpi("Resposta comentarios", `${t.responseHours.toFixed(1).replace(".", ",")}h`, "forum")}
+        </div>`;
+      }
+
+      function instagramSectionsHtml(rows) {
+        return `
+          ${socialFormatSection("Reels", "Foco: descoberta e retencao", rows.filter((r) => r.formato === "instagram_reels"), ["marca", "conta_nome", "tema", "data_publicacao", "post_url", "alcance", "engajamento", "total_visualizacoes", "tempo_medio_visualizacao", "taxa_rejeicao_inicial", "percentual_assistido_final", "alcance_nao_seguidores_pct", "compartilhamentos", "salvamentos", "insight_social"])}
+          ${socialFormatSection("Stories", "Foco: relacionamento e conversao", rows.filter((r) => r.formato === "instagram_stories"), ["marca", "conta_nome", "tema", "data_publicacao", "post_url", "media_visualizacoes_unicas_story", "taxa_retencao_diaria", "melhor_sticker_interacoes", "melhor_sticker_tema", "respostas_dm", "cliques_sticker_link", "insight_social"])}
+          ${socialFormatSection("Feed: carrosseis e imagens", "Foco: autoridade e consideracao", rows.filter((r) => r.formato === "instagram_feed"), ["marca", "conta_nome", "tema", "data_publicacao", "post_url", "alcance", "engajamento", "salvamentos", "alcance_segunda_visualizacao", "comentarios_qualificados", "taxa_compartilhamento_feed", "insight_social"])}`;
+      }
+
+      function facebookSectionsHtml(rows) {
+        return `
+          ${socialFormatSection("Facebook Reels", "Foco: distribuicao aberta", rows.filter((r) => r.formato === "facebook_reels"), ["marca", "conta_nome", "tema", "data_publicacao", "post_url", "alcance", "engajamento", "visualizacoes_unicas_midia", "retencao_qualificada_5s", "compartilhamentos_publicos_timeline", "insight_social"])}
+          ${socialFormatSection("Feed: imagens, links e textos", "Foco: comunidade e trafego externo", rows.filter((r) => r.formato === "facebook_feed"), ["marca", "conta_nome", "tema", "data_publicacao", "post_url", "alcance", "engajamento", "cliques_link", "cliques_ver_mais", "compartilhamentos_grupos", "tempo_resposta_comentarios_horas", "insight_social"])}
+          ${socialFormatSection("Stories do Facebook", "Foco: lembranca de marca", rows.filter((r) => r.formato === "facebook_stories"), ["marca", "conta_nome", "tema", "data_publicacao", "post_url", "visualizacoes_unicas", "toques_avancar", "toques_voltar", "insight_social"])}`;
+      }
+
+      function socialFormatSection(title, subtitle, rows, fields) {
+        const labels = {
+          marca: "Marca", conta_nome: "Conta", data_publicacao: "Publicado", post_url: "Post", alcance: "Alcance", engajamento: "Engajamento", objetivo: "Objetivo", tema: "Tema", total_visualizacoes: "Views", tempo_medio_visualizacao: "Tempo medio", taxa_rejeicao_inicial: "Skip 3s", percentual_assistido_final: "Ate o fim", alcance_nao_seguidores_pct: "Nao seguidores", compartilhamentos: "Shares", salvamentos: "Saves", media_visualizacoes_unicas_story: "Views/story", taxa_retencao_diaria: "Retencao", melhor_sticker_interacoes: "Sticker", melhor_sticker_tema: "Tema sticker", respostas_dm: "DMs", cliques_sticker_link: "Cliques link", alcance_segunda_visualizacao: "2a exibicao", comentarios_qualificados: "Comentarios", taxa_compartilhamento_feed: "Share rate", visualizacoes_unicas_midia: "Views unicas", retencao_qualificada_5s: "Retencao 5s", compartilhamentos_publicos_timeline: "Shares timeline", cliques_link: "Cliques link", cliques_ver_mais: "Ver mais", compartilhamentos_grupos: "Shares grupos", tempo_resposta_comentarios_horas: "Resposta h", visualizacoes_unicas: "Views unicas", toques_avancar: "Avancar", toques_voltar: "Voltar", insight_social: "Insight"
+        };
+        return `<section class="card"><h3>${title}</h3><p class="muted">${subtitle}</p><div class="table-wrap" style="margin-top:16px"><table><thead><tr>${fields.map((field) => `<th>${labels[field] || field}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${fields.map((field) => `<td>${socialCell(row, field)}</td>`).join("")}</tr>`).join("") || `<tr><td colspan="${fields.length}">Sem dados para este formato.</td></tr>`}</tbody></table></div></section>`;
+      }
+
+      function socialCell(row, field) {
+        const value = row[field];
+        if (value === null || value === undefined || value === "") return "-";
+        if (field === "post_url") return `<a href="${escapeHtml(value)}" target="_blank" rel="noreferrer">Abrir</a>`;
+        if (/data_publicacao|ultima_referencia/.test(field)) return escapeHtml(formatDateTime(value));
+        if (/taxa|percentual|pct|retencao/.test(field)) return `${num(value).toFixed(1).replace(".", ",")}%`;
+        if (/tempo_medio/.test(field)) return `${num(value).toFixed(1).replace(".", ",")}s`;
+        if (/tempo_resposta/.test(field)) return `${num(value).toFixed(1).replace(".", ",")}h`;
+        if (typeof value === "number" || /^\d+(\.\d+)?$/.test(String(value))) return fmt.format(num(value));
+        return escapeHtml(value);
+      }
+
+      function hasDetailedSocialMetrics(rows, rede) {
+        const fields = rede === "Instagram"
+          ? ["alcance", "engajamento", "total_visualizacoes", "compartilhamentos", "salvamentos", "curtidas", "comentarios"]
+          : ["alcance", "engajamento", "visualizacoes_unicas_midia", "cliques_link", "compartilhamentos_publicos_timeline"];
+        return rows.some((row) => fields.some((field) => num(row[field]) > 0));
+      }
+
+      function bestSocialSignals(rows, rede) {
+        if (!rows.length) return ["Importe dados granulares para gerar leitura do social media."];
+        if (rede === "Instagram") {
+          const reels = rows.find((r) => r.formato === "instagram_reels");
+          const stories = rows.find((r) => r.formato === "instagram_stories");
+          const feed = rows.find((r) => r.formato === "instagram_feed");
+          return [
+            reels ? `Reels: ${num(reels.alcance_nao_seguidores_pct).toFixed(1).replace(".", ",")}% de alcance em nao seguidores.` : "Reels ainda sem dados de descoberta.",
+            stories ? `Stories: ${num(stories.taxa_retencao_diaria).toFixed(1).replace(".", ",")}% de retencao diaria.` : "Stories ainda sem dados de relacionamento.",
+            feed ? `Feed: ${fmt.format(num(feed.salvamentos))} salvamentos como sinal de autoridade.` : "Feed ainda sem dados de saves."
+          ];
+        }
+        return [
+          `Reels: ${fmt.format(rows.reduce((s, r) => s + num(r.visualizacoes_unicas_midia), 0))} visualizacoes unicas.`,
+          `Feed: ${fmt.format(rows.reduce((s, r) => s + num(r.cliques_link), 0))} cliques de trafego externo.`,
+          `Stories: ${fmt.format(rows.reduce((s, r) => s + num(r.visualizacoes_unicas), 0))} visualizacoes unicas.`
+        ];
+      }
+
+      function nextSocialActions(rows, rede) {
+        if (!rows.length) return ["Criar uma planilha padrao por formato e importar a primeira base de metricas."];
+
+        const actions = [];
+
+        if (rede === "Instagram") {
+          const reels = rows.find((r) => r.formato === "instagram_reels");
+          const stories = rows.find((r) => r.formato === "instagram_stories");
+          const feed = rows.find((r) => r.formato === "instagram_feed");
+
+          if (reels) {
+            const naoSeguidoresPct = num(reels.alcance_nao_seguidores_pct);
+            if (naoSeguidoresPct >= 40) {
+              actions.push(`Repetir o formato dos Reels atuais: ${naoSeguidoresPct.toFixed(1).replace(".", ",")}% do alcance vem de nao seguidores, sinal forte de descoberta.`);
+            } else if (naoSeguidoresPct > 0 && naoSeguidoresPct < 20) {
+              actions.push(`Reels com baixa descoberta (${naoSeguidoresPct.toFixed(1).replace(".", ",")}% de nao seguidores) — testar temas e ganchos diferentes.`);
+            }
+          }
+
+          if (stories) {
+            const retencao = num(stories.taxa_retencao_diaria);
+            if (retencao > 0 && retencao < 60) {
+              actions.push(`Encurtar sequencias de Stories: retencao diaria em ${retencao.toFixed(1).replace(".", ",")}%, abaixo de 60%.`);
+            }
+          }
+
+          if (feed) {
+            const alcanceFeed = num(feed.alcance);
+            const salvamentosFeed = num(feed.salvamentos);
+            const taxaSalvamento = alcanceFeed > 0 ? (salvamentosFeed / alcanceFeed) * 100 : 0;
+            if (alcanceFeed > 0 && taxaSalvamento < 1) {
+              actions.push(`Aumentar CTA de salvar no Feed: ${fmt.format(salvamentosFeed)} salvamentos frente a ${fmt.format(alcanceFeed)} de alcance.`);
+            }
+          }
+
+          if (!actions.length) actions.push("Metricas de Instagram sem sinais de alerta pelas regras atuais — manter cadencia e monitorar.");
+          return actions;
+        }
+
+        const somaAlcance = rows.reduce((s, r) => s + num(r.alcance), 0);
+        const somaCliquesLink = rows.reduce((s, r) => s + num(r.cliques_link), 0);
+        const taxaCliqueLink = somaAlcance > 0 ? (somaCliquesLink / somaAlcance) * 100 : 0;
+        if (somaAlcance > 0 && taxaCliqueLink < 1) {
+          actions.push(`Reforcar CTA de link no Feed: ${fmt.format(somaCliquesLink)} cliques de trafego externo frente a ${fmt.format(somaAlcance)} de alcance.`);
+        }
+
+        const temposResposta = rows.map((r) => num(r.tempo_resposta_comentarios_horas)).filter((v) => v > 0);
+        if (temposResposta.length) {
+          const mediaResposta = temposResposta.reduce((s, v) => s + v, 0) / temposResposta.length;
+          if (mediaResposta > 6) {
+            actions.push(`Responder comentarios mais rapido: tempo medio de resposta em ${mediaResposta.toFixed(1).replace(".", ",")}h, acima de 6h.`);
+          }
+        }
+
+        const reelsFacebook = rows.filter((r) => r.formato === "facebook_reels" && num(r.retencao_qualificada_5s) > 0);
+        if (reelsFacebook.length) {
+          const mediaRetencao5s = reelsFacebook.reduce((s, r) => s + num(r.retencao_qualificada_5s), 0) / reelsFacebook.length;
+          if (mediaRetencao5s >= 50) {
+            actions.push(`Priorizar Reels no Facebook: retencao de 5s em ${mediaRetencao5s.toFixed(1).replace(".", ",")}%, acima da media do formato.`);
+          }
+        }
+
+        if (!actions.length) actions.push("Metricas de Facebook sem sinais de alerta pelas regras atuais — manter cadencia e monitorar.");
+        return actions;
+      }
+
+      function buildExecutiveInsights(rows, ranking) {
+        if (!rows.length) return ["Sem dados sincronizados ainda para gerar leitura executiva."];
+
+        const insights = [];
+        const comAlcance = rows.filter((r) => num(r.alcance_facebook) > 0);
+
+        if (comAlcance.length >= 2) {
+          const ordenado = [...comAlcance].sort((a, b) => num(b.taxa_engajamento) - num(a.taxa_engajamento));
+          const melhor = ordenado[0];
+          const pior = ordenado[ordenado.length - 1];
+          if (melhor.marca !== pior.marca) {
+            insights.push(`Comparar ${melhor.marca} (${num(melhor.taxa_engajamento).toFixed(2).replace(".", ",")}% de engajamento) com ${pior.marca} (${num(pior.taxa_engajamento).toFixed(2).replace(".", ",")}%) antes de aumentar a frequencia de posts na segunda.`);
+          }
+        }
+
+        const semPostDestaque = ranking.filter((r) => !r.post_destaque_semana_url).length;
+        if (semPostDestaque > 0) {
+          insights.push(`Adicionar URL do post destaque em ${semPostDestaque} registro(s) para habilitar leitura editorial completa.`);
+        }
+
+        const atencao = ranking.find((r) => r.diagnostico_conteudo === "Atencao" || r.diagnostico_conteudo === "Atenção");
+        if (atencao) {
+          insights.push(`Revisar conteudo de ${atencao.marca}${atencao.data_referencia ? ` em ${atencao.data_referencia}` : ""}: engajamento de ${fmt.format(num(atencao.engajamento_total))} frente a alcance de ${fmt.format(num(atencao.alcance_facebook))} (diagnostico: Atencao).`);
+        }
+
+        if (!insights.length) insights.push("Sem sinais de alerta pelas regras atuais nos dados sincronizados — manter cadencia.");
+        return insights;
+      }
+
+      async function renderSocialBI() {
+        const content = document.querySelector("#content");
+        content.innerHTML = `<div class="alert">Carregando dados de redes sociais...</div>`;
+
+        try {
+          await loadSocialBI();
+        } catch (error) {
+          try {
+            await loadSocialBIFallback(error);
+          } catch (fallbackError) {
+            content.innerHTML = `<div class="alert error">${fallbackError.message}</div>`;
+            return;
+          }
+        }
+
+        const social = state.social || { resumo: [], periodos: [], ranking: [] };
+        const rows = social.resumo || [];
+        const ranking = social.ranking || [];
+        const totals = rows.reduce((acc, row) => ({
+          total_periodos: acc.total_periodos + num(row.total_periodos),
+          seguidores_instagram: acc.seguidores_instagram + num(row.seguidores_instagram),
+          alcance_facebook: acc.alcance_facebook + num(row.alcance_facebook),
+          engajamento_total: acc.engajamento_total + num(row.engajamento_total)
+        }), { total_periodos: 0, seguidores_instagram: 0, alcance_facebook: 0, engajamento_total: 0 });
+        totals.taxa_engajamento = totals.alcance_facebook ? (totals.engajamento_total / totals.alcance_facebook) * 100 : 0;
+        const top = ranking[0] || null;
+
+        content.innerHTML = `
+          <div class="page-head">
+            <div><div class="eyebrow">Meta Business</div><h2>Redes Sociais</h2><p class="muted">Alcance, engajamento, ranking de destaques e recomendações de conteúdo.</p></div>
+            <div class="filters">
+              ${marcaPillsHtml()}
+              <button id="refresh">Atualizar</button>
+            </div>
+          </div>
+          ${socialTabsHtml("geral")}
+          ${social.fallback ? `<div class="alert ${social.usingMetaStage ? "success" : ""}">${social.usingMetaStage ? "Resumo montado com os registros sincronizados diretamente da Meta em <code>stage_social_format_metrics</code>." : "Usando base stage antiga como contingência."} ${social.fallbackReason ? `Detalhe técnico: <code>${escapeHtml(social.fallbackReason)}</code>` : ""}</div>` : ""}
+          <div class="grid kpis">
+            ${kpi("Períodos", fmt.format(totals.total_periodos), "calendar_month")}
+            ${kpi("Seguidores Instagram", fmt.format(totals.seguidores_instagram), "group")}
+            ${kpi("Alcance Facebook", fmt.format(totals.alcance_facebook), "sensors")}
+            ${kpi("Engajamento", fmt.format(totals.engajamento_total), "favorite")}
+            ${kpi("Taxa engajamento", `${totals.taxa_engajamento.toFixed(2).replace(".", ",")}%`, "monitoring")}
+            ${kpi("Melhor marca", top?.marca || "-", "workspace_premium")}
+            ${kpi("Melhor alcance", fmt.format(num(top?.alcance_facebook)), "trending_up")}
+            ${kpi("Diagnóstico", top?.diagnostico_conteudo || "-", "psychology")}
+          </div>
+          <section class="card">
+            <h3>Resumo por marca</h3>
+            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Períodos</th><th>Seguidores</th><th>Alcance</th><th>Engajamento</th><th>Taxa engajamento</th><th>Última referência</th></tr></thead><tbody>${rows.map((r) => `<tr><td>${r.marca}</td><td>${fmt.format(num(r.total_periodos))}</td><td>${fmt.format(num(r.seguidores_instagram))}</td><td>${fmt.format(num(r.alcance_facebook))}</td><td>${fmt.format(num(r.engajamento_total))}</td><td>${num(r.taxa_engajamento).toFixed(2).replace(".", ",")}%</td><td>${r.ultima_referencia || "-"}</td></tr>`).join("") || `<tr><td colspan="7">Sem dados de Meta Business.</td></tr>`}</tbody></table></div>
+          </section>
+          <section class="card">
+            <h3>Ranking de destaques</h3>
+            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Data</th><th>Alcance</th><th>Engajamento</th><th>Taxa</th><th>Diagnóstico</th><th>Post destaque</th></tr></thead><tbody>${ranking.map((r) => `<tr><td>${r.marca}</td><td>${r.data_referencia || "-"}</td><td>${fmt.format(num(r.alcance_facebook))}</td><td>${fmt.format(num(r.engajamento_total))}</td><td>${num(r.taxa_engajamento).toFixed(2).replace(".", ",")}%</td><td>${r.diagnostico_conteudo || "-"}</td><td>${r.post_destaque_semana_url ? `<a href="${r.post_destaque_semana_url}" target="_blank" rel="noreferrer">Abrir</a>` : "-"}</td></tr>`).join("") || `<tr><td colspan="7">Sem ranking de conteúdo.</td></tr>`}</tbody></table></div>
+          </section>
+          <div class="grid cols">
+            <section class="card">
+              <h3>Recomendações de conteúdo</h3>
+              <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Diagnóstico</th><th>Recomendação</th></tr></thead><tbody>${ranking.slice(0, 8).map((r) => `<tr><td>${r.marca}</td><td>${r.diagnostico_conteudo || "-"}</td><td>${r.recomendacao_conteudo || "-"}</td></tr>`).join("") || `<tr><td colspan="3">Sem recomendações.</td></tr>`}</tbody></table></div>
+            </section>
+            <section class="card">
+              <h3>Leitura executiva</h3>
+              <div class="insight-panel" style="margin-top:16px">
+                <h4>Prioridade</h4>
+                ${insightCardsHtml(buildExecutiveInsights(rows, ranking), "info", "lightbulb")}
+              </div>
+            </section>
+          </div>`;
+
+        wireMarcaPills(renderSocialBI);
+        wireSocialTabs();
+        document.querySelector("#refresh").onclick = renderSocialBI;
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll("\"", "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function formatDateTime(value) {
+        if (!value) return "Nunca";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return "Nunca";
+        return date.toLocaleString("pt-BR");
+      }
+
+      function metaReturnUrl() {
+        if (location.protocol === "file:") return "http://127.0.0.1:5173/?page=connections";
+        return `${location.origin}${location.pathname}?page=connections`;
+      }
+
+      async function loadConnections() {
+        let query = supabase
+          .from("vw_integracao_meta_contas_publica")
+          .select("id,marca,page_id,page_name,instagram_business_account_id,instagram_username,token_type,token_expires_at,scopes,ativo,conta_confirmada,ignorada,observacao,ultima_sincronizacao_em,criado_em,atualizado_em")
+          .order("criado_em", { ascending: false });
+
+        if (state.marca !== "Todas") query = query.eq("marca", state.marca);
+        const { data, error } = await query;
+        if (error) throw error;
+        state.connections = data || [];
+      }
+
+      function connectionStateLabel(row) {
+        if (row.ignorada) return { label: "Ignorada", className: "inactive" };
+        if (row.conta_confirmada && row.ativo) return { label: "Confirmada", className: "active" };
+        if (!row.ativo) return { label: "Inativa", className: "inactive" };
+        return { label: "Revisar", className: "inactive" };
+      }
+
+      async function renderConnections(statusMessage = "") {
+        const content = document.querySelector("#content");
+        const urlParams = new URLSearchParams(location.search);
+        const metaConnected = urlParams.get("meta_connected");
+        const metaError = urlParams.get("meta_error");
+
+        content.innerHTML = `<div class="alert">Carregando conexões Meta...</div>`;
+        try {
+          await loadConnections();
+        } catch (error) {
+          content.innerHTML = `<div class="alert error">${escapeHtml(error.message)}<br><br>Aplique a migration <code>supabase/migrations/20260714_010_meta_account_mapping.sql</code> e depois rode <code>notify pgrst, 'reload schema';</code>.</div>`;
+          return;
+        }
+
+        const rows = state.connections || [];
+        const confirmedRows = rows.filter((row) => row.conta_confirmada && row.ativo && !row.ignorada);
+        const pendingRows = rows.filter((row) => !row.conta_confirmada && !row.ignorada);
+        const ignoredRows = rows.filter((row) => row.ignorada);
+        const lastSync = confirmedRows.map((row) => row.ultima_sincronizacao_em).filter(Boolean).sort().pop();
+        const statusHtml = statusMessage
+          ? `<div class="alert success">${escapeHtml(statusMessage)}</div>`
+          : metaError
+            ? `<div class="alert error">Meta retornou erro: ${escapeHtml(metaError)}</div>`
+            : metaConnected
+              ? `<div class="alert success">${escapeHtml(metaConnected)} conta(s) Meta recebida(s). Revise abaixo quais pertencem à marca antes de sincronizar.</div>`
+              : "";
+
+        content.innerHTML = `
+          <div class="page-head">
+            <div><div class="eyebrow">Meta Business API</div><h2>Conexões</h2><p class="muted">Revise páginas e perfis encontrados na Meta antes de enviar métricas aos dashboards.</p></div>
+            <div class="filters">
+              ${marcaPillsHtml(true)}
+              <button id="refreshConnections" class="secondary">Atualizar</button>
+            </div>
+          </div>
+          ${statusHtml}
+          <div class="grid kpis">
+            ${kpi("Recebidas da Meta", fmt.format(rows.length), "link")}
+            ${kpi("Confirmadas", fmt.format(confirmedRows.length), "check_circle")}
+            ${kpi("A revisar", fmt.format(pendingRows.length), "pending_actions")}
+            ${kpi("Última sincronização", formatDateTime(lastSync), "sync")}
+          </div>
+          <section class="card">
+            <div class="page-head" style="align-items:center">
+              <div><h3>Conectar Meta Business</h3><p class="muted">Conecte por marca. A Meta pode devolver várias páginas; confirme apenas as contas que realmente pertencem à marca selecionada.</p></div>
+              <div class="actions">
+                <button id="connectMeta"><span class="material-symbols-outlined" style="vertical-align:middle">add_link</span> Conectar Meta Business</button>
+                <button id="syncAllMeta" class="secondary"><span class="material-symbols-outlined" style="vertical-align:middle">sync</span> Sincronizar confirmadas</button>
+              </div>
+            </div>
+            <div id="connectionActionStatus" style="margin-top:14px"></div>
+          </section>
+          <section class="card">
+            <h3>Contas para revisão</h3>
+            <p class="muted">Use Confirmar para páginas/perfis que pertencem à marca. Use Ignorar para remover da fila sem apagar histórico.</p>
+            <div class="table-wrap" style="margin-top:16px">
+              <table>
+                <thead><tr><th>Marca</th><th>Page</th><th>Instagram</th><th>Status</th><th>Última sincronização</th><th>Token expira</th><th>Ação</th></tr></thead>
+                <tbody>${rows.map((row) => {
+                  const stateLabel = connectionStateLabel(row);
+                  return `
+                  <tr>
+                    <td>${escapeHtml(row.marca)}</td>
+                    <td>${escapeHtml(row.page_name || row.page_id || "-")}</td>
+                    <td>${escapeHtml(row.instagram_username ? `@${row.instagram_username}` : row.instagram_business_account_id || "-")}</td>
+                    <td><span class="status-pill ${stateLabel.className}">${stateLabel.label}</span></td>
+                    <td>${escapeHtml(formatDateTime(row.ultima_sincronizacao_em))}</td>
+                    <td>${escapeHtml(formatDateTime(row.token_expires_at))}</td>
+                    <td><div class="actions">
+                      ${row.conta_confirmada && !row.ignorada ? `<button class="secondary sync-one" data-id="${escapeHtml(row.id)}">Sincronizar</button>` : `<button class="confirm-one" data-id="${escapeHtml(row.id)}">Confirmar</button>`}
+                      ${row.ignorada ? `<button class="secondary reactivate-one" data-id="${escapeHtml(row.id)}">Reativar</button>` : `<button class="secondary ignore-one" data-id="${escapeHtml(row.id)}">Ignorar</button>`}
+                    </div></td>
+                  </tr>`;
+                }).join("") || `<tr><td colspan="7">Nenhuma conta conectada ainda.</td></tr>`}</tbody>
+              </table>
+            </div>
+          </section>`;
+
+        wireMarcaPills(renderConnections);
+        document.querySelector("#refreshConnections").onclick = () => renderConnections();
+        document.querySelector("#connectMeta").onclick = connectMetaBusiness;
+        document.querySelector("#syncAllMeta").onclick = () => syncMetaInsights();
+        document.querySelectorAll(".sync-one").forEach((button) => { button.onclick = () => syncMetaInsights(button.dataset.id); });
+        document.querySelectorAll(".confirm-one").forEach((button) => { button.onclick = () => saveConnectionMapping(button.dataset.id, "confirm"); });
+        document.querySelectorAll(".ignore-one").forEach((button) => { button.onclick = () => saveConnectionMapping(button.dataset.id, "ignore"); });
+        document.querySelectorAll(".reactivate-one").forEach((button) => { button.onclick = () => saveConnectionMapping(button.dataset.id, "reactivate"); });
+      }
+
+      async function saveConnectionMapping(id, action) {
+        const status = document.querySelector("#connectionActionStatus") || document.querySelector("#content");
+        const payloads = {
+          confirm: { conta_confirmada: true, ignorada: false, ativo: true, observacao: "Conta confirmada para sincronização." },
+          ignore: { conta_confirmada: false, ignorada: true, ativo: false, observacao: "Conta ignorada na revisão de mapeamento." },
+          reactivate: { conta_confirmada: false, ignorada: false, ativo: true, observacao: "Conta reativada para nova revisão." }
+        };
+
+        status.innerHTML = `<div class="alert">Atualizando mapeamento da conta...</div>`;
+        const { error } = await supabase
+          .from("integracao_meta_contas")
+          .update(payloads[action])
+          .eq("id", id);
+
+        if (error) {
+          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          return;
+        }
+
+        const messages = {
+          confirm: "Conta confirmada. Ela já pode alimentar Instagram, Facebook e Redes Sociais.",
+          ignore: "Conta ignorada. Ela não será sincronizada nem enviada aos dashboards.",
+          reactivate: "Conta reativada para revisão. Confirme se ela pertencer à marca."
+        };
+        await renderConnections(messages[action]);
+      }
+
+      async function connectMetaBusiness() {
+        const status = document.querySelector("#connectionActionStatus");
+        if (state.marca === "Todas") {
+          status.innerHTML = `<div class="alert error">Selecione uma marca específica antes de conectar o Meta Business.</div>`;
+          return;
+        }
+
+        status.innerHTML = `<div class="alert">Abrindo autorização da Meta...</div>`;
+        const { data, error } = await supabase.functions.invoke("meta-oauth-start", {
+          body: {
+            marca: state.marca,
+            app_return_url: metaReturnUrl()
+          }
+        });
+
+        if (error) {
+          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          return;
+        }
+
+        if (!data?.authorizeUrl) {
+          status.innerHTML = `<div class="alert error">A função Meta não retornou a URL de autorização.</div>`;
+          return;
+        }
+
+        location.href = data.authorizeUrl;
+      }
+
+      async function syncMetaInsights(integracaoId = null) {
+        const status = document.querySelector("#connectionActionStatus") || document.querySelector("#content");
+        status.innerHTML = `<div class="alert">Sincronizando métricas Meta das contas confirmadas...</div>`;
+
+        const body = integracaoId ? { integracao_id: integracaoId } : { marca: state.marca };
+        const { data, error } = await supabase.functions.invoke("meta-sync-insights", { body });
+
+        if (error) {
+          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          return;
+        }
+
+        const results = data?.results || [];
+        const totalInstagram = results.reduce((sum, row) => sum + num(row.instagramImported), 0);
+        const totalFacebook = results.reduce((sum, row) => sum + num(row.facebookImported), 0);
+        const totalWarnings = results.reduce((sum, row) => sum + (row.warnings?.length || 0), 0);
+        const errors = results.filter((row) => row.error).map((row) => `${row.pageName || row.id}: ${row.error}`);
+        const details = errors.length ? ` Erros: ${errors.slice(0, 2).join(" | ")}` : totalWarnings ? ` Avisos da Meta: ${totalWarnings}. Veja logs_integracao_meta para detalhes.` : "";
+        await renderConnections(`Sincronização concluída: ${fmt.format(totalInstagram)} registros do Instagram e ${fmt.format(totalFacebook)} registros do Facebook.${details}`);
+      }
+      function googleReturnUrl() {
+        if (location.protocol === "file:") return "http://127.0.0.1:5173/?page=google_business";
+        return `${location.origin}${location.pathname}?page=google_business`;
+      }
+
+      function googleConnectionStateLabel(row) {
+        if (row.ignorada) return { label: "Ignorada", className: "inactive" };
+        if (row.conta_confirmada && row.ativo) return { label: "Confirmada", className: "active" };
+        if (!row.ativo) return { label: "Inativa", className: "inactive" };
+        return { label: "Revisar", className: "inactive" };
+      }
+
+      function renderStars(rating) {
+        const value = Math.round(num(rating));
+        let html = '<span class="stars">';
+        for (let i = 1; i <= 5; i++) {
+          html += `<span class="material-symbols-outlined ${i <= value ? "" : "off"}" style="font-variation-settings:'FILL' 1">grade</span>`;
+        }
+        html += "</span>";
+        return html;
+      }
+
+      function podeGerenciarGoogleLocais() {
+        return ["Admin", "Gestor", "Coordenador"].includes(state.perfil?.cargo);
+      }
+
+      function podeResponderGoogleAvaliacoes() {
+        return ["Admin", "Gestor", "Coordenador", "Analista"].includes(state.perfil?.cargo);
+      }
+
+      async function loadGoogleBI() {
+        let contasQuery = supabase
+          .from("vw_integracao_google_contas_publica")
+          .select("id,marca,google_account_id,email_conta,ativo,conta_confirmada,ignorada,observacao,ultima_sincronizacao_em,criado_em")
+          .order("criado_em", { ascending: false });
+        if (state.marca !== "Todas") contasQuery = contasQuery.eq("marca", state.marca);
+        const { data: contas, error: contasError } = await contasQuery;
+        if (contasError) throw contasError;
+
+        const confirmedIds = (contas || [])
+          .filter((c) => c.conta_confirmada && c.ativo && !c.ignorada)
+          .map((c) => c.id);
+
+        let locais = [];
+        let avaliacoes = [];
+        let fotos = [];
+        let metricas = [];
+
+        if (confirmedIds.length) {
+          const { data: locaisData, error: locaisError } = await supabase
+            .from("integracao_google_locais")
+            .select("id,integracao_id,marca,location_id,nome_loja,endereco_completo,telefone,descricao,status")
+            .in("integracao_id", confirmedIds);
+          if (locaisError) throw locaisError;
+          locais = locaisData || [];
+
+          const localIds = locais.map((l) => l.id);
+
+          if (localIds.length) {
+            const [avaliacoesResult, fotosResult, metricasResult] = await Promise.all([
+              supabase.from("integracao_google_avaliacoes")
+                .select("id,local_id,marca,review_id,autor_nome,rating,comentario,avaliado_em,status_resposta,resposta_texto")
+                .in("local_id", localIds)
+                .order("avaliado_em", { ascending: false })
+                .limit(20),
+              supabase.from("integracao_google_fotos")
+                .select("id,local_id,marca,url,origem")
+                .in("local_id", localIds)
+                .limit(8),
+              supabase.from("integracao_google_metricas_diarias")
+                .select("local_id,marca,solicitacoes_rota,impressoes_busca,impressoes_descoberta")
+                .in("local_id", localIds)
+            ]);
+            if (avaliacoesResult.error) throw avaliacoesResult.error;
+            if (fotosResult.error) throw fotosResult.error;
+            if (metricasResult.error) throw metricasResult.error;
+            avaliacoes = avaliacoesResult.data || [];
+            fotos = fotosResult.data || [];
+            metricas = metricasResult.data || [];
+          }
+        }
+
+        const ratingPorLocal = {};
+        avaliacoes.forEach((r) => {
+          if (num(r.rating) > 0) {
+            ratingPorLocal[r.local_id] ||= [];
+            ratingPorLocal[r.local_id].push(num(r.rating));
+          }
+        });
+
+        const todasNotas = avaliacoes.map((r) => num(r.rating)).filter((n) => n > 0);
+        const avaliacaoMedia = todasNotas.length ? todasNotas.reduce((s, n) => s + n, 0) / todasNotas.length : 0;
+        const visualizacoes = metricas.reduce((s, m) => s + num(m.impressoes_busca) + num(m.impressoes_descoberta), 0);
+        const solicitacoesRota = metricas.reduce((s, m) => s + num(m.solicitacoes_rota), 0);
+
+        state.google = {
+          ...(state.google || {}),
+          contas: contas || [],
+          locais,
+          avaliacoes,
+          fotos,
+          ratingPorLocal,
+          kpis: { totalUnidades: locais.length, avaliacaoMedia, visualizacoes, solicitacoesRota }
+        };
+      }
+
+      async function renderGoogleBusiness(statusMessage = "") {
+        const content = document.querySelector("#content");
+        content.innerHTML = `<div class="alert">Carregando dados do Google Meu Negócio...</div>`;
+        try {
+          await loadGoogleBI();
+        } catch (error) {
+          content.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          return;
+        }
+        paintGoogleBusiness(statusMessage);
+      }
+
+      function paintGoogleBusiness(statusMessage = "") {
+        const content = document.querySelector("#content");
+        const g = state.google || {};
+        const contas = g.contas || [];
+        const locais = g.locais || [];
+        const avaliacoes = g.avaliacoes || [];
+        const fotos = g.fotos || [];
+        const ratingPorLocal = g.ratingPorLocal || {};
+        const kpis = g.kpis || { totalUnidades: 0, avaliacaoMedia: 0, visualizacoes: 0, solicitacoesRota: 0 };
+
+        const urlParams = new URLSearchParams(location.search);
+        const googleConnected = urlParams.get("google_connected");
+        const googleError = urlParams.get("google_error");
+        const statusHtml = statusMessage
+          ? `<div class="alert success">${escapeHtml(statusMessage)}</div>`
+          : googleError
+            ? `<div class="alert error">Google retornou erro: ${escapeHtml(googleError)}</div>`
+            : googleConnected
+              ? `<div class="alert success">${escapeHtml(googleConnected)} conta(s) Google recebida(s). Revise abaixo quais pertencem à marca antes de sincronizar.</div>`
+              : "";
+
+        const podeEditarLocal = podeGerenciarGoogleLocais();
+        const podeResponder = podeResponderGoogleAvaliacoes();
+
+        content.innerHTML = `
+          <div class="page-head">
+            <div><div class="eyebrow">Google Business Profile API</div><h2>Google Meu Negócio</h2><p class="muted">Unidades, avaliações e desempenho de busca local por marca.</p></div>
+            <div class="filters">
+              ${marcaPillsHtml(true)}
+              <button id="refreshGoogle" class="secondary">Atualizar</button>
+            </div>
+          </div>
+          ${statusHtml}
+          <div class="grid kpis">
+            ${kpi("Total de Unidades", fmt.format(kpis.totalUnidades), "storefront")}
+            ${kpi("Avaliação Média", kpis.avaliacaoMedia ? `${kpis.avaliacaoMedia.toFixed(1)} / 5.0` : "-", "grade")}
+            ${kpi("Visualizações Locais", fmt.format(kpis.visualizacoes), "visibility")}
+            ${kpi("Solicitações de Rota", fmt.format(kpis.solicitacoesRota), "directions_car")}
+          </div>
+          <section class="card">
+            <div class="page-head" style="align-items:center">
+              <div><h3>Contas conectadas</h3><p class="muted">Conecte por marca. O Google pode devolver várias contas; confirme apenas as que pertencem à marca selecionada.</p></div>
+              <div class="actions">
+                <button id="connectGoogle"><span class="material-symbols-outlined" style="vertical-align:middle">add_link</span> Conectar Google Meu Negócio</button>
+                <button id="syncAllGoogle" class="secondary"><span class="material-symbols-outlined" style="vertical-align:middle">sync</span> Sincronizar confirmadas</button>
+              </div>
+            </div>
+            <div id="googleActionStatus" style="margin-top:14px"></div>
+            <div class="table-wrap" style="margin-top:16px">
+              <table>
+                <thead><tr><th>Marca</th><th>Conta</th><th>Status</th><th>Última sincronização</th><th>Ação</th></tr></thead>
+                <tbody>${contas.map((row) => {
+                  const stateLabel = googleConnectionStateLabel(row);
+                  return `
+                  <tr>
+                    <td>${escapeHtml(row.marca)}</td>
+                    <td>${escapeHtml(row.email_conta || row.google_account_id || "-")}</td>
+                    <td><span class="status-pill ${stateLabel.className}">${stateLabel.label}</span></td>
+                    <td>${escapeHtml(formatDateTime(row.ultima_sincronizacao_em))}</td>
+                    <td><div class="actions">
+                      ${row.conta_confirmada && !row.ignorada ? `<button class="secondary google-sync-one" data-id="${escapeHtml(row.id)}">Sincronizar</button>` : `<button class="google-confirm-one" data-id="${escapeHtml(row.id)}">Confirmar</button>`}
+                      ${row.ignorada ? `<button class="secondary google-reactivate-one" data-id="${escapeHtml(row.id)}">Reativar</button>` : `<button class="secondary google-ignore-one" data-id="${escapeHtml(row.id)}">Ignorar</button>`}
+                    </div></td>
+                  </tr>`;
+                }).join("") || `<tr><td colspan="5">Nenhuma conta conectada ainda.</td></tr>`}</tbody>
+              </table>
+            </div>
+          </section>
+          <section class="card">
+            <h3>Gerenciamento de Unidades</h3>
+            <p class="muted">Lojas sincronizadas das contas confirmadas.</p>
+            <div class="table-wrap" style="margin-top:16px">
+              <table>
+                <thead><tr><th>Unidade</th><th>Endereço</th><th>Telefone</th><th>Status</th><th>Avaliação</th><th>Ação</th></tr></thead>
+                <tbody>${locais.map((local) => {
+                  const notas = ratingPorLocal[local.id] || [];
+                  const media = notas.length ? (notas.reduce((s, n) => s + n, 0) / notas.length).toFixed(1) : "-";
+                  const aberto = local.status === "OPEN";
+                  const statusLabel = local.status ? (aberto ? "Aberto" : "Fechado") : "Não informado";
+                  const editando = g.openEditLocalId === local.id;
+                  return `
+                  <tr>
+                    <td>${escapeHtml(local.nome_loja || "-")}</td>
+                    <td>${escapeHtml(local.endereco_completo || "-")}</td>
+                    <td>${escapeHtml(local.telefone || "-")}</td>
+                    <td><span class="status-pill ${aberto ? "active" : "inactive"}">${statusLabel}</span></td>
+                    <td>${media}${notas.length ? ` (${notas.length})` : ""}</td>
+                    <td>${podeEditarLocal ? `<button class="secondary google-edit-toggle" data-id="${escapeHtml(local.id)}">${editando ? "Fechar" : "Editar"}</button>` : ""}</td>
+                  </tr>
+                  ${editando ? `
+                  <tr class="edit-row">
+                    <td colspan="6">
+                      <div class="edit-form">
+                        <label>Telefone<input id="editTelefone-${escapeHtml(local.id)}" value="${escapeHtml(local.telefone || "")}" /></label>
+                        <label>Descrição<input id="editDescricao-${escapeHtml(local.id)}" value="${escapeHtml(local.descricao || "")}" /></label>
+                        <div class="actions">
+                          <button class="google-edit-save" data-id="${escapeHtml(local.id)}">Salvar</button>
+                          <button class="secondary google-edit-toggle" data-id="${escapeHtml(local.id)}">Cancelar</button>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>` : ""}`;
+                }).join("") || `<tr><td colspan="6">Nenhuma unidade sincronizada ainda. Confirme uma conta e clique em Sincronizar.</td></tr>`}</tbody>
+              </table>
+            </div>
+          </section>
+          <div class="grid cols">
+            <section class="card">
+              <h3>Avaliações Recentes</h3>
+              <p class="muted">Responda aos clientes para melhorar seu SEO local.</p>
+              <div class="grid" style="gap:12px;margin-top:16px">
+                ${avaliacoes.map((review) => {
+                  const local = locais.find((l) => l.id === review.local_id);
+                  const respondendo = g.openReplyReviewId === review.id;
+                  return `
+                  <div class="review-card">
+                    <div class="review-head">
+                      <div>
+                        <strong>${escapeHtml(review.autor_nome || "Cliente")}</strong>
+                        <div class="muted" style="font-size:12px">${escapeHtml(local?.nome_loja || "-")}</div>
+                        ${renderStars(review.rating)}
+                      </div>
+                      <span class="muted" style="font-size:12px">${escapeHtml(formatDateTime(review.avaliado_em))}</span>
+                    </div>
+                    <p style="margin:0">${escapeHtml(review.comentario || "(sem comentário)")}</p>
+                    ${review.status_resposta === "respondida" ? `
+                    <div class="review-reply">
+                      <div class="muted" style="font-size:11px;text-transform:uppercase;font-weight:800">Sua resposta</div>
+                      <p style="margin:4px 0 0">${escapeHtml(review.resposta_texto || "")}</p>
+                    </div>` : ""}
+                    ${podeResponder ? `
+                    <div class="actions">
+                      <button class="secondary google-reply-toggle" data-id="${escapeHtml(review.id)}">${respondendo ? "Cancelar" : review.status_resposta === "respondida" ? "Editar resposta" : "Responder"}</button>
+                      ${review.status_resposta === "respondida" ? `<button class="secondary google-reply-delete" data-id="${escapeHtml(review.id)}">Apagar resposta</button>` : ""}
+                    </div>
+                    ${respondendo ? `
+                    <div class="reply-box">
+                      <textarea id="replyText-${escapeHtml(review.id)}" placeholder="Escreva sua resposta...">${escapeHtml(review.resposta_texto || "")}</textarea>
+                      <div class="actions">
+                        <button class="google-reply-send" data-id="${escapeHtml(review.id)}">Enviar</button>
+                      </div>
+                    </div>` : ""}` : ""}
+                  </div>`;
+                }).join("") || `<p class="muted">Nenhuma avaliação sincronizada ainda.</p>`}
+              </div>
+            </section>
+            <section class="card">
+              <h3>Galeria de Fotos</h3>
+              <p class="muted">Fotos já sincronizadas do Google.</p>
+              <div class="photo-grid" style="margin-top:16px">
+                ${fotos.map((foto) => `<div class="photo-thumb">${foto.url ? `<img src="${escapeHtml(foto.url)}" alt="Foto da unidade" loading="lazy" />` : ""}</div>`).join("") || `<p class="muted">Nenhuma foto sincronizada ainda.</p>`}
+              </div>
+            </section>
+          </div>`;
+
+        wireMarcaPills(renderGoogleBusiness);
+        document.querySelector("#refreshGoogle").onclick = () => renderGoogleBusiness();
+        document.querySelector("#connectGoogle").onclick = connectGoogleBusiness;
+        document.querySelector("#syncAllGoogle").onclick = () => syncGoogleBusiness();
+        document.querySelectorAll(".google-sync-one").forEach((button) => { button.onclick = () => syncGoogleBusiness(button.dataset.id); });
+        document.querySelectorAll(".google-confirm-one").forEach((button) => { button.onclick = () => saveGoogleConnectionMapping(button.dataset.id, "confirm"); });
+        document.querySelectorAll(".google-ignore-one").forEach((button) => { button.onclick = () => saveGoogleConnectionMapping(button.dataset.id, "ignore"); });
+        document.querySelectorAll(".google-reactivate-one").forEach((button) => { button.onclick = () => saveGoogleConnectionMapping(button.dataset.id, "reactivate"); });
+        document.querySelectorAll(".google-edit-toggle").forEach((button) => {
+          button.onclick = () => {
+            state.google.openEditLocalId = state.google.openEditLocalId === button.dataset.id ? null : button.dataset.id;
+            paintGoogleBusiness();
+          };
+        });
+        document.querySelectorAll(".google-edit-save").forEach((button) => {
+          button.onclick = () => {
+            const id = button.dataset.id;
+            const telefone = document.querySelector(`#editTelefone-${id}`).value.trim();
+            const descricao = document.querySelector(`#editDescricao-${id}`).value.trim();
+            updateGoogleLocation(id, { telefone, descricao });
+          };
+        });
+        document.querySelectorAll(".google-reply-toggle").forEach((button) => {
+          button.onclick = () => {
+            state.google.openReplyReviewId = state.google.openReplyReviewId === button.dataset.id ? null : button.dataset.id;
+            paintGoogleBusiness();
+          };
+        });
+        document.querySelectorAll(".google-reply-send").forEach((button) => {
+          button.onclick = () => {
+            const id = button.dataset.id;
+            const texto = document.querySelector(`#replyText-${id}`).value.trim();
+            if (!texto) return;
+            replyGoogleReview(id, texto);
+          };
+        });
+        document.querySelectorAll(".google-reply-delete").forEach((button) => {
+          button.onclick = () => deleteGoogleReviewReply(button.dataset.id);
+        });
+      }
+
+      async function saveGoogleConnectionMapping(id, action) {
+        const status = document.querySelector("#googleActionStatus") || document.querySelector("#content");
+        const payloads = {
+          confirm: { conta_confirmada: true, ignorada: false, ativo: true, observacao: "Conta confirmada para sincronização." },
+          ignore: { conta_confirmada: false, ignorada: true, ativo: false, observacao: "Conta ignorada na revisão de mapeamento." },
+          reactivate: { conta_confirmada: false, ignorada: false, ativo: true, observacao: "Conta reativada para nova revisão." }
+        };
+
+        status.innerHTML = `<div class="alert">Atualizando mapeamento da conta...</div>`;
+        const { error } = await supabase
+          .from("integracao_google_contas")
+          .update(payloads[action])
+          .eq("id", id);
+
+        if (error) {
+          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          return;
+        }
+
+        const messages = {
+          confirm: "Conta confirmada. Ela já pode alimentar o dashboard.",
+          ignore: "Conta ignorada. Ela não será sincronizada nem enviada aos dashboards.",
+          reactivate: "Conta reativada para revisão. Confirme se ela pertencer à marca."
+        };
+        await renderGoogleBusiness(messages[action]);
+      }
+
+      async function connectGoogleBusiness() {
+        const status = document.querySelector("#googleActionStatus");
+        if (state.marca === "Todas") {
+          status.innerHTML = `<div class="alert error">Selecione uma marca específica antes de conectar o Google Meu Negócio.</div>`;
+          return;
+        }
+
+        status.innerHTML = `<div class="alert">Abrindo autorização do Google...</div>`;
+        const { data, error } = await supabase.functions.invoke("google-oauth-start", {
+          body: {
+            marca: state.marca,
+            app_return_url: googleReturnUrl()
+          }
+        });
+
+        if (error) {
+          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          return;
+        }
+
+        if (!data?.authorizeUrl) {
+          status.innerHTML = `<div class="alert error">A função Google não retornou a URL de autorização.</div>`;
+          return;
+        }
+
+        location.href = data.authorizeUrl;
+      }
+
+      async function syncGoogleBusiness(integracaoId = null) {
+        const status = document.querySelector("#googleActionStatus") || document.querySelector("#content");
+        status.innerHTML = `<div class="alert">Sincronizando dados do Google Meu Negócio das contas confirmadas...</div>`;
+
+        const body = integracaoId ? { integracao_id: integracaoId } : { marca: state.marca };
+        const { data, error } = await supabase.functions.invoke("google-gbp-sync", { body });
+
+        if (error) {
+          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          return;
+        }
+
+        const results = data?.results || [];
+        const totalReviews = results.reduce((sum, row) => sum + num(row.reviewsImported), 0);
+        const errors = results.filter((row) => row.error).map((row) => `${row.marca}: ${row.error}`);
+        const details = errors.length ? ` Erros: ${errors.slice(0, 2).join(" | ")}` : "";
+        await renderGoogleBusiness(`Sincronização concluída: ${fmt.format(totalReviews)} avaliações processadas.${details}`);
+      }
+
+      async function replyGoogleReview(reviewId, texto) {
+        const status = document.querySelector("#googleActionStatus") || document.querySelector("#content");
+        status.innerHTML = `<div class="alert">Enviando resposta...</div>`;
+        const { error } = await supabase.functions.invoke("google-gbp-review-reply", {
+          body: { review_id: reviewId, action: "reply", texto }
+        });
+        if (error) {
+          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          return;
+        }
+        state.google.openReplyReviewId = null;
+        await renderGoogleBusiness("Resposta enviada.");
+      }
+
+      async function deleteGoogleReviewReply(reviewId) {
+        const status = document.querySelector("#googleActionStatus") || document.querySelector("#content");
+        status.innerHTML = `<div class="alert">Apagando resposta...</div>`;
+        const { error } = await supabase.functions.invoke("google-gbp-review-reply", {
+          body: { review_id: reviewId, action: "delete" }
+        });
+        if (error) {
+          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          return;
+        }
+        await renderGoogleBusiness("Resposta removida.");
+      }
+
+      async function updateGoogleLocation(localId, campos) {
+        const status = document.querySelector("#googleActionStatus") || document.querySelector("#content");
+        status.innerHTML = `<div class="alert">Atualizando cadastro da loja...</div>`;
+        const { error } = await supabase.functions.invoke("google-gbp-location-update", {
+          body: { local_id: localId, campos }
+        });
+        if (error) {
+          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          return;
+        }
+        state.google.openEditLocalId = null;
+        await renderGoogleBusiness("Cadastro da loja atualizado.");
+      }
+
+      function renderImport() {
+        const content = document.querySelector("#content");
+        content.innerHTML = `
+          <div class="page-head"><div><div class="eyebrow">Importação controlada</div><h2>Importar planilhas</h2><p class="muted">Fluxo CSV para CredSystem e tabelas stage.</p></div></div>
+          <div class="grid cols">
+            <section class="card grid" style="gap:16px">
+              <label>Marca<select id="importMarca">${marcas.filter((m) => m !== "Todas").map((m) => `<option>${m}</option>`).join("")}</select></label>
+              <label>Origem<select id="source">${Object.entries(sourceTables).map(([k, v]) => `<option value="${k}">${k} - ${v}</option>`).join("")}</select></label>
+              <div class="drop"><span class="material-symbols-outlined">upload_file</span><strong>Selecione um CSV</strong><p class="muted">O arquivo será validado antes da importação.</p><input id="file" type="file" accept=".csv"></div>
+            </section>
+            <section class="card"><h3>Preview</h3><div id="preview" class="muted">Escolha um arquivo para começar.${lastImportLogHtml()}</div></section>
+          </div>`;
+        document.querySelector("#file").onchange = previewCsv;
+      }
+
+      async function previewCsv(event) {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        const text = await readCsvText(file);
+        const lines = text.split(/\r?\n/).filter(Boolean);
+        const sep = lines[0]?.includes(";") ? ";" : ",";
+        const columns = lines[0].split(sep).map((c) => c.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, ""));
+        const rows = lines.slice(1).map((line) => Object.fromEntries(line.split(sep).map((value, index) => [columns[index], value.trim()])));
+        document.querySelector("#preview").innerHTML = `<p><b>${file.name}</b> · ${rows.length} linhas · ${columns.length} colunas</p><button id="doImport">Importar para Supabase</button><div id="importStatus" style="margin-top:12px"></div>`;
+        document.querySelector("#doImport").onclick = () => importRows(file.name, rows);
+      }
+
+      async function fetchAllRows(table, columns, marca = "Todas") {
+        const pageSize = 1000;
+        let from = 0;
+        let allRows = [];
+
+        while (true) {
+          let query = supabase
+            .from(table)
+            .select(columns)
+            .range(from, from + pageSize - 1);
+
+          if (marca !== "Todas") query = query.eq("marca", marca);
+
+          const { data, error } = await query;
+          if (error) throw error;
+
+          const rows = data || [];
+          allRows = allRows.concat(rows);
+
+          if (rows.length < pageSize) break;
+          from += pageSize;
+        }
+
+        return allRows;
+      }
+
+      async function readCsvText(file) {
+        const buffer = await file.arrayBuffer();
+        const utf8Text = new TextDecoder("utf-8", { fatal: false }).decode(buffer);
+
+        if (!utf8Text.includes("ï¿½")) return utf8Text;
+
+        try {
+          return new TextDecoder("windows-1252").decode(buffer);
+        } catch {
+          return new TextDecoder("iso-8859-1").decode(buffer);
+        }
+      }
+
+      function saveImportLog(message, type = "info") {
+        localStorage.setItem("gto_last_import_log", JSON.stringify({
+          message,
+          type,
+          at: new Date().toLocaleString("pt-BR")
+        }));
+      }
+
+      function lastImportLogHtml() {
+        const raw = localStorage.getItem("gto_last_import_log");
+        if (!raw) return "";
+        try {
+          const log = JSON.parse(raw);
+          const alertClass = log.type === "error" ? "alert error" : log.type === "success" ? "alert success" : "alert";
+          return `<div class="${alertClass}" style="margin-top:12px">Último status (${log.at}): ${log.message}</div>`;
+        } catch {
+          return "";
+        }
+      }
+
+      async function importRows(fileName, rows) {
+        const marca = document.querySelector("#importMarca").value;
+        const source = document.querySelector("#source").value;
+        const table = sourceTables[source];
+        const mapped = rows.map((r) => mapRow(source, marca, r, fileName));
+        const status = document.querySelector("#importStatus");
+        const button = document.querySelector("#doImport");
+        const chunkSize = source === "credsystem_propostas" ? 100 : 300;
+        let imported = 0;
+
+        button.disabled = true;
+        status.innerHTML = `<div class="alert">Importando em lotes de ${chunkSize} linhas...</div>`;
+        saveImportLog(`Importação iniciada: ${mapped.length} linhas para ${table}.`);
+
+        const conflictColumns = {
+          credsystem_propostas: "marca,id_cod_proposta",
+          credsystem_emissoes: "marca,id_cod_cartao"
+        }[source];
+
+        for (let start = 0; start < mapped.length; start += chunkSize) {
+          const chunk = mapped.slice(start, start + chunkSize);
+          const request = conflictColumns
+            ? supabase.from(table).upsert(chunk, {
+                onConflict: conflictColumns,
+                ignoreDuplicates: true
+              })
+            : supabase.from(table).insert(chunk);
+
+          const { error } = await request;
+
+          if (error) {
+            const message = `Falha após ${imported} linhas em ${table}: ${error.message}`;
+            status.insertAdjacentHTML("beforeend", `<div class="alert error">${message}</div>`);
+            saveImportLog(message, "error");
+            button.disabled = false;
+            return;
+          }
+
+          imported += chunk.length;
+          const message = `Importadas ${imported} de ${mapped.length} linhas em ${table}...`;
+          status.innerHTML = `<div class="alert">${message}</div>`;
+          saveImportLog(message);
+        }
+
+        const finalMessage = `${imported} linhas processadas em ${table}.`;
+        status.innerHTML = `<div class="alert success">${finalMessage}</div>`;
+        saveImportLog(finalMessage, "success");
+        button.disabled = false;
+      }
+
+      function mapRow(source, marca, r, fileName) {
+        const today = new Date().toISOString().slice(0, 10);
+        if (source === "credsystem_emissoes") return {
+          marca,
+          data_emissao: normalizeDate(r.dt_emissao || r.data_emissao || r.data || today),
+          data_ativacao: r.dt_ativacao || r.data_ativacao ? normalizeDate(r.dt_ativacao || r.data_ativacao) : null,
+          loja_operacao: r.nm_loja || r.loja_operacao || r.loja || r.cd_loja_cs || "Nao informado",
+          nome_cliente: r.nm_cliente || r.nome_cliente || r.cliente || null,
+          telefone: joinPhone(r.ddd_celular, r.nr_fone_celular) || r.telefone || null,
+          valor_compra_inicial: num(r.valor_compra_inicial || r.valor),
+          frequencia_recorrencia: num(r.frequencia_recorrencia),
+          id_cod_cartao: r.id_cod_cartao || null,
+          cpf_cliente: r.cpf_cliente || null,
+          canal: r.canal || null,
+          sub_canal: r.sub_canal || null,
+          tipo_cartao: r.tipo_cartao || null,
+          origem_arquivo: fileName,
+          lote_importacao: crypto.randomUUID()
+        };
+        if (source === "credsystem_propostas") return {
+          marca,
+          dt_proposta: normalizeDate(r.dt_proposta || r.data_proposta || r.data || today),
+          hr_proposta: r.hr_proposta || null,
+          cd_loja_cs: r.cd_loja_cs || null,
+          nm_loja: r.nm_loja || null,
+          id_cod_proposta: r.id_cod_proposta || crypto.randomUUID(),
+          cpf_cliente: r.cpf_cliente || null,
+          cd_cliente: r.cd_cliente || null,
+          id_cod_cartao: r.id_cod_cartao || null,
+          campanha: r.campanha || null,
+          origem_prop: r.origem_prop || null,
+          proposta_aprov: num(r.proposta_aprov),
+          proposta_rejei: num(r.proposta_rejei),
+          motivo: r.motivo || null,
+          cpf_promotor: r.cpf_promotor || null,
+          login_operador: r.login_operador || null,
+          tel_celular: r.tel_celular || null,
+          cpf_operador: r.cpf_operador || null,
+          nivel_2: r.nivel_2 || null,
+          payload_bruto: r,
+          origem_arquivo: fileName,
+          lote_importacao: crypto.randomUUID()
+        };
+        if (source === "rd_station") return {
+          marca,
+          id_campanha: r.id_campanha || r.campanha_id || crypto.randomUUID(),
+          nome_campanha: r.nome_campanha || r.campanha || "Campanha sem nome",
+          enviados: num(r.enviados),
+          entregues: num(r.entregues),
+          taxa_abertura: num(r.taxa_abertura),
+          taxa_clique: num(r.taxa_clique),
+          descadastros: num(r.descadastros),
+          assunto_email: r.assunto_email || r.assunto || r.subject || null,
+          preheader: r.preheader || r.pre_header || null,
+          corpo_copy: r.corpo_copy || r.copy || r.corpo || r.conteudo || null,
+          payload_bruto: r,
+          origem_api: "csv_import",
+          data_referencia: r.data_referencia || today,
+          lote_importacao: crypto.randomUUID()
+        };
+        if (source === "social_format_metrics") {
+          const rede = normalizeSocialNetwork(r.rede_social || r.rede || r.canal || r.network);
+          const formato = normalizeSocialFormat(r.formato || r.tipo_conteudo || r.tipo || r.format, rede);
+          return {
+            marca,
+            rede_social: rede,
+            formato,
+            objetivo: r.objetivo || r.objective || null,
+            tema: r.tema || r.assunto || r.editoria || null,
+            data_referencia: normalizeDate(r.data_referencia || r.data || today),
+            total_visualizacoes: num(r.total_visualizacoes || r.views || r.visualizacoes),
+            tempo_medio_visualizacao: num(r.tempo_medio_visualizacao || r.average_watch_time || r.watch_time),
+            taxa_rejeicao_inicial: num(r.taxa_rejeicao_inicial || r.skip_rate || r.skip_rate_3s),
+            percentual_assistido_final: num(r.percentual_assistido_final || r.completion_rate || r.video_assistido_final),
+            alcance_seguidores_pct: num(r.alcance_seguidores_pct || r.followers_reach_pct),
+            alcance_nao_seguidores_pct: num(r.alcance_nao_seguidores_pct || r.non_followers_reach_pct),
+            compartilhamentos: num(r.compartilhamentos || r.shares),
+            salvamentos: num(r.salvamentos || r.saves),
+            media_visualizacoes_unicas_story: num(r.media_visualizacoes_unicas_story || r.unique_story_views),
+            taxa_retencao_diaria: num(r.taxa_retencao_diaria || r.daily_retention),
+            melhor_sticker_interacoes: num(r.melhor_sticker_interacoes || r.sticker_interactions),
+            melhor_sticker_tema: r.melhor_sticker_tema || r.sticker_tema || null,
+            respostas_dm: num(r.respostas_dm || r.dms || r.directs),
+            cliques_sticker_link: num(r.cliques_sticker_link || r.link_sticker_clicks),
+            alcance_segunda_visualizacao: num(r.alcance_segunda_visualizacao || r.second_impression_reach),
+            comentarios_qualificados: num(r.comentarios_qualificados || r.qualified_comments),
+            taxa_compartilhamento_feed: num(r.taxa_compartilhamento_feed || r.feed_share_rate),
+            visualizacoes_unicas_midia: num(r.visualizacoes_unicas_midia || r.unique_media_views),
+            retencao_qualificada_5s: num(r.retencao_qualificada_5s || r.retention_5s),
+            compartilhamentos_publicos_timeline: num(r.compartilhamentos_publicos_timeline || r.public_timeline_shares),
+            cliques_link: num(r.cliques_link || r.link_clicks),
+            cliques_ver_mais: num(r.cliques_ver_mais || r.see_more_clicks),
+            compartilhamentos_grupos: num(r.compartilhamentos_grupos || r.group_shares),
+            tempo_resposta_comentarios_horas: num(r.tempo_resposta_comentarios_horas || r.comment_response_hours),
+            visualizacoes_unicas: num(r.visualizacoes_unicas || r.unique_viewers),
+            toques_avancar: num(r.toques_avancar || r.taps_forward),
+            toques_voltar: num(r.toques_voltar || r.taps_back),
+            payload_bruto: r,
+            origem_arquivo: fileName,
+            lote_importacao: crypto.randomUUID()
+          };
+        }
+        if (source === "meta_business") return { marca, data_referencia: r.data_referencia || today, seguidores_instagram: num(r.seguidores_instagram), alcance_facebook: num(r.alcance_facebook), engajamento_total: num(r.engajamento_total), post_destaque_semana_url: r.post_destaque_semana_url || null, payload_bruto: r, origem_api: "csv_import", lote_importacao: crypto.randomUUID() };
+        return { marca, id_loja_gmb: r.id_loja_gmb || crypto.randomUUID(), nome_loja: r.nome_loja || r.loja || null, rating_medio: num(r.rating_medio), status_resposta: r.status_resposta || null, horario_funcionamento: parseJsonField(r.horario_funcionamento || r.horarios || r.horario), payload_bruto: r, data_referencia: r.data_referencia || today, origem_api: "csv_import", lote_importacao: crypto.randomUUID() };
+      }
+
+      function normalizeSocialNetwork(value) {
+        const clean = String(value || "").toLowerCase();
+        return clean.includes("face") ? "Facebook" : "Instagram";
+      }
+
+      function normalizeSocialFormat(value, rede) {
+        const clean = String(value || "").toLowerCase();
+        if (rede === "Facebook") {
+          if (clean.includes("story")) return "facebook_stories";
+          if (clean.includes("reel")) return "facebook_reels";
+          return "facebook_feed";
+        }
+        if (clean.includes("story")) return "instagram_stories";
+        if (clean.includes("feed") || clean.includes("carross") || clean.includes("imagem")) return "instagram_feed";
+        return "instagram_reels";
+      }
+
+      function normalizeDate(value) {
+        if (!value) return new Date().toISOString().slice(0, 10);
+        const clean = String(value).trim();
+        if (/^\d{4}\/\d{2}\/\d{2}$/.test(clean)) return clean.replaceAll("/", "-");
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(clean)) {
+          const [day, month, year] = clean.split("/");
+          return `${year}-${month}-${day}`;
+        }
+        return clean.slice(0, 10);
+      }
+
+      function joinPhone(ddd, phone) {
+        const cleanDdd = String(ddd || "").replace(/\D/g, "");
+        const cleanPhone = String(phone || "").replace(/\D/g, "");
+        if (!cleanDdd && !cleanPhone) return "";
+        return `${cleanDdd}${cleanPhone}`;
+      }
+
+      init();
+    </script>
+  </body>
+</html>
+
+
+
+
+

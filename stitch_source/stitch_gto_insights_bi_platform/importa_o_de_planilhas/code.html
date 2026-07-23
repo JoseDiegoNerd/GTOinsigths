@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+
+<html class="light" lang="pt-br"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Importar Planilhas | GTO Insights</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-error-container": "#93000a",
+                    "on-secondary-container": "#00714d",
+                    "primary-container": "#2563eb",
+                    "secondary-container": "#6cf8bb",
+                    "on-tertiary-fixed-variant": "#7d2d00",
+                    "on-tertiary-fixed": "#360f00",
+                    "on-secondary-fixed": "#002113",
+                    "error-container": "#ffdad6",
+                    "tertiary": "#943700",
+                    "inverse-on-surface": "#ecf1ff",
+                    "error": "#ba1a1a",
+                    "surface-container-low": "#f0f3ff",
+                    "outline-variant": "#c3c6d7",
+                    "on-secondary-fixed-variant": "#005236",
+                    "secondary-fixed": "#6ffbbe",
+                    "secondary-fixed-dim": "#4edea3",
+                    "on-tertiary-container": "#ffede6",
+                    "surface-container": "#e7eeff",
+                    "surface-dim": "#cfdaf2",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "surface-container-lowest": "#ffffff",
+                    "on-surface": "#111c2d",
+                    "secondary": "#006c49",
+                    "on-primary": "#ffffff",
+                    "on-primary-container": "#eeefff",
+                    "on-error": "#ffffff",
+                    "tertiary-fixed": "#ffdbcd",
+                    "primary-fixed": "#dbe1ff",
+                    "inverse-primary": "#b4c5ff",
+                    "surface-tint": "#0053db",
+                    "on-background": "#111c2d",
+                    "tertiary-fixed-dim": "#ffb596",
+                    "outline": "#737686",
+                    "on-secondary": "#ffffff",
+                    "surface-container-high": "#dee8ff",
+                    "surface": "#f9f9ff",
+                    "surface-container-highest": "#d8e3fb",
+                    "surface-bright": "#f9f9ff",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-fixed": "#00174b",
+                    "primary": "#004ac6",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "background": "#f9f9ff",
+                    "tertiary-container": "#bc4800",
+                    "on-surface-variant": "#434655",
+                    "inverse-surface": "#263143",
+                    "surface-variant": "#d8e3fb"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "sidebar-width": "260px",
+                    "base": "4px",
+                    "xs": "8px",
+                    "sm": "12px",
+                    "md": "16px",
+                    "lg": "24px",
+                    "container-padding": "32px",
+                    "xl": "32px",
+                    "grid-gutter": "20px"
+            },
+            "fontFamily": {
+                    "body-md": ["Inter"],
+                    "data-mono": ["JetBrains Mono"],
+                    "label-md": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "headline-sm": ["Inter"],
+                    "headline-md": ["Inter"]
+            },
+            "fontSize": {
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "data-mono": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "display-lg": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-sm": ["18px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { background-color: #f9f9ff; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .step-active { color: #004ac6; }
+        .step-inactive { color: #94A3B8; }
+        .sidebar-active { background-color: rgba(0, 74, 198, 0.1); border-left: 3px solid #2563eb; color: #ffffff; font-weight: 700; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="font-body-md text-on-surface">
+<!-- SideNavBar (Shared Component) -->
+<aside class="fixed left-0 top-0 h-full w-sidebar-width bg-on-background flex flex-col py-md border-r border-outline-variant transition-all duration-200 ease-in-out z-50">
+<div class="px-lg mb-xl flex flex-col items-center">
+<div class="w-12 h-12 mb-xs rounded-lg overflow-hidden bg-white/10 flex items-center justify-center">
+<img class="w-10 h-10" data-alt="A professional high-contrast brand logo for a BI platform called GTO Insights. The design is minimalist, using a stylized geometric G in vibrant primary blue against a deep navy background. The lighting is crisp and modern, reflecting a premium corporate SaaS identity with sharp lines and high-quality digital rendering." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAcMTr86hG1ENn-2LzmqhZ3BZ4memQlrqQ0rkDigsmlMdA1QYtj8iXNOdHojRZ1ZdKpEY0ijNwRglA-URFNa_xSu542_5xRFaNayVtrgbyFNUTck48YAx1CCN5BpiaWlSzujuOyT5hux7Scz--m-R6X6EQZ_-tttZq2TZtCaMO3NMm1AJ7lbp96XhKgrHa7kqfwUt78vKiBqY6e_GUuk46c7qYwPCw_a5bk20HkdLXYjPRgXqc4_PdjjuydcR6TyGf-3bqsC_p3O1k"/>
+</div>
+<h1 class="text-headline-md font-headline-md text-on-primary">GTO Insights</h1>
+<span class="text-label-md font-label-md text-outline-variant">BI Platform</span>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center px-lg py-sm text-outline-variant hover:bg-primary/5 transition-colors" href="#">
+<span class="material-symbols-outlined mr-md">dashboard</span>
+<span class="font-body-md">Dashboard Geral</span>
+</a>
+<a class="flex items-center px-lg py-sm text-outline-variant hover:bg-primary/5 transition-colors" href="#">
+<span class="material-symbols-outlined mr-md">credit_card</span>
+<span class="font-body-md">Cartão Próprio</span>
+</a>
+<a class="flex items-center px-lg py-sm text-outline-variant hover:bg-primary/5 transition-colors" href="#">
+<span class="material-symbols-outlined mr-md">mail</span>
+<span class="font-body-md">Email Marketing</span>
+</a>
+<a class="flex items-center px-lg py-sm text-outline-variant hover:bg-primary/5 transition-colors" href="#">
+<span class="material-symbols-outlined mr-md">share</span>
+<span class="font-body-md">Redes Sociais</span>
+</a>
+<a class="flex items-center px-lg py-sm sidebar-active" href="#">
+<span class="material-symbols-outlined mr-md">upload_file</span>
+<span class="font-body-md">Importar Planilhas</span>
+</a>
+<a class="flex items-center px-lg py-sm text-outline-variant hover:bg-primary/5 transition-colors" href="#">
+<span class="material-symbols-outlined mr-md">lightbulb</span>
+<span class="font-body-md">Insights</span>
+</a>
+<a class="flex items-center px-lg py-sm text-outline-variant hover:bg-primary/5 transition-colors" href="#">
+<span class="material-symbols-outlined mr-md">settings</span>
+<span class="font-body-md">Configurações</span>
+</a>
+</nav>
+</aside>
+<!-- TopNavBar (Shared Component) -->
+<header class="ml-sidebar-width flex justify-between items-center px-container-padding h-16 w-[calc(100%-260px)] fixed top-0 bg-surface border-b border-outline-variant shadow-sm z-40">
+<div class="flex items-center gap-xl">
+<h2 class="text-headline-sm font-headline-sm text-on-surface">Importar Planilhas</h2>
+<div class="hidden md:flex items-center gap-md">
+<a class="text-label-md font-label-md text-on-surface-variant hover:text-primary transition-colors" href="#">Period</a>
+<a class="text-label-md font-label-md text-on-surface-variant hover:text-primary transition-colors" href="#">Brand</a>
+<a class="text-label-md font-label-md text-on-surface-variant hover:text-primary transition-colors" href="#">Source/Channel</a>
+</div>
+</div>
+<div class="flex items-center gap-lg">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary scale-95 active:scale-90 transition-transform">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary scale-95 active:scale-90 transition-transform">help</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a business executive for a user profile avatar. The subject is smiling warmly against a soft-focus office background with natural lighting. The image has a clean, high-end corporate aesthetic with a neutral color palette, emphasizing trustworthiness and professionalism." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCIrsoaWqPsTkUERttIRy0-SPd1-LtNnCEE6MqXY8YDm3TYOvYVop-P2Vq1msTeW1hsFGWKHicxkoRoL_22mL7MTjztYJAbhd-r7kZ1RWuy2_C6gCUhCZBCc71fnAGR-XZfkzWoxeWucsOv_pm_QLi5NkkGAL4Jx7oqcclolmjt6ljSuT7uWzAjw-KwLZjgP-9uR_OCBPLNUlaBxWBZPhGAkCIL1jqDj1_pBkz-6D9zy2lqj-Md-Ld0SHc_dj0SClwPCm9knmV8qsQ"/>
+</div>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="ml-sidebar-width mt-16 p-xl">
+<div class="max-w-6xl mx-auto space-y-xl">
+<!-- Guided Flow Stepper -->
+<div class="bg-white rounded-xl border border-outline-variant p-lg shadow-sm flex justify-between items-center relative">
+<div class="flex flex-col items-center gap-xs z-10 step-active" id="step-1">
+<div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold">1</div>
+<span class="text-label-md font-label-md uppercase tracking-wider">Bandeira</span>
+</div>
+<div class="flex-1 h-px bg-outline-variant mx-4 relative top-[-12px]"></div>
+<div class="flex flex-col items-center gap-xs z-10 step-inactive" id="step-2">
+<div class="w-10 h-10 rounded-full border-2 border-outline-variant bg-surface text-outline flex items-center justify-center font-bold">2</div>
+<span class="text-label-md font-label-md uppercase tracking-wider">Origem</span>
+</div>
+<div class="flex-1 h-px bg-outline-variant mx-4 relative top-[-12px]"></div>
+<div class="flex flex-col items-center gap-xs z-10 step-inactive" id="step-3">
+<div class="w-10 h-10 rounded-full border-2 border-outline-variant bg-surface text-outline flex items-center justify-center font-bold">3</div>
+<span class="text-label-md font-label-md uppercase tracking-wider">Upload</span>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-grid-gutter">
+<!-- Interaction Area (Steps Container) -->
+<div class="lg:col-span-8 space-y-grid-gutter">
+<!-- Step 1: Brand Selection -->
+<div class="bg-white rounded-xl border border-outline-variant p-xl shadow-sm transition-all duration-300" id="content-step-1">
+<h3 class="text-headline-sm font-headline-sm mb-lg">Selecione a Bandeira</h3>
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-md">
+<button class="p-md border-2 border-outline-variant rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-center group" onclick="nextStep(2)">
+<div class="w-12 h-12 mx-auto mb-sm rounded bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">storefront</span>
+</div>
+<span class="text-body-md font-semibold text-on-surface">Loja Alpha</span>
+</button>
+<button class="p-md border-2 border-outline-variant rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-center group" onclick="nextStep(2)">
+<div class="w-12 h-12 mx-auto mb-sm rounded bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">shopping_bag</span>
+</div>
+<span class="text-body-md font-semibold text-on-surface">Varejo Sul</span>
+</button>
+<button class="p-md border-2 border-outline-variant rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-center group" onclick="nextStep(2)">
+<div class="w-12 h-12 mx-auto mb-sm rounded bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">local_shipping</span>
+</div>
+<span class="text-body-md font-semibold text-on-surface">Logística Global</span>
+</button>
+</div>
+</div>
+<!-- Step 2: Source Selection (Hidden by default) -->
+<div class="hidden bg-white rounded-xl border border-outline-variant p-xl shadow-sm transition-all duration-300" id="content-step-2">
+<div class="flex items-center gap-md mb-lg">
+<button class="material-symbols-outlined p-xs hover:bg-surface-container rounded-full text-on-surface-variant" onclick="prevStep(1)">arrow_back</button>
+<h3 class="text-headline-sm font-headline-sm">Origem dos Dados</h3>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-md">
+<button class="p-md border border-outline-variant rounded-lg hover:border-primary hover:shadow-md transition-all flex flex-col items-center gap-sm" onclick="nextStep(3)">
+<img class="h-8 object-contain" data-alt="Minimalist logo of CredSystem financial services, rendered in a professional flat vector style with high-contrast colors suitable for a dashboard integration list. The image is crisp, clean, and modern." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAWy4AIvAWufLHBsDrZghBN3sOL__4hAU6oUhCVJMYKTTnpH7STwYczWckHxeG-laUSZkvEp_b79T5p3mnizlOCAHAtAiuBs_mL6FoXk5nlwU1Rt1ExzEXr6I7i07ZrubIvrnbs0sq6t3rcB54YwH5AFr23HqrQsoF3cJGCcC7Aq-s2GSTwNXmfXj6hY2JNM2pN8Y5KBfr8iltQHZfgkOBQg__jjgRU8vW_P23nTa79qTCN_gaBxW0Ci4cIUUR7-bZ675CSkYgBscc"/>
+<span class="text-label-md">CredSystem</span>
+</button>
+<button class="p-md border border-outline-variant rounded-lg hover:border-primary hover:shadow-md transition-all flex flex-col items-center gap-sm" onclick="nextStep(3)">
+<img class="h-8 object-contain" data-alt="The RD Station logo, a professional marketing automation software brand, depicted as a clean digital icon. High-definition rendering with its signature colors, optimized for a corporate UI component." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAqZnXp16jk16BV2hqG-FWXYeTtaQO08zbZUYvCsR4-wiCD5kOFkdde2jco-4kl9UdjlU_6IvPVVRdWmZV-IT23hS35oLB-T0qZR4NDH4KXtz6CVtyzpOdQKWETlDH0k3bYuSnzzfrL2CJ0Lxf_aTONKE9FFiz4Q-n66Thycptea1gNsV09ZHpFvKmIU4xI31-37TU863DuQ3Ypn339ubmuZ44tzCMgRv3pd_-QCuEFx82dhwxQ2P07L7KhBV2Jtb_H-zNBdO158JI"/>
+<span class="text-label-md">RD Station</span>
+</button>
+<button class="p-md border border-outline-variant rounded-lg hover:border-primary hover:shadow-md transition-all flex flex-col items-center gap-sm" onclick="nextStep(3)">
+<img class="h-8 object-contain" data-alt="A modern Meta Ads logo icon for business integration. The design uses the signature infinity loop with a professional blue gradient, presented in a clean, flat aesthetic on a neutral white background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDumjnzVCIul06swH9wG0stuzrna5N-3VcNKp5aqimS9IjDtGR2gFnscDXemml7q5RMREg7W3xDlSVaXoYxQCACPFA8eWHKTQlt-e3ANj9RrrSaJCkZ_DJ8rPEbTJgDnzBnACylAEQGRPrhBfn_NG0-2rM2g5U8opmz5Zo0OwYMbOqhWUPOpbhW_xgwxRp_XMcXDs_-TmQLwtq0m5e8ECbsnxM1ABt9fBbcDkTpcHZW3QsOzcl-Odgw0oYnxJ1s7bn0x-CskyHHADU"/>
+<span class="text-label-md">Meta Ads</span>
+</button>
+<button class="p-md border border-outline-variant rounded-lg hover:border-primary hover:shadow-md transition-all flex flex-col items-center gap-sm" onclick="nextStep(3)">
+<span class="material-symbols-outlined text-3xl text-outline">add_circle</span>
+<span class="text-label-md">Outros</span>
+</button>
+</div>
+</div>
+<!-- Step 3: File Upload (Hidden by default) -->
+<div class="hidden bg-white rounded-xl border border-outline-variant p-xl shadow-sm transition-all duration-300" id="content-step-3">
+<div class="flex items-center gap-md mb-lg">
+<button class="material-symbols-outlined p-xs hover:bg-surface-container rounded-full text-on-surface-variant" onclick="prevStep(2)">arrow_back</button>
+<h3 class="text-headline-sm font-headline-sm">Upload de Arquivo</h3>
+</div>
+<!-- Drag & Drop Area -->
+<div class="border-2 border-dashed border-primary-container bg-primary/5 rounded-xl p-xl flex flex-col items-center justify-center text-center cursor-pointer hover:bg-primary/10 transition-colors" id="drop-zone">
+<div class="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-md">
+<span class="material-symbols-outlined text-4xl text-primary">cloud_upload</span>
+</div>
+<h4 class="text-body-lg font-bold text-on-surface mb-xs">Arraste seu arquivo aqui</h4>
+<p class="text-body-md text-on-surface-variant mb-lg">Ou clique para navegar (CSV, XLSX, XLS)</p>
+<input accept=".csv,.xlsx,.xls" class="hidden" id="file-input" type="file"/>
+<button class="px-xl py-md bg-primary text-on-primary rounded-lg font-bold shadow-sm hover:brightness-110 active:scale-95 transition-all" onclick="document.getElementById('file-input').click()">Selecionar Arquivo</button>
+</div>
+<!-- Preview Card (Appears after select) -->
+<div class="mt-xl hidden border border-outline-variant rounded-lg overflow-hidden" id="file-preview">
+<div class="bg-surface-container-low px-md py-sm border-b border-outline-variant flex justify-between items-center">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">description</span>
+<span class="text-body-md font-semibold" id="preview-filename">relatorio_vendas_q3.csv</span>
+</div>
+<button class="text-error hover:underline text-label-md" onclick="resetUpload()">Remover</button>
+</div>
+<div class="p-md bg-white">
+<div class="overflow-x-auto">
+<table class="w-full text-left text-label-md border-collapse">
+<thead>
+<tr class="bg-surface-container-lowest">
+<th class="p-xs border border-outline-variant">Data</th>
+<th class="p-xs border border-outline-variant">ID Venda</th>
+<th class="p-xs border border-outline-variant">Valor</th>
+<th class="p-xs border border-outline-variant">Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="p-xs border border-outline-variant text-outline-variant">2023-10-01</td>
+<td class="p-xs border border-outline-variant text-outline-variant">#99281</td>
+<td class="p-xs border border-outline-variant text-outline-variant">R$ 1.250,00</td>
+<td class="p-xs border border-outline-variant text-outline-variant">Pago</td>
+</tr>
+<tr>
+<td class="p-xs border border-outline-variant text-outline-variant">2023-10-01</td>
+<td class="p-xs border border-outline-variant text-outline-variant">#99282</td>
+<td class="p-xs border border-outline-variant text-outline-variant">R$ 420,50</td>
+<td class="p-xs border border-outline-variant text-outline-variant">Pendente</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="mt-md flex justify-end">
+<button class="px-xl py-sm bg-secondary text-on-secondary rounded-lg font-bold flex items-center gap-xs">
+<span class="material-symbols-outlined">rocket_launch</span>
+                                        Processar Importação
+                                    </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Sidebar: History & Status -->
+<div class="lg:col-span-4 space-y-grid-gutter">
+<div class="bg-white rounded-xl border border-outline-variant p-lg shadow-sm">
+<div class="flex items-center justify-between mb-lg">
+<h3 class="text-headline-sm font-headline-sm">Histórico</h3>
+<button class="text-primary text-label-md hover:underline">Ver tudo</button>
+</div>
+<div class="space-y-md">
+<!-- History Item Success -->
+<div class="flex items-start gap-sm p-sm rounded-lg hover:bg-surface-container transition-colors">
+<div class="w-10 h-10 rounded-full bg-secondary-container/20 flex items-center justify-center text-on-secondary-container shrink-0">
+<span class="material-symbols-outlined">check_circle</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between">
+<h4 class="text-body-md font-bold text-on-surface">Vendas_LojaA.csv</h4>
+<span class="text-[10px] text-outline-variant uppercase">Hoje, 10:30</span>
+</div>
+<p class="text-label-md text-on-surface-variant">1,240 linhas importadas</p>
+<span class="inline-block mt-xs px-xs py-0.5 bg-secondary-container text-on-secondary-container rounded text-[10px] font-bold uppercase">Sucesso</span>
+</div>
+</div>
+<!-- History Item Error -->
+<div class="flex items-start gap-sm p-sm rounded-lg hover:bg-surface-container transition-colors">
+<div class="w-10 h-10 rounded-full bg-error-container/20 flex items-center justify-center text-on-error-container shrink-0">
+<span class="material-symbols-outlined">error</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between">
+<h4 class="text-body-md font-bold text-on-surface">Ads_Campaigns.xlsx</h4>
+<span class="text-[10px] text-outline-variant uppercase">Ontem</span>
+</div>
+<p class="text-label-md text-on-surface-variant">Erro na coluna 'Data'</p>
+<span class="inline-block mt-xs px-xs py-0.5 bg-error-container text-on-error-container rounded text-[10px] font-bold uppercase">Erro</span>
+</div>
+</div>
+<!-- History Item Pending -->
+<div class="flex items-start gap-sm p-sm rounded-lg hover:bg-surface-container transition-colors">
+<div class="w-10 h-10 rounded-full bg-primary-container/10 flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined animate-spin">sync</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between">
+<h4 class="text-body-md font-bold text-on-surface">Stock_Monthly.csv</h4>
+<span class="text-[10px] text-outline-variant uppercase">22 Out</span>
+</div>
+<p class="text-label-md text-on-surface-variant">Processando dados...</p>
+<span class="inline-block mt-xs px-xs py-0.5 bg-primary-container text-white rounded text-[10px] font-bold uppercase">Pendente</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Statistics / Info Card -->
+<div class="bg-on-background p-lg rounded-xl text-white relative overflow-hidden group">
+<div class="absolute -right-8 -bottom-8 opacity-10 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[160px]">query_stats</span>
+</div>
+<h4 class="text-label-md uppercase tracking-widest text-primary-fixed-dim mb-xs">Volume Mensal</h4>
+<p class="text-display-lg font-display-lg mb-md">452.8k</p>
+<p class="text-body-md opacity-80">Linhas de dados processadas este mês.</p>
+<div class="mt-lg h-2 w-full bg-white/10 rounded-full overflow-hidden">
+<div class="h-full bg-primary-container w-[70%]"></div>
+</div>
+<p class="text-label-md mt-sm text-outline-variant">70% da cota do plano atual</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<script>
+        // Simple step navigation logic
+        function nextStep(step) {
+            // Hide all steps
+            document.querySelectorAll('[id^="content-step-"]').forEach(el => el.classList.add('hidden'));
+            // Show target step
+            document.getElementById(`content-step-${step}`).classList.remove('hidden');
+            
+            // Update Stepper Visuals
+            for(let i=1; i<=3; i++) {
+                const stepIndicator = document.getElementById(`step-${i}`);
+                const circle = stepIndicator.querySelector('div');
+                
+                if (i < step) {
+                    stepIndicator.className = 'flex flex-col items-center gap-xs z-10 text-secondary';
+                    circle.innerHTML = '<span class="material-symbols-outlined">check</span>';
+                    circle.className = 'w-10 h-10 rounded-full bg-secondary text-on-secondary flex items-center justify-center font-bold';
+                } else if (i === step) {
+                    stepIndicator.className = 'flex flex-col items-center gap-xs z-10 step-active';
+                    circle.innerHTML = i;
+                    circle.className = 'w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold';
+                } else {
+                    stepIndicator.className = 'flex flex-col items-center gap-xs z-10 step-inactive';
+                    circle.innerHTML = i;
+                    circle.className = 'w-10 h-10 rounded-full border-2 border-outline-variant bg-surface text-outline flex items-center justify-center font-bold';
+                }
+            }
+        }
+
+        function prevStep(step) {
+            nextStep(step);
+        }
+
+        // File Selection Logic
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const preview = document.getElementById('file-preview');
+        const filenameLabel = document.getElementById('preview-filename');
+
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                const file = e.target.files[0];
+                filenameLabel.textContent = file.name;
+                preview.classList.remove('hidden');
+                dropZone.classList.add('opacity-50', 'pointer-events-none');
+            }
+        });
+
+        function resetUpload() {
+            fileInput.value = '';
+            preview.classList.add('hidden');
+            dropZone.classList.remove('opacity-50', 'pointer-events-none');
+        }
+
+        // Drag & Drop visual feedback
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropZone.classList.add('bg-primary/20');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('bg-primary/20');
+            }, false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if(files.length > 0) {
+                fileInput.files = files;
+                const event = new Event('change');
+                fileInput.dispatchEvent(event);
+            }
+        });
+    </script>
+</body></html>

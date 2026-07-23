@@ -1,0 +1,545 @@
+<!DOCTYPE html><html lang="pt-BR"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Configurações - GTO Insights</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-high": "#dee8ff",
+                    "surface-container": "#e7eeff",
+                    "on-tertiary": "#ffffff",
+                    "background": "#f9f9ff",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary-fixed": "#6ffbbe",
+                    "on-surface": "#111c2d",
+                    "on-secondary": "#ffffff",
+                    "surface-variant": "#d8e3fb",
+                    "surface-tint": "#0053db",
+                    "tertiary": "#943700",
+                    "surface-container-highest": "#d8e3fb",
+                    "surface-dim": "#cfdaf2",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "inverse-on-surface": "#ecf1ff",
+                    "surface-container-low": "#f0f3ff",
+                    "secondary-fixed-dim": "#4edea3",
+                    "on-primary": "#ffffff",
+                    "on-background": "#111c2d",
+                    "surface-bright": "#f9f9ff",
+                    "primary": "#004ac6",
+                    "secondary": "#006c49",
+                    "error": "#ba1a1a",
+                    "outline": "#737686",
+                    "primary-fixed": "#dbe1ff",
+                    "tertiary-fixed-dim": "#ffb596",
+                    "on-secondary-fixed-variant": "#005236",
+                    "on-secondary-fixed": "#002113",
+                    "on-primary-container": "#eeefff",
+                    "on-tertiary-container": "#ffede6",
+                    "tertiary-fixed": "#ffdbcd",
+                    "inverse-surface": "#263143",
+                    "primary-container": "#2563eb",
+                    "outline-variant": "#c3c6d7",
+                    "error-container": "#ffdad6",
+                    "on-tertiary-fixed": "#360f00",
+                    "inverse-primary": "#b4c5ff",
+                    "surface": "#f9f9ff",
+                    "on-error-container": "#93000a",
+                    "tertiary-container": "#bc4800",
+                    "on-primary-fixed": "#00174b",
+                    "on-error": "#ffffff",
+                    "on-secondary-container": "#00714d",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "secondary-container": "#6cf8bb",
+                    "on-tertiary-fixed-variant": "#7d2d00",
+                    "on-surface-variant": "#434655"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "md": "16px",
+                    "xs": "8px",
+                    "base": "4px",
+                    "grid-gutter": "20px",
+                    "lg": "24px",
+                    "container-padding": "32px",
+                    "xl": "32px",
+                    "sm": "12px",
+                    "sidebar-width": "260px"
+            },
+            "fontFamily": {
+                    "headline-sm": ["Inter"],
+                    "headline-md-mobile": ["Inter"],
+                    "body-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "data-mono": ["JetBrains Mono"],
+                    "label-md": ["Inter"],
+                    "headline-md": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-sm": ["18px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "headline-md-mobile": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "display-lg": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "data-mono": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+      body {
+        background-color: #F8FAFC;
+        font-family: 'Inter', sans-serif;
+      }
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        vertical-align: middle;
+      }
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+      }
+      .glass-card {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(8px);
+        border: 1px solid #E2E8F0;
+      }
+    </style>
+</head>
+<body class="flex min-h-screen">
+<!-- SideNavBar Anchor -->
+<aside class="fixed left-0 top-0 h-full w-[260px] bg-inverse-surface dark:bg-surface-dim border-r border-outline-variant flex flex-col py-lg z-50">
+<div class="px-lg mb-xl flex items-center gap-sm">
+<div class="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">analytics</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-surface-lowest leading-tight">GTO Insights</h1>
+<p class="text-xs text-outline-variant opacity-70 tracking-wider uppercase">BI Platform</p>
+</div>
+</div>
+<nav class="flex-1 px-sm space-y-1 custom-scrollbar overflow-y-auto">
+<a class="flex items-center gap-md px-md py-3 font-body-md text-body-md text-outline-variant hover:text-white hover:bg-primary-container/5 transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">dashboard</span>
+<span class="">Dashboard Geral</span>
+</a>
+<a class="flex items-center gap-md px-md py-3 font-body-md text-body-md text-outline-variant hover:text-white hover:bg-primary-container/5 transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">credit_card</span>
+<span class="">Cartão Próprio</span>
+</a>
+<a class="flex items-center gap-md px-md py-3 font-body-md text-body-md text-outline-variant hover:text-white hover:bg-primary-container/5 transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">mail</span>
+<span class="">Email Marketing</span>
+</a>
+<a class="flex items-center gap-md px-md py-3 font-body-md text-body-md text-outline-variant hover:text-white hover:bg-primary-container/5 transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">share</span>
+<span class="">Redes Sociais</span>
+</a>
+<a class="flex items-center gap-md px-md py-3 font-body-md text-body-md text-outline-variant hover:text-white hover:bg-primary-container/5 transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">upload_file</span>
+<span class="">Importar Planilhas</span>
+</a>
+<a class="flex items-center gap-md px-md py-3 font-body-md text-body-md text-outline-variant hover:text-white hover:bg-primary-container/5 transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">lightbulb</span>
+<span class="">Insights</span>
+</a>
+<!-- Active Navigation -->
+<a class="flex items-center gap-md px-md py-3 font-body-md text-body-md text-white border-l-[3px] border-primary bg-primary-container/10 rounded-r-lg" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="font-semibold">Configurações</span>
+</a>
+</nav>
+<div class="px-lg pt-lg mt-auto">
+<div class="flex items-center gap-sm p-sm rounded-xl bg-white/5 border border-white/10">
+<img class="w-10 h-10 rounded-full object-cover" data-alt="A professional headshot of a business executive in a modern office environment, soft cinematic lighting, neutral corporate background, professional attire." src="https://lh3.googleusercontent.com/aida-public/AB6AXuALVkkxclAftWd1-BRI7V1CsZKfC5xMNwCRF94PIz-62N9jtseQLZ4LdqAtgkRVg1GVCZI2dtMNdh6ajYcaB_-5XPiMpdGlm9Aardubs_oDVRoheUvfx7osIfFNCyn6pDuBYk2vSRcSk6ncDyPfz97_NMTGm8Bd8sHtTHH2WboszhJE9bfuJqa1MFw1g3r6_uiIAVe8sQqNoEt-pkUaGij0Wd9ls-4MLX_Hg3TmlDhZzrJSDKYV3PKZ128QnhPegTVL8k4YDC6oCH8">
+<div class="flex-1 min-w-0">
+<p class="text-sm font-bold text-white truncate">Diretoria GTO</p>
+<p class="text-xs text-outline-variant truncate">Admin Account</p>
+</div>
+<span class="material-symbols-outlined text-outline-variant cursor-pointer hover:text-white">logout</span>
+</div>
+</div>
+</aside>
+<!-- Main Content Shell -->
+<main class="flex-1 ml-[260px]">
+<!-- TopNavBar Anchor -->
+<header class="flex justify-between items-center w-full px-container-padding h-16 bg-surface dark:bg-surface-bright shadow-sm sticky top-0 z-40">
+<div class="flex items-center gap-lg flex-1">
+<div class="relative w-full max-w-md group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-outline-variant rounded-full text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all" placeholder="Buscar configurações..." type="text">
+</div>
+</div>
+<div class="flex items-center gap-md">
+<button class="w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-variant transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined">help</span>
+</button>
+<div class="w-[1px] h-6 bg-outline-variant mx-xs"></div>
+<div class="flex items-center gap-xs cursor-pointer hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">account_circle</span>
+<span class="font-label-md text-label-md text-on-surface uppercase tracking-wider">Perfil Admin</span>
+</div>
+</div>
+</header>
+<!-- Canvas -->
+<div class="p-container-padding space-y-xl animate-in fade-in duration-700">
+<header>
+<h2 class="font-headline-md text-headline-md text-on-surface">Configurações do Sistema</h2>
+<p class="text-body-md text-on-surface-variant">Gerencie permissões, marcas, fontes de dados e preferências da plataforma.</p>
+</header>
+<!-- Settings Grid -->
+<div class="grid grid-cols-12 gap-grid-gutter">
+<!-- 1. User Management (Large Card) -->
+<div class="col-span-12 bg-white rounded-xl shadow-sm border border-outline-variant overflow-hidden">
+<div class="p-lg border-b border-outline-variant flex justify-between items-center bg-surface-container-lowest">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">group</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Gerenciar Usuários</h3>
+</div>
+<button class="flex items-center gap-xs bg-primary text-white px-md py-2 rounded-lg font-label-md text-label-md hover:bg-primary-container transition-all shadow-sm active:scale-95">
+<span class="material-symbols-outlined text-sm">person_add</span>
+                            NOVO USUÁRIO
+                        </button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead class="bg-surface-container-low text-on-surface-variant font-label-md text-label-md uppercase tracking-widest">
+<tr>
+<th class="px-lg py-4 border-b border-outline-variant">Nome / Email</th>
+<th class="px-lg py-4 border-b border-outline-variant">Cargo / Role</th>
+<th class="px-lg py-4 border-b border-outline-variant">Último Acesso</th>
+<th class="px-lg py-4 border-b border-outline-variant">Status</th>
+<th class="px-lg py-4 border-b border-outline-variant text-right">Ações</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<tr class="hover:bg-primary-container/5 transition-colors group">
+<td class="px-lg py-4">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-primary-container/10 flex items-center justify-center text-primary font-bold">JD</div>
+<div>
+<p class="text-body-md font-bold text-on-surface">João de Deus</p>
+<p class="text-xs text-on-surface-variant">joao@gto.com.br</p>
+</div>
+</div>
+</td>
+<td class="px-lg py-4">
+<span class="px-xs py-1 rounded-full bg-primary-fixed text-on-primary-fixed-variant text-xs font-bold uppercase">Administrador</span>
+</td>
+<td class="px-lg py-4 text-body-md text-on-surface-variant">Há 15 min</td>
+<td class="px-lg py-4">
+<span class="flex items-center gap-xs text-secondary font-semibold text-xs uppercase">
+<span class="w-2 h-2 bg-secondary rounded-full animate-pulse"></span> Ativo
+                                        </span>
+</td>
+<td class="px-lg py-4 text-right">
+<button class="text-outline hover:text-primary transition-colors"><span class="material-symbols-outlined">edit</span></button>
+<button class="text-outline hover:text-error transition-colors ml-xs"><span class="material-symbols-outlined">delete</span></button>
+</td>
+</tr>
+<tr class="hover:bg-primary-container/5 transition-colors group">
+<td class="px-lg py-4">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center text-on-surface-variant font-bold">MS</div>
+<div>
+<p class="text-body-md font-bold text-on-surface">Maria Silva</p>
+<p class="text-xs text-on-surface-variant">maria.gestora@gto.com.br</p>
+</div>
+</div>
+</td>
+<td class="px-lg py-4">
+<span class="px-xs py-1 rounded-full bg-surface-container-high text-on-surface-variant text-xs font-bold uppercase">Gestor Regional</span>
+</td>
+<td class="px-lg py-4 text-body-md text-on-surface-variant">Há 2 horas</td>
+<td class="px-lg py-4">
+<span class="flex items-center gap-xs text-secondary font-semibold text-xs uppercase">
+<span class="w-2 h-2 bg-secondary rounded-full"></span> Ativo
+                                        </span>
+</td>
+<td class="px-lg py-4 text-right">
+<button class="text-outline hover:text-primary transition-colors"><span class="material-symbols-outlined">edit</span></button>
+<button class="text-outline hover:text-error transition-colors ml-xs"><span class="material-symbols-outlined">delete</span></button>
+</td>
+</tr>
+<tr class="hover:bg-primary-container/5 transition-colors group">
+<td class="px-lg py-4">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-error-container/10 flex items-center justify-center text-error font-bold">RC</div>
+<div>
+<p class="text-body-md font-bold text-on-surface">Ricardo Costa</p>
+<p class="text-xs text-on-surface-variant">ricardo@frecenter.com.br</p>
+</div>
+</div>
+</td>
+<td class="px-lg py-4">
+<span class="px-xs py-1 rounded-full bg-surface-container-high text-on-surface-variant text-xs font-bold uppercase">Analista</span>
+</td>
+<td class="px-lg py-4 text-body-md text-on-surface-variant">12/10/2023</td>
+<td class="px-lg py-4">
+<span class="flex items-center gap-xs text-outline font-semibold text-xs uppercase">
+<span class="w-2 h-2 bg-outline rounded-full"></span> Inativo
+                                        </span>
+</td>
+<td class="px-lg py-4 text-right">
+<button class="text-outline hover:text-primary transition-colors"><span class="material-symbols-outlined">edit</span></button>
+<button class="text-outline hover:text-error transition-colors ml-xs"><span class="material-symbols-outlined">delete</span></button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- 2. Brand Management (Medium Section) -->
+<div class="col-span-12 lg:col-span-7 space-y-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">sell</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Gerenciar Bandeiras</h3>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md">
+<!-- Tesoura de Ouro -->
+<div class="bg-white p-md rounded-xl shadow-sm border border-outline-variant hover:border-primary transition-all group cursor-pointer">
+<div class="flex justify-between items-start mb-md">
+<div class="w-10 h-10 bg-error rounded-lg flex items-center justify-center text-white font-black text-xl italic">TO</div>
+<span class="text-[10px] bg-secondary-container px-2 py-0.5 rounded-full text-on-secondary-fixed font-bold">LIVE</span>
+</div>
+<h4 class="font-body-md font-bold text-on-surface">Tesoura de Ouro</h4>
+<div class="mt-sm flex items-center justify-between text-xs text-on-surface-variant">
+<span class="">32 Lojas</span>
+<div class="flex gap-1">
+<div class="w-3 h-3 rounded-full bg-error"></div>
+<div class="w-3 h-3 rounded-full bg-primary-container"></div>
+</div>
+</div>
+</div>
+<!-- Free Center -->
+<div class="bg-white p-md rounded-xl shadow-sm border border-outline-variant hover:border-primary transition-all group cursor-pointer">
+<div class="flex justify-between items-start mb-md">
+<div class="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center text-white font-black text-xl">FC</div>
+<span class="text-[10px] bg-secondary-container px-2 py-0.5 rounded-full text-on-secondary-fixed font-bold">LIVE</span>
+</div>
+<h4 class="font-body-md font-bold text-on-surface">Free Center</h4>
+<div class="mt-sm flex items-center justify-between text-xs text-on-surface-variant">
+<span class="">18 Lojas</span>
+<div class="flex gap-1">
+<div class="w-3 h-3 rounded-full bg-primary"></div>
+<div class="w-3 h-3 rounded-full bg-on-surface"></div>
+</div>
+</div>
+</div>
+<!-- Magazine da Economia -->
+<div class="bg-white p-md rounded-xl shadow-sm border border-outline-variant hover:border-primary transition-all group cursor-pointer">
+<div class="flex justify-between items-start mb-md">
+<div class="w-10 h-10 bg-[#FFD700] rounded-lg flex items-center justify-center text-on-surface font-black text-xl">ME</div>
+<span class="text-[10px] bg-surface-variant px-2 py-0.5 rounded-full text-on-surface-variant font-bold">MANUTENÇÃO</span>
+</div>
+<h4 class="font-body-md font-bold text-on-surface">Magazine da Economia</h4>
+<div class="mt-sm flex items-center justify-between text-xs text-on-surface-variant">
+<span class="">12 Lojas</span>
+<div class="flex gap-1">
+<div class="w-3 h-3 rounded-full bg-[#FFD700]"></div>
+<div class="w-3 h-3 rounded-full bg-on-background"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- 4. System Preferences (Side Section) -->
+<div class="col-span-12 lg:col-span-5 space-y-md">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">tune</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Preferências do Sistema</h3>
+</div>
+<div class="bg-white p-lg rounded-xl shadow-sm border border-outline-variant space-y-lg">
+<!-- Appearance Toggle -->
+<div class="flex items-center justify-between">
+<div>
+<p class="font-body-md font-bold text-on-surface">Modo de Exibição</p>
+<p class="text-xs text-on-surface-variant">Alterne entre os temas Claro e Escuro.</p>
+</div>
+<div class="flex bg-surface-container-low p-1 rounded-lg">
+<button class="flex items-center gap-xs px-md py-1.5 bg-white shadow-sm rounded-md text-primary font-bold text-xs transition-all">
+<span class="material-symbols-outlined text-sm">light_mode</span> CLARO
+                                </button>
+<button class="flex items-center gap-xs px-md py-1.5 text-on-surface-variant font-bold text-xs hover:text-primary transition-all">
+<span class="material-symbols-outlined text-sm">dark_mode</span> ESCURO
+                                </button>
+</div>
+</div>
+<div class="h-[1px] bg-outline-variant"></div>
+<!-- Notifications -->
+<div class="space-y-md">
+<p class="font-body-md font-bold text-on-surface">Notificações por Email</p>
+<div class="space-y-sm">
+<label class="flex items-center gap-md cursor-pointer group">
+<div class="relative inline-block w-10 h-5 bg-primary-container/20 rounded-full transition-colors group-hover:bg-primary-container/30">
+<input checked="" class="sr-only peer" type="checkbox">
+<div class="absolute left-1 top-1 w-3 h-3 bg-primary-container rounded-full transition-all peer-checked:left-6"></div>
+</div>
+<span class="text-xs text-on-surface">Relatórios semanais de performance</span>
+</label>
+<label class="flex items-center gap-md cursor-pointer group">
+<div class="relative inline-block w-10 h-5 bg-outline-variant rounded-full transition-colors group-hover:bg-outline">
+<input class="sr-only peer" type="checkbox">
+<div class="absolute left-1 top-1 w-3 h-3 bg-white rounded-full transition-all peer-checked:left-6"></div>
+</div>
+<span class="text-xs text-on-surface-variant">Alertas de discrepância de dados</span>
+</label>
+</div>
+</div>
+</div>
+</div>
+<!-- 3. Data Sources (Grid) -->
+<div class="col-span-12 space-y-md pt-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">database</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Fontes de Dados Integradas</h3>
+</div>
+<span class="text-xs font-bold text-on-surface-variant flex items-center gap-xs"><span class="w-2 h-2 rounded-full bg-secondary"></span> 3 Ativas / 1 Pendente</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-grid-gutter"><!-- CredSystem -->
+<div class="bg-white p-lg rounded-xl shadow-sm border border-outline-variant flex flex-col items-center text-center space-y-md relative group hover:border-primary transition-all">
+    <div class="absolute top-3 right-3">
+        <span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+    </div>
+    <div class="w-16 h-16 rounded-full bg-primary-container/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+        <span class="material-symbols-outlined text-primary text-3xl">account_balance_wallet</span>
+    </div>
+    <div class="flex-1">
+        <h4 class="font-bold text-on-surface">CredSystem</h4>
+        <p class="text-[10px] text-on-surface-variant font-label-md uppercase tracking-wider">Financeiro &amp; Cartão</p>
+    </div>
+    <div class="w-full pt-md border-t border-outline-variant">
+        <div class="inline-flex items-center px-2 py-1 rounded-full bg-secondary/10 text-secondary text-[10px] font-bold mb-1">
+            CONECTADO
+        </div>
+        <p class="text-[10px] text-outline">Sincronizado: 2min atrás</p>
+    </div>
+</div>
+
+<!-- RD Station -->
+<div class="bg-white p-lg rounded-xl shadow-sm border border-outline-variant flex flex-col items-center text-center space-y-md relative group hover:border-primary transition-all">
+    <div class="absolute top-3 right-3">
+        <span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+    </div>
+    <div class="w-16 h-16 rounded-full bg-[#00A5D9]/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+        <span class="material-symbols-outlined text-[#00A5D9] text-3xl">hub</span>
+    </div>
+    <div class="flex-1">
+        <h4 class="font-bold text-on-surface">RD Station</h4>
+        <p class="text-[10px] text-on-surface-variant font-label-md uppercase tracking-wider">CRM &amp; Marketing</p>
+    </div>
+    <div class="w-full pt-md border-t border-outline-variant">
+        <div class="inline-flex items-center px-2 py-1 rounded-full bg-secondary/10 text-secondary text-[10px] font-bold mb-1">
+            CONECTADO
+        </div>
+        <p class="text-[10px] text-outline">Sincronizado: 1h atrás</p>
+    </div>
+</div>
+
+<!-- Meta Ads -->
+<div class="bg-white p-lg rounded-xl shadow-sm border border-outline-variant flex flex-col items-center text-center space-y-md relative group hover:border-primary transition-all">
+    <div class="absolute top-3 right-3">
+        <span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+    </div>
+    <div class="w-16 h-16 rounded-full bg-[#0668E1]/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+        <span class="material-symbols-outlined text-[#0668E1] text-3xl">ads_click</span>
+    </div>
+    <div class="flex-1">
+        <h4 class="font-bold text-on-surface">Meta Ads</h4>
+        <p class="text-[10px] text-on-surface-variant font-label-md uppercase tracking-wider">Ads &amp; Social</p>
+    </div>
+    <div class="w-full pt-md border-t border-outline-variant">
+        <div class="inline-flex items-center px-2 py-1 rounded-full bg-secondary/10 text-secondary text-[10px] font-bold mb-1">
+            CONECTADO
+        </div>
+        <p class="text-[10px] text-outline">Sincronizado: 45min atrás</p>
+    </div>
+</div>
+
+<!-- Google Ads -->
+<div class="bg-white p-lg rounded-xl shadow-sm border-error/30 border-2 flex flex-col items-center text-center space-y-md relative group hover:bg-error-container/5 transition-all">
+    <div class="absolute top-3 right-3">
+        <span class="material-symbols-outlined text-error" style="font-variation-settings: 'FILL' 1;">error</span>
+    </div>
+    <div class="w-16 h-16 rounded-full bg-error-container/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+        <span class="material-symbols-outlined text-error text-3xl">insights</span>
+    </div>
+    <div class="flex-1">
+        <h4 class="font-bold text-on-surface">Google Ads</h4>
+        <p class="text-[10px] text-on-surface-variant font-label-md uppercase tracking-wider">Ads &amp; Search</p>
+    </div>
+    <div class="w-full pt-md border-t border-error/10">
+        <button class="w-full py-1.5 bg-error text-white text-[10px] font-bold rounded-md hover:opacity-90 transition-opacity mb-1">
+            RECONECTAR AGORA
+        </button>
+        <p class="text-[10px] text-error font-medium">Token expirado em 14/10</p>
+    </div>
+</div></div>
+</div>
+</div>
+<!-- Footer Meta -->
+<footer class="pt-xl flex justify-between items-center text-on-surface-variant border-t border-outline-variant opacity-60">
+<p class="font-label-md text-label-md tracking-wider">GTO INSIGHTS © 2023 | Versão 2.4.0-build.82</p>
+<div class="flex gap-lg font-label-md text-label-md">
+<a class="hover:text-primary transition-colors" href="#">Termos de Uso</a>
+<a class="hover:text-primary transition-colors" href="#">Política de Privacidade</a>
+<a class="hover:text-primary transition-colors" href="#">Logs de Auditoria</a>
+</div>
+</footer>
+</div>
+</main>
+<script>
+        // Tab switching logic (Visual only)
+        document.querySelectorAll('nav a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                // If the link is not the active one, simulate navigation
+                if (!link.classList.contains('border-primary')) {
+                    // Logic would go here
+                }
+            });
+        });
+
+        // Theme toggle simulation
+        const themeButtons = document.querySelectorAll('.flex.bg-surface-container-low button');
+        themeButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                themeButtons.forEach(b => {
+                    b.classList.remove('bg-white', 'shadow-sm', 'text-primary');
+                    b.classList.add('text-on-surface-variant');
+                });
+                btn.classList.add('bg-white', 'shadow-sm', 'text-primary');
+                btn.classList.remove('text-on-surface-variant');
+            });
+        });
+    </script>
+
+
+</body></html>

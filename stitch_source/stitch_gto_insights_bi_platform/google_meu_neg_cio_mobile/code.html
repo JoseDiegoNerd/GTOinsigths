@@ -1,0 +1,365 @@
+<!DOCTYPE html><html lang="pt-BR" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>RetailIntelligence - Google Meu Negócio</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-tint": "#0053db",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "outline": "#737686",
+                    "on-surface-variant": "#434655",
+                    "tertiary-fixed-dim": "#ffb596",
+                    "primary": "#004ac6",
+                    "surface-bright": "#f9f9ff",
+                    "on-primary": "#ffffff",
+                    "tertiary-fixed": "#ffdbcd",
+                    "secondary-fixed": "#6ffbbe",
+                    "on-secondary-fixed": "#002113",
+                    "on-secondary-container": "#00714d",
+                    "secondary-fixed-dim": "#4edea3",
+                    "primary-fixed": "#dbe1ff",
+                    "on-secondary": "#ffffff",
+                    "on-surface": "#111c2d",
+                    "background": "#f9f9ff",
+                    "on-secondary-fixed-variant": "#005236",
+                    "inverse-surface": "#263143",
+                    "surface-container-high": "#dee8ff",
+                    "error": "#ba1a1a",
+                    "on-primary-container": "#eeefff",
+                    "inverse-primary": "#b4c5ff",
+                    "outline-variant": "#c3c6d7",
+                    "surface": "#f9f9ff",
+                    "primary-container": "#2563eb",
+                    "on-tertiary": "#ffffff",
+                    "tertiary-container": "#bc4800",
+                    "secondary-container": "#6cf8bb",
+                    "secondary": "#006c49",
+                    "on-tertiary-container": "#ffede6",
+                    "surface-container": "#e7eeff",
+                    "tertiary": "#943700",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container-low": "#f0f3ff",
+                    "error-container": "#ffdad6",
+                    "on-error-container": "#93000a",
+                    "on-error": "#ffffff",
+                    "on-primary-fixed": "#00174b",
+                    "on-tertiary-fixed-variant": "#7d2d00",
+                    "inverse-on-surface": "#ecf1ff",
+                    "surface-container-highest": "#d8e3fb",
+                    "on-background": "#111c2d",
+                    "surface-variant": "#d8e3fb",
+                    "surface-dim": "#cfdaf2",
+                    "on-tertiary-fixed": "#360f00"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xs": "8px",
+                    "base": "4px",
+                    "sidebar-width": "260px",
+                    "md": "16px",
+                    "lg": "24px",
+                    "grid-gutter": "20px",
+                    "xl": "32px",
+                    "sm": "12px",
+                    "container-padding": "32px"
+            },
+            "fontFamily": {
+                    "headline-sm": ["Inter"],
+                    "data-mono": ["JetBrains Mono"],
+                    "headline-md": ["Inter"],
+                    "label-md": ["Inter"],
+                    "headline-md-mobile": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "body-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-sm": ["18px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "data-mono": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-md-mobile": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "display-lg": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .active-tab-indicator {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background-color: var(--tw-color-primary);
+        }
+        .bento-card {
+            background-color: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            box-shadow: 0px 1px 3px rgba(15, 23, 42, 0.08);
+            transition: all 0.2s ease-in-out;
+        }
+        .bento-card:active {
+            box-shadow: 0px 10px 15px -3px rgba(15, 23, 42, 0.1);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md min-h-screen pb-24 lg:pb-0">
+<!-- TopNavBar -->
+<header class="bg-surface sticky top-0 z-50 border-b border-outline-variant shadow-sm flex justify-between items-center w-full px-md h-16">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-primary">menu</span>
+<h1 class="font-headline-md-mobile text-headline-md-mobile font-bold text-primary">Google Meu Negócio</h1>
+</div>
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+<div class="w-8 h-8 rounded-full bg-surface-container-high overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a corporate retail manager in a bright, modern office setting. The lighting is clean and soft, reflecting a high-end SaaS platform aesthetic with white and light blue tones. The subject has a confident and friendly expression, wearing minimalist professional attire." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-HqrMPUZ6Rm4tZEfoOmaPqOKaNvJnv8ppuiUDtuCNXFApP4hWPrI0B8nqzJ91qnlVMz6K_K8-pWpJcKGUOF3xZrVbK1gGeuFVv_1KyLN3aylqF6OfGLUxxBlJLbbx7DAvO76F0TlI08pv4_VY6IUO70HmhaCmn7syvFSNdNWYT2EJCx9RObU9gbH97yr5d2b0U3NLXHSh3g3QZAkpZkj4xIOo6wLEEAehVUt743wgHN0hyo5iAYzPI0HfMvWjNoFUZke364C7NPY">
+</div>
+</div>
+</header>
+<main class="px-md py-lg space-y-lg">
+<!-- Brand Selection Chips -->
+<section>
+<div class="flex gap-sm overflow-x-auto hide-scrollbar pb-xs">
+<button class="flex-none px-md py-base rounded-full bg-primary text-on-primary font-label-md text-label-md">Todas as Lojas</button>
+<button class="flex-none px-md py-base rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-label-md">HyperMax Sul</button>
+<button class="flex-none px-md py-base rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-label-md">HyperMax Centro</button>
+<button class="flex-none px-md py-base rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-label-md">Express Park</button>
+</div>
+</section>
+<!-- Summary Metrics -->
+<section class="grid grid-cols-2 gap-md">
+<div class="bento-card p-md rounded-xl flex flex-col">
+<span class="text-label-md font-label-md text-on-surface-variant uppercase tracking-wider">Total Lojas</span>
+<span class="text-headline-md font-headline-md mt-base">42</span>
+<div class="flex items-center gap-xs mt-base text-[#10B981]">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+<span class="text-xs font-bold">+2 este mês</span>
+</div>
+</div>
+<div class="bento-card p-md rounded-xl flex flex-col">
+<span class="text-label-md font-label-md text-on-surface-variant uppercase tracking-wider">Avaliação Média</span>
+<div class="flex items-center gap-xs mt-base">
+<span class="text-headline-md font-headline-md">4.8</span>
+<span class="material-symbols-outlined text-yellow-500" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<div class="flex items-center gap-xs mt-base text-[#10B981]">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+<span class="text-xs font-bold">0.2% vs set</span>
+</div>
+</div>
+</section>
+<!-- Tabs Content Selection -->
+<section>
+<div class="flex border-b border-outline-variant mb-md">
+<button class="flex-1 py-md text-primary border-b-2 border-primary font-label-md text-label-md relative">
+                    LOCAIS
+                </button>
+<button class="flex-1 py-md text-on-surface-variant font-label-md text-label-md">
+                    REVIEWS
+                </button>
+<button class="flex-1 py-md text-on-surface-variant font-label-md text-label-md">
+                    INSIGHTS
+                </button>
+</div>
+<!-- Stores List with Details -->
+<div class="space-y-md">
+<!-- Store Item 1 -->
+<div class="bento-card rounded-xl overflow-hidden" id="store-1">
+<div class="p-md flex justify-between items-start" onclick="toggleDetails('details-1')">
+<div class="flex gap-md">
+<div class="w-12 h-12 rounded-lg bg-surface-container overflow-hidden shrink-0">
+<img class="w-full h-full object-cover" data-alt="A high-quality architectural photograph of a modern retail storefront with large glass windows and clean branding. The scene is bright with natural daylight, featuring soft shadows and a professional, inviting atmosphere consistent with a premium corporate dashboard design." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1hdYV5yeMI93Cr-qqVX4v1iMW-yW-TWEGnFkL-lavcFACrqJ8hhmtRwpAICNh2Jq7yMWF2dG8E82D0KAHiIimOHa15DPLGBr2MiUBJsIiPMbfm9I2aJZ2eMUss1hXTUNirGeR5CZ29UzJpMSwjl5_McO7MTBcH4LdBXW0nNlVyQUOTvmkK6FOQIJ3CCFFZuHpy0houVJkn14pP87RjYQMuCOvxOA_yCZ2plk0gJIzZepLhGZIaQ4_hyC_mhJLV3X8sz47kgJkQ-k">
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">HyperMax - Matriz Centro</h3>
+<p class="text-body-md text-on-surface-variant">Aberto · Fecha às 22:00</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant transition-transform duration-300" id="icon-1">expand_more</span>
+</div>
+<div class="hidden px-md pb-md space-y-md border-t border-outline-variant pt-md" id="details-1">
+<div class="grid grid-cols-1 gap-sm text-body-md">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-primary">location_on</span>
+<span class="">Av. Paulista, 1000 - Bela Vista, São Paulo</span>
+</div>
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-primary">call</span>
+<span class="">(11) 4002-8922</span>
+</div>
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-primary">schedule</span>
+<span class="">Seg-Sáb: 08:00 - 22:00 | Dom: 10:00 - 18:00</span>
+</div>
+</div>
+<!-- Verification Photos -->
+<div class="space-y-xs">
+<p class="text-label-md font-label-md text-on-surface-variant">FOTOS PARA VERIFICAÇÃO</p>
+<div class="flex gap-xs overflow-x-auto hide-scrollbar">
+<div class="w-16 h-16 rounded-md bg-surface-container-highest flex-none">
+<img class="w-full h-full object-cover rounded-md" data-alt="Close-up sharp photograph of a supermarket entrance showing a digital display and clear glass doors. The lighting is bright and industrial, perfect for a retail verification photo. High contrast and realistic textures in a professional SaaS UI context." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDmiC9ZWTpKB2cjpZEC8p0d3Q4lxCLe29D3Z92Py7AztRARuRyk3NWWqinTzJqaR2on-NoVK7xV0WvdGRIxMQDJgVgUo4pV-TcGuHihk1Hc-QHHcAqpI4byTf-5N33EC0NMErRXT7UtmP-Sv3ilmyQHKrZ78mHyGT80cTz0In7wsySqMEdnyJT_R17tOwRUhQXA_cgD6hIq9s4ch3fT0qPSrLKiyjT0a6WrBvxMnpCbdNZf7askQzsu4SDygNVQhRlle5wk_Vgmth0">
+</div>
+<div class="w-16 h-16 rounded-md bg-surface-container-highest flex-none">
+<img class="w-full h-full object-cover rounded-md" data-alt="An interior shot of a well-organized retail aisle with clean shelving and clear signage. The lighting is overhead and even, creating a sense of order and cleanliness typical of high-end commercial spaces. Soft color palette of blues and whites." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCyt_LGg62S11fGxBV_Fo5jt_2tYaDh6OcqQbdTsAjiiyWfN7gCMRCNJakzpwpB1Wmhk2jfuJRqPg0lhvWNabGNC_RMyjHwyow1EWO0keZG3-RsFJ6JJge7CgtM9bdrHUfgXDuF32mTlfJL8OsYF_SLSEiRLB4fAyE_o2yysDKWZ6dQUKlrH0y_O96XCCmE63qsNiTQcpe_DYFcd7gt_BGBvZ_j_dbCns-SVOJ7GwlnZ2dpmWMVlXhyeH6232jJO-bmmUO5Ha5Dq7U">
+</div>
+<div class="w-16 h-16 rounded-md bg-surface-container-highest flex-none">
+<img class="w-full h-full object-cover rounded-md" data-alt="Photograph of a store facade from across the street, showing the building's architecture and street numbers. Daylight is clear and bright, providing a realistic reference for store location verification in a business management app." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD870nnxQVV3c3kG5QkA8nNQYfgmd5qKH5NEOyBEQMNBTBiPgAoNDz1LADrDT2GEhqzfHQnpDn8r7lqP_vctL8IwgiOKgEcmBBAZcpc5RBT7D3MlNq-40Mb9-ZUE6w92Mc0WDJ6mxRZXZXhUWKVOHxYQEC4xiXXu-gnhcAdLNIwY0urby4CELqvXH8BJJ7lSorFzWaTJy8KnHGjvxx-I1yJ6wkF8bbs0QMjJx9Q46PbXIm2TQQllDybIffg2JY2SZ2rrujgoVz6i1I">
+</div>
+<div class="flex-none w-16 h-16 rounded-md bg-surface-container-high flex items-center justify-center border-2 border-dashed border-outline-variant">
+<span class="material-symbols-outlined text-outline">add_a_photo</span>
+</div>
+</div>
+</div>
+<button class="w-full bg-primary-container text-on-primary-container py-md rounded-xl font-bold flex items-center justify-center gap-sm">
+<span class="material-symbols-outlined">edit</span>
+                            Gerenciar Local
+                        </button>
+</div>
+</div>
+<!-- Store Item 2 (Review Reply Focus) -->
+<div class="bento-card rounded-xl p-md space-y-md">
+<div class="flex justify-between items-start">
+<div class="flex gap-md">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center text-primary font-bold">R</div>
+<div>
+<h4 class="font-headline-sm text-headline-sm">Ricardo Mendes</h4>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-sm text-yellow-500" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm text-yellow-500" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm text-yellow-500" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm text-yellow-500" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm text-outline-variant">star</span>
+<span class="text-xs text-on-surface-variant ml-xs">Há 2 horas</span>
+</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">more_vert</span>
+</div>
+<p class="text-body-md text-on-surface">O atendimento na unidade Centro foi excelente, mas achei que a seção de hortifrúti estava um pouco desorganizada hoje.</p>
+<!-- Reply UI -->
+<div class="bg-surface-container-low p-md rounded-lg space-y-sm">
+<textarea class="w-full bg-white border border-outline-variant rounded-lg p-sm text-body-md focus:ring-2 focus:ring-primary focus:border-transparent outline-none min-h-[80px]" placeholder="Responda ao Ricardo..."></textarea>
+<div class="flex justify-end gap-sm">
+<button class="text-primary font-bold px-md py-base text-body-md">Cancelar</button>
+<button class="bg-primary text-on-primary px-lg py-base rounded-lg font-bold text-body-md">Responder</button>
+</div>
+</div>
+</div>
+<!-- Store Item 3 -->
+<div class="bento-card rounded-xl p-md flex justify-between items-center">
+<div class="flex gap-md">
+<div class="w-12 h-12 rounded-lg bg-surface-container overflow-hidden shrink-0">
+<img class="w-full h-full object-cover" data-alt="A modern retail storefront at night, illuminated with soft warm LED lights. The branding is clean and minimalist, set against a dark architectural background. Professional photography for a corporate SaaS dashboard, emphasizing high-end design." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB5z0x9wqtCRU2FZHnR1xqFvkE6A6UA7Tke0slkLrNcapePHC-exIqEsHYw2lV7OTJgjqCtKQKB89p2OY329oILzlEX5tqtaIRD3js6WfouWIzV5PAzCnzzFTR08rP6QP6Udm3sH1evpf6aoLAIe34jeYiLmC8cgoRsPL-JNSHT7QwREOsolEDRsZLeflRBT6wS08Dw_8OFt6gx5JIqPsjq26ILsAEmvB3cyq2kfyGTWiUTI4i2n4oaqfLfPLEKsqqOIHOKSOb4mpk">
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">HyperMax - Vila Mariana</h3>
+<p class="text-body-md text-error">Fechado · Abre amanhã 08:00</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+</div>
+</section>
+<!-- Insights Snippet -->
+<section class="space-y-md">
+<h2 class="font-headline-sm text-headline-sm">Insights da Semana</h2>
+<div class="bento-card p-md rounded-xl space-y-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">visibility</span>
+<span class="text-body-md font-bold">Visualizações no Mapa</span>
+</div>
+<span class="text-headline-sm font-data-mono">12.4k</span>
+</div>
+<div class="w-full h-2 bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 75%"></div>
+</div>
+<p class="text-xs text-on-surface-variant italic">Suas lojas estão 15% mais visíveis que na semana anterior.</p>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="lg:hidden fixed bottom-0 w-full z-50 bg-surface-container dark:bg-inverse-surface border-t border-outline-variant shadow-lg flex justify-around items-center px-xs py-base pb-safe h-20">
+<div class="flex flex-col items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="credit_card">credit_card</span>
+<span class="font-label-md text-label-md">Cartão</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="mail">mail</span>
+<span class="font-label-md text-label-md">Email</span>
+</div>
+<!-- ACTIVE TAB -->
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-3 py-1 scale-95 transition-transform">
+<span class="material-symbols-outlined" data-icon="store" style="font-variation-settings: 'FILL' 1;">store</span>
+<span class="font-label-md text-label-md font-bold">GMN</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-md text-label-md">Config</span>
+</div>
+</nav>
+<script>
+        function toggleDetails(id) {
+            const el = document.getElementById(id);
+            const icon = document.getElementById('icon-' + id.split('-')[1]);
+            const isHidden = el.classList.contains('hidden');
+            
+            // Close all first (simple accordion behavior)
+            // document.querySelectorAll('[id^="details-"]').forEach(d => d.classList.add('hidden'));
+            
+            if (isHidden) {
+                el.classList.remove('hidden');
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                el.classList.add('hidden');
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Handle Active states for interactive elements
+        document.querySelectorAll('.bento-card').forEach(card => {
+            card.addEventListener('touchstart', () => {
+                card.style.transform = 'scale(0.98)';
+            });
+            card.addEventListener('touchend', () => {
+                card.style.transform = 'scale(1)';
+            });
+        });
+    </script>
+
+
+</body></html>

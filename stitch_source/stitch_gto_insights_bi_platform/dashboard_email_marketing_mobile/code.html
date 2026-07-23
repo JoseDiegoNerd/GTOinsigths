@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>GTO Insights - Email Marketing</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary": "#ffffff",
+                    "error": "#ba1a1a",
+                    "on-surface-variant": "#434655",
+                    "surface-container": "#e7eeff",
+                    "surface-variant": "#d8e3fb",
+                    "secondary-container": "#6cf8bb",
+                    "surface-container-lowest": "#ffffff",
+                    "on-tertiary-fixed-variant": "#7d2d00",
+                    "secondary": "#006c49",
+                    "primary": "#004ac6",
+                    "on-secondary-container": "#00714d",
+                    "error-container": "#ffdad6",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "tertiary-fixed": "#ffdbcd",
+                    "secondary-fixed": "#6ffbbe",
+                    "tertiary-container": "#bc4800",
+                    "surface-dim": "#cfdaf2",
+                    "on-primary": "#ffffff",
+                    "on-secondary-fixed-variant": "#005236",
+                    "tertiary-fixed-dim": "#ffb596",
+                    "inverse-primary": "#b4c5ff",
+                    "on-tertiary-fixed": "#360f00",
+                    "on-error-container": "#93000a",
+                    "on-background": "#111c2d",
+                    "surface-container-high": "#dee8ff",
+                    "on-secondary-fixed": "#002113",
+                    "on-error": "#ffffff",
+                    "outline": "#737686",
+                    "inverse-on-surface": "#ecf1ff",
+                    "primary-container": "#2563eb",
+                    "surface-tint": "#0053db",
+                    "outline-variant": "#c3c6d7",
+                    "surface-bright": "#f9f9ff",
+                    "on-tertiary": "#ffffff",
+                    "on-surface": "#111c2d",
+                    "tertiary": "#943700",
+                    "surface": "#f9f9ff",
+                    "background": "#f9f9ff",
+                    "on-primary-fixed": "#00174b",
+                    "inverse-surface": "#263143",
+                    "primary-fixed": "#dbe1ff",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "on-primary-container": "#eeefff",
+                    "surface-container-low": "#f0f3ff",
+                    "on-tertiary-container": "#ffede6",
+                    "surface-container-highest": "#d8e3fb",
+                    "secondary-fixed-dim": "#4edea3"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "sidebar-width": "260px",
+                    "container-padding": "32px",
+                    "base": "4px",
+                    "lg": "24px",
+                    "xl": "32px",
+                    "xs": "8px",
+                    "md": "16px",
+                    "sm": "12px",
+                    "grid-gutter": "20px"
+            },
+            "fontFamily": {
+                    "body-md": ["Inter"],
+                    "label-md": ["Inter"],
+                    "headline-sm": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "data-mono": ["JetBrains Mono"],
+                    "body-lg": ["Inter"],
+                    "headline-md-mobile": ["Inter"]
+            },
+            "fontSize": {
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-sm": ["18px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "display-lg": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "data-mono": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-md-mobile": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #F8FAFC;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .card-shadow {
+            box-shadow: 0px 1px 3px rgba(15, 23, 42, 0.08);
+        }
+        .bar-transition {
+            transition: height 1s ease-in-out;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body-md text-on-surface">
+<!-- Top Navigation Bar (Mobile View) -->
+<header class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-md h-16 bg-surface shadow-sm border-b border-outline-variant">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">mail</span>
+<h1 class="font-headline-sm text-headline-sm text-on-surface">Email Marketing</h1>
+</div>
+<div class="flex items-center gap-sm">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="notifications">notifications</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A professional user profile avatar for a marketing executive, clean and bright lighting with a soft blue studio background, modern corporate aesthetic. The person is smiling confidently, wearing business casual attire. High-end professional photography style for a SaaS dashboard." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAn9zs_jiizHXnZxllzV6CvPofha4DUcYLmUfNDzKT0IOxurhVynbK5SvNepwNR6y1QNlQR4EkTMVJF870dutJrChxfiMTdYs0MwuomCbZADuD8RFu133_zVucDbYbQIIastL2k2DY5DArp23IaEJc_SBMz6fNXBDEriboIjLMRwjL7o4i_qVBHamIhJV3RwPRcXVilqkTRp385HOPaPKjEhuoh9sQH8JgZxXkyz_YQgXfRqvTEcWE9UlNmAU-G9MKKSpXt3wgnJ2g"/>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-20 pb-24 px-md">
+<!-- Quick Stats Bento Grid (2x2) -->
+<div class="grid grid-cols-2 gap-md mb-lg">
+<!-- Sent -->
+<div class="bg-white p-md rounded-xl card-shadow border border-outline-variant">
+<div class="flex justify-between items-start mb-xs">
+<span class="text-label-md font-label-md text-outline">Enviados</span>
+<span class="material-symbols-outlined text-primary text-sm">send</span>
+</div>
+<div class="font-headline-md text-headline-md-mobile text-on-surface">125.4k</div>
+<div class="flex items-center gap-xs mt-xs text-[12px] text-secondary">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+<span>12% vs last month</span>
+</div>
+</div>
+<!-- Delivered -->
+<div class="bg-white p-md rounded-xl card-shadow border border-outline-variant">
+<div class="flex justify-between items-start mb-xs">
+<span class="text-label-md font-label-md text-outline">Entregues</span>
+<span class="material-symbols-outlined text-secondary text-sm">task_alt</span>
+</div>
+<div class="font-headline-md text-headline-md-mobile text-on-surface">98.2%</div>
+<div class="flex items-center gap-xs mt-xs text-[12px] text-secondary">
+<span class="material-symbols-outlined text-[14px]">check</span>
+<span>Stable</span>
+</div>
+</div>
+<!-- Open Rate -->
+<div class="bg-white p-md rounded-xl card-shadow border border-outline-variant">
+<div class="flex justify-between items-start mb-xs">
+<span class="text-label-md font-label-md text-outline">Abertura</span>
+<span class="material-symbols-outlined text-tertiary text-sm">drafts</span>
+</div>
+<div class="font-headline-md text-headline-md-mobile text-on-surface">24.5%</div>
+<div class="flex items-center gap-xs mt-xs text-[12px] text-error">
+<span class="material-symbols-outlined text-[14px]">trending_down</span>
+<span>2.1% drop</span>
+</div>
+</div>
+<!-- Clicks -->
+<div class="bg-white p-md rounded-xl card-shadow border border-outline-variant">
+<div class="flex justify-between items-start mb-xs">
+<span class="text-label-md font-label-md text-outline">Cliques</span>
+<span class="material-symbols-outlined text-primary text-sm">ads_click</span>
+</div>
+<div class="font-headline-md text-headline-md-mobile text-on-surface">3.8%</div>
+<div class="flex items-center gap-xs mt-xs text-[12px] text-secondary">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+<span>0.5% inc</span>
+</div>
+</div>
+</div>
+<!-- Performance Chart Section -->
+<section class="bg-white p-md rounded-xl card-shadow border border-outline-variant mb-lg">
+<div class="flex justify-between items-center mb-md">
+<div>
+<h2 class="font-headline-sm text-headline-sm">Abertura vs Clique</h2>
+<p class="text-label-md font-label-md text-outline">Últimos 7 dias</p>
+</div>
+<button class="p-xs rounded-lg border border-outline-variant text-on-surface-variant flex items-center gap-xs">
+<span class="material-symbols-outlined text-sm">calendar_today</span>
+<span class="text-[12px]">7D</span>
+</button>
+</div>
+<!-- Simplified Bar Chart -->
+<div class="flex items-end justify-between h-40 pt-md px-xs">
+<!-- Mon -->
+<div class="flex flex-col items-center gap-xs w-full">
+<div class="w-3 bg-primary rounded-t-full h-[70%] relative group">
+<div class="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">22%</div>
+</div>
+<div class="w-3 bg-secondary-container rounded-t-full h-[30%]"></div>
+<span class="text-[10px] text-outline mt-xs">Seg</span>
+</div>
+<!-- Tue -->
+<div class="flex flex-col items-center gap-xs w-full">
+<div class="w-3 bg-primary rounded-t-full h-[85%]"></div>
+<div class="w-3 bg-secondary-container rounded-t-full h-[45%]"></div>
+<span class="text-[10px] text-outline mt-xs">Ter</span>
+</div>
+<!-- Wed -->
+<div class="flex flex-col items-center gap-xs w-full">
+<div class="w-3 bg-primary rounded-t-full h-[60%]"></div>
+<div class="w-3 bg-secondary-container rounded-t-full h-[25%]"></div>
+<span class="text-[10px] text-outline mt-xs">Qua</span>
+</div>
+<!-- Thu -->
+<div class="flex flex-col items-center gap-xs w-full">
+<div class="w-3 bg-primary rounded-t-full h-[95%]"></div>
+<div class="w-3 bg-secondary-container rounded-t-full h-[55%]"></div>
+<span class="text-[10px] text-outline mt-xs">Qui</span>
+</div>
+<!-- Fri -->
+<div class="flex flex-col items-center gap-xs w-full">
+<div class="w-3 bg-primary rounded-t-full h-[80%]"></div>
+<div class="w-3 bg-secondary-container rounded-t-full h-[40%]"></div>
+<span class="text-[10px] text-outline mt-xs">Sex</span>
+</div>
+<!-- Sat -->
+<div class="flex flex-col items-center gap-xs w-full">
+<div class="w-3 bg-primary rounded-t-full h-[40%]"></div>
+<div class="w-3 bg-secondary-container rounded-t-full h-[15%]"></div>
+<span class="text-[10px] text-outline mt-xs">Sab</span>
+</div>
+<!-- Sun -->
+<div class="flex flex-col items-center gap-xs w-full">
+<div class="w-3 bg-primary rounded-t-full h-[35%]"></div>
+<div class="w-3 bg-secondary-container rounded-t-full h-[10%]"></div>
+<span class="text-[10px] text-outline mt-xs">Dom</span>
+</div>
+</div>
+<div class="flex gap-md justify-center mt-md">
+<div class="flex items-center gap-xs">
+<div class="w-2 h-2 rounded-full bg-primary"></div>
+<span class="text-[11px] text-outline">Taxa de Abertura</span>
+</div>
+<div class="flex items-center gap-xs">
+<div class="w-2 h-2 rounded-full bg-secondary-container"></div>
+<span class="text-[11px] text-outline">Taxa de Clique</span>
+</div>
+</div>
+</section>
+<!-- Best Campaigns Section -->
+<section>
+<div class="flex justify-between items-center mb-md">
+<h2 class="font-headline-sm text-headline-sm">Melhores Campanhas</h2>
+<button class="text-primary text-[12px] font-bold">Ver Todas</button>
+</div>
+<div class="flex flex-col gap-md">
+<!-- Campaign Card 1 -->
+<div class="bg-white p-md rounded-xl card-shadow border border-outline-variant">
+<div class="flex justify-between items-start mb-sm">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" data-icon="campaign">campaign</span>
+</div>
+<div>
+<h3 class="font-bold text-on-surface">Black Friday 2024 - Preview</h3>
+<p class="text-[11px] text-outline">Enviada em: 22 Out, 09:00</p>
+</div>
+</div>
+<span class="bg-secondary/10 text-secondary text-[10px] font-bold px-xs py-1 rounded-full uppercase tracking-wider">Ativa</span>
+</div>
+<div class="grid grid-cols-3 gap-xs border-t border-outline-variant pt-sm">
+<div class="text-center">
+<p class="text-[10px] text-outline uppercase font-label-md">Abertura</p>
+<p class="font-bold text-primary">32.4%</p>
+</div>
+<div class="text-center border-x border-outline-variant">
+<p class="text-[10px] text-outline uppercase font-label-md">Clique</p>
+<p class="font-bold text-primary">5.1%</p>
+</div>
+<div class="text-center">
+<p class="text-[10px] text-outline uppercase font-label-md">Bounce</p>
+<p class="font-bold text-error">0.4%</p>
+</div>
+</div>
+</div>
+<!-- Campaign Card 2 -->
+<div class="bg-white p-md rounded-xl card-shadow border border-outline-variant">
+<div class="flex justify-between items-start mb-sm">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 bg-tertiary/10 rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary" data-icon="auto_awesome">auto_awesome</span>
+</div>
+<div>
+<h3 class="font-bold text-on-surface">Recuperação de Carrinho</h3>
+<p class="text-[11px] text-outline">Automação • Diário</p>
+</div>
+</div>
+<span class="bg-secondary/10 text-secondary text-[10px] font-bold px-xs py-1 rounded-full uppercase tracking-wider">Ativa</span>
+</div>
+<div class="grid grid-cols-3 gap-xs border-t border-outline-variant pt-sm">
+<div class="text-center">
+<p class="text-[10px] text-outline uppercase font-label-md">Abertura</p>
+<p class="font-bold text-primary">48.2%</p>
+</div>
+<div class="text-center border-x border-outline-variant">
+<p class="text-[10px] text-outline uppercase font-label-md">Clique</p>
+<p class="font-bold text-primary">12.7%</p>
+</div>
+<div class="text-center">
+<p class="text-[10px] text-outline uppercase font-label-md">Conv.</p>
+<p class="font-bold text-secondary">2.8%</p>
+</div>
+</div>
+</div>
+<!-- Campaign Card 3 -->
+<div class="bg-white p-md rounded-xl card-shadow border border-outline-variant opacity-75">
+<div class="flex justify-between items-start mb-sm">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 bg-outline/10 rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-outline" data-icon="schedule">schedule</span>
+</div>
+<div>
+<h3 class="font-bold text-on-surface">Newsletter Mensal - Set</h3>
+<p class="text-[11px] text-outline">Enviada em: 30 Set, 14:00</p>
+</div>
+</div>
+<span class="bg-outline-variant text-on-surface-variant text-[10px] font-bold px-xs py-1 rounded-full uppercase tracking-wider">Finalizada</span>
+</div>
+<div class="grid grid-cols-3 gap-xs border-t border-outline-variant pt-sm">
+<div class="text-center">
+<p class="text-[10px] text-outline uppercase font-label-md">Abertura</p>
+<p class="font-bold text-on-surface">21.8%</p>
+</div>
+<div class="text-center border-x border-outline-variant">
+<p class="text-[10px] text-outline uppercase font-label-md">Clique</p>
+<p class="font-bold text-on-surface">2.4%</p>
+</div>
+<div class="text-center">
+<p class="text-[10px] text-outline uppercase font-label-md">Bounce</p>
+<p class="font-bold text-on-surface">1.2%</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- FAB: Criar Nova Campanha -->
+<button class="fixed bottom-24 right-6 w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-transform z-40 border-2 border-white/20">
+<span class="material-symbols-outlined text-[32px]" data-icon="add" style="font-variation-settings: 'wght' 600;">add</span>
+</button>
+<!-- Bottom Navigation Bar (Mobile) -->
+<nav class="fixed bottom-0 left-0 right-0 z-50 bg-surface flex justify-around items-center h-20 px-md shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+<a class="flex flex-col items-center gap-1 text-outline transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="text-[10px] font-label-md">Dashboard</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="mail" style="font-variation-settings: 'FILL' 1;">mail</span>
+<span class="text-[10px] font-bold">Email</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-outline transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="share">share</span>
+<span class="text-[10px] font-label-md">Sociais</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-outline transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="lightbulb">lightbulb</span>
+<span class="text-[10px] font-label-md">Insights</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-outline transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="text-[10px] font-label-md">Ajustes</span>
+</a>
+</nav>
+<script>
+        // Micro-interaction for bar chart entry
+        document.addEventListener('DOMContentLoaded', () => {
+            const bars = document.querySelectorAll('.bar-transition');
+            // Adding a small delay to simulate data loading
+            setTimeout(() => {
+                bars.forEach(bar => {
+                    const targetHeight = bar.getAttribute('data-height');
+                    bar.style.height = targetHeight;
+                });
+            }, 300);
+        });
+
+        // Simple tactile feedback for buttons
+        const buttons = document.querySelectorAll('button, a');
+        buttons.forEach(btn => {
+            btn.addEventListener('touchstart', () => {
+                btn.classList.add('opacity-70');
+            });
+            btn.addEventListener('touchend', () => {
+                btn.classList.remove('opacity-70');
+            });
+        });
+    </script>
+</body></html>

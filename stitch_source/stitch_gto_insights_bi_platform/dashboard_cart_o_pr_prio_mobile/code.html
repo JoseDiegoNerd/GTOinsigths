@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>GTO Insights - Cartão Próprio</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "on-surface-variant": "#434655",
+                        "surface-container": "#e7eeff",
+                        "surface-variant": "#d8e3fb",
+                        "secondary-container": "#6cf8bb",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed-variant": "#7d2d00",
+                        "secondary": "#006c49",
+                        "primary": "#004ac6",
+                        "on-secondary-container": "#00714d",
+                        "error-container": "#ffdad6",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "tertiary-fixed": "#ffdbcd",
+                        "secondary-fixed": "#6ffbbe",
+                        "tertiary-container": "#bc4800",
+                        "surface-dim": "#cfdaf2",
+                        "on-primary": "#ffffff",
+                        "on-secondary-fixed-variant": "#005236",
+                        "tertiary-fixed-dim": "#ffb596",
+                        "inverse-primary": "#b4c5ff",
+                        "on-tertiary-fixed": "#360f00",
+                        "on-error-container": "#93000a",
+                        "on-background": "#111c2d",
+                        "surface-container-high": "#dee8ff",
+                        "on-secondary-fixed": "#002113",
+                        "on-error": "#ffffff",
+                        "outline": "#737686",
+                        "inverse-on-surface": "#ecf1ff",
+                        "primary-container": "#2563eb",
+                        "surface-tint": "#0053db",
+                        "outline-variant": "#c3c6d7",
+                        "surface-bright": "#f9f9ff",
+                        "on-tertiary": "#ffffff",
+                        "on-surface": "#111c2d",
+                        "tertiary": "#943700",
+                        "surface": "#f9f9ff",
+                        "background": "#f9f9ff",
+                        "on-primary-fixed": "#00174b",
+                        "inverse-surface": "#263143",
+                        "primary-fixed": "#dbe1ff",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "on-primary-container": "#eeefff",
+                        "surface-container-low": "#f0f3ff",
+                        "on-tertiary-container": "#ffede6",
+                        "surface-container-highest": "#d8e3fb",
+                        "secondary-fixed-dim": "#4edea3"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sidebar-width": "260px",
+                        "container-padding": "32px",
+                        "base": "4px",
+                        "lg": "24px",
+                        "xl": "32px",
+                        "xs": "8px",
+                        "md": "16px",
+                        "sm": "12px",
+                        "grid-gutter": "20px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "data-mono": ["JetBrains Mono"],
+                        "body-lg": ["Inter"],
+                        "headline-md-mobile": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-sm": ["18px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "display-lg": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "data-mono": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-md-mobile": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.5);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background font-body-md text-on-surface antialiased overflow-x-hidden">
+<!-- Mobile Top Navigation Header -->
+<header class="sticky top-0 z-50 bg-surface flex items-center justify-between px-md h-16 shadow-sm">
+<div class="flex items-center gap-xs">
+<div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary text-[20px]" data-icon="credit_card">credit_card</span>
+</div>
+<h1 class="font-headline-sm text-headline-sm text-on-surface">Cartão Próprio</h1>
+</div>
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="notifications">notifications</span>
+<div class="w-8 h-8 rounded-full bg-surface-container overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Close-up professional headshot of a corporate executive for a financial platform profile. High-key studio lighting with a neutral gray background. The subject is wearing a crisp navy suit, conveying authority and confidence. The aesthetic is clean, sharp, and modern, matching a premium business dashboard theme." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgwOxxLGbJUZV_RTafy8cAuhFbOc3jgaTZ1TROmKSyNjRe8Ws5ghSd_grhxW7p3Kq4e_nCiE3es9cRnZQjGEBw84BcJTr-HFEWSdRWi6WgKzPWKN9fVZe3gvC9-fa4E-RunyYsN-hAvjzw5mINp9BMFfgD4s0hdbIc2R1TaeTuRfUM9QI1KTWOjJyh--4q3XMGEt8zEskbg34hN-QcSyqbsRDo5E3AakueYTVJ4BZ4FcTlUo77xFlb5RXPJt_ZNkdHj_jjtWvaFL4"/>
+</div>
+</div>
+</header>
+<main class="px-md py-md pb-24 space-y-md max-w-md mx-auto">
+<!-- Churn Alert Section -->
+<section class="bg-error-container/40 border border-error/20 rounded-xl p-md flex items-start gap-md">
+<div class="bg-error rounded-lg p-xs flex items-center justify-center">
+<span class="material-symbols-outlined text-on-error text-[20px]" data-icon="warning">warning</span>
+</div>
+<div class="flex-1">
+<h3 class="font-label-md text-label-md text-error uppercase tracking-wider">Alertas de Churn</h3>
+<p class="font-body-md text-body-md text-on-error-container mt-xs">Aumento de <span class="font-bold">12.4%</span> em inatividade na última semana (Bandeira Visa).</p>
+</div>
+<span class="material-symbols-outlined text-outline" data-icon="chevron_right">chevron_right</span>
+</section>
+<!-- KPI Performance Vertical Cards -->
+<section class="grid grid-cols-1 gap-md">
+<!-- Card 1: Total Cartões -->
+<div class="bg-white p-lg rounded-xl shadow-sm border border-outline-variant/30 flex flex-col items-center text-center">
+<div class="w-12 h-12 rounded-full bg-primary-container/10 flex items-center justify-center mb-md">
+<span class="material-symbols-outlined text-primary text-[28px]" data-icon="credit_card">credit_card</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant uppercase">Total Cartões</span>
+<span class="font-headline-md text-headline-md text-on-surface mt-xs">24.580</span>
+<div class="mt-sm flex items-center gap-xs px-xs py-1 bg-secondary-container/20 rounded-full">
+<span class="material-symbols-outlined text-secondary text-[14px]" data-icon="trending_up">trending_up</span>
+<span class="text-[12px] font-bold text-secondary">+8.2% vs MM</span>
+</div>
+</div>
+<!-- Card 2: Ticket Médio -->
+<div class="bg-white p-lg rounded-xl shadow-sm border border-outline-variant/30 flex flex-col items-center text-center">
+<div class="w-12 h-12 rounded-full bg-tertiary-fixed-dim/20 flex items-center justify-center mb-md">
+<span class="material-symbols-outlined text-tertiary text-[28px]" data-icon="payments">payments</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant uppercase">Ticket Médio</span>
+<span class="font-headline-md text-headline-md text-on-surface mt-xs">R$ 482,50</span>
+<div class="mt-sm flex items-center gap-xs px-xs py-1 bg-secondary-container/20 rounded-full">
+<span class="material-symbols-outlined text-secondary text-[14px]" data-icon="trending_up">trending_up</span>
+<span class="text-[12px] font-bold text-secondary">+3.1% vs MM</span>
+</div>
+</div>
+<!-- Card 3: Receita -->
+<div class="bg-white p-lg rounded-xl shadow-sm border border-outline-variant/30 flex flex-col items-center text-center">
+<div class="w-12 h-12 rounded-full bg-secondary-fixed/20 flex items-center justify-center mb-md">
+<span class="material-symbols-outlined text-secondary text-[28px]" data-icon="account_balance_wallet">account_balance_wallet</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant uppercase">Receita Bruta</span>
+<span class="font-headline-md text-headline-md text-on-surface mt-xs">R$ 1.2M</span>
+<div class="mt-sm flex items-center gap-xs px-xs py-1 bg-error-container/20 rounded-full">
+<span class="material-symbols-outlined text-error text-[14px]" data-icon="trending_down">trending_down</span>
+<span class="text-[12px] font-bold text-error">-1.5% vs MM</span>
+</div>
+</div>
+</section>
+<!-- Donut Chart: Ativos por Bandeira -->
+<section class="bg-white p-lg rounded-xl shadow-sm border border-outline-variant/30 flex flex-col items-center">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-xl">Ativos por Bandeira</h3>
+<div class="relative w-48 h-48 flex items-center justify-center">
+<!-- Simple Donut Visualization with SVG -->
+<svg class="w-full h-full -rotate-90" viewbox="0 0 100 100">
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#E2E8F0" stroke-width="12"></circle>
+<!-- Visa: 45% -->
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#004ac6" stroke-dasharray="113.1 251.3" stroke-dashoffset="0" stroke-width="12"></circle>
+<!-- Master: 35% -->
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#943700" stroke-dasharray="87.9 251.3" stroke-dashoffset="-113.1" stroke-width="12"></circle>
+<!-- Elo: 20% -->
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#006c49" stroke-dasharray="50.2 251.3" stroke-dashoffset="-201" stroke-width="12"></circle>
+</svg>
+<div class="absolute flex flex-col items-center">
+<span class="font-headline-md text-headline-md text-on-surface">65%</span>
+<span class="font-label-md text-label-md text-on-surface-variant">Atividade</span>
+</div>
+</div>
+<!-- Legend -->
+<div class="grid grid-cols-3 gap-md w-full mt-xl">
+<div class="flex flex-col items-center">
+<div class="flex items-center gap-xs">
+<div class="w-2 h-2 rounded-full bg-primary"></div>
+<span class="font-label-md text-label-md">Visa</span>
+</div>
+<span class="font-body-md font-bold">45%</span>
+</div>
+<div class="flex flex-col items-center">
+<div class="flex items-center gap-xs">
+<div class="w-2 h-2 rounded-full bg-tertiary"></div>
+<span class="font-label-md text-label-md">Master</span>
+</div>
+<span class="font-body-md font-bold">35%</span>
+</div>
+<div class="flex flex-col items-center">
+<div class="flex items-center gap-xs">
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+<span class="font-label-md text-label-md">Elo</span>
+</div>
+<span class="font-body-md font-bold">20%</span>
+</div>
+</div>
+</section>
+<!-- Horizontal Indicators List -->
+<section class="space-y-sm">
+<div class="flex items-center justify-between px-xs">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Indicadores</h3>
+<button class="text-primary font-label-md flex items-center gap-xs">
+                    Ver Todos <span class="material-symbols-outlined text-[16px]" data-icon="open_in_new">open_in_new</span>
+</button>
+</div>
+<div class="flex overflow-x-auto gap-md hide-scrollbar pb-xs">
+<!-- Indicator Card 1 -->
+<div class="min-w-[180px] bg-white p-md rounded-xl border border-outline-variant/30 shadow-sm">
+<p class="font-label-md text-on-surface-variant mb-xs">Aprovação</p>
+<div class="flex items-end gap-xs">
+<span class="font-headline-md text-headline-md">72%</span>
+<span class="font-body-md text-secondary mb-1">+2%</span>
+</div>
+<div class="w-full bg-surface-container-highest h-1.5 rounded-full mt-sm">
+<div class="bg-primary h-full rounded-full" style="width: 72%;"></div>
+</div>
+</div>
+<!-- Indicator Card 2 -->
+<div class="min-w-[180px] bg-white p-md rounded-xl border border-outline-variant/30 shadow-sm">
+<p class="font-label-md text-on-surface-variant mb-xs">Inadimplência</p>
+<div class="flex items-end gap-xs">
+<span class="font-headline-md text-headline-md">4.8%</span>
+<span class="font-body-md text-error mb-1">+0.5%</span>
+</div>
+<div class="w-full bg-surface-container-highest h-1.5 rounded-full mt-sm">
+<div class="bg-error h-full rounded-full" style="width: 4.8%;"></div>
+</div>
+</div>
+<!-- Indicator Card 3 -->
+<div class="min-w-[180px] bg-white p-md rounded-xl border border-outline-variant/30 shadow-sm">
+<p class="font-label-md text-on-surface-variant mb-xs">Ativação</p>
+<div class="flex items-end gap-xs">
+<span class="font-headline-md text-headline-md">89%</span>
+<span class="font-body-md text-secondary mb-1">+5%</span>
+</div>
+<div class="w-full bg-surface-container-highest h-1.5 rounded-full mt-sm">
+<div class="bg-secondary h-full rounded-full" style="width: 89%;"></div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 right-0 z-50 bg-on-background px-md py-xs flex justify-between items-center shadow-[0_-4px_10px_rgba(0,0,0,0.1)]">
+<!-- Dashboard -->
+<a class="flex flex-col items-center gap-xs px-md py-1 text-outline-variant hover:text-on-primary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-[10px]">Dashboard</span>
+</a>
+<!-- Cartão (Active) -->
+<a class="flex flex-col items-center gap-xs px-md py-1 text-on-primary border-t-2 border-primary-container bg-primary/10 font-bold" href="#">
+<span class="material-symbols-outlined" data-icon="credit_card">credit_card</span>
+<span class="font-label-md text-[10px]">Cartão</span>
+</a>
+<!-- Insights -->
+<a class="flex flex-col items-center gap-xs px-md py-1 text-outline-variant hover:text-on-primary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="lightbulb">lightbulb</span>
+<span class="font-label-md text-[10px]">Insights</span>
+</a>
+<!-- Settings -->
+<a class="flex flex-col items-center gap-xs px-md py-1 text-outline-variant hover:text-on-primary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-md text-[10px]">Config</span>
+</a>
+</nav>
+<!-- Micro-interaction Script -->
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Animate card entrance
+            const cards = document.querySelectorAll('section > div, section');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(10px)';
+                card.style.transition = `all 0.4s ease-out ${index * 0.1}s`;
+                
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, 100);
+            });
+
+            // Toggle active state in bottom nav (simulated)
+            const navItems = document.querySelectorAll('nav a');
+            navItems.forEach(item => {
+                item.addEventListener('click', (e) => {
+                    navItems.forEach(nav => {
+                        nav.classList.remove('text-on-primary', 'border-t-2', 'border-primary-container', 'bg-primary/10', 'font-bold');
+                        nav.classList.add('text-outline-variant');
+                    });
+                    item.classList.add('text-on-primary', 'border-t-2', 'border-primary-container', 'bg-primary/10', 'font-bold');
+                    item.classList.remove('text-outline-variant');
+                });
+            });
+        });
+    </script>
+</body></html>

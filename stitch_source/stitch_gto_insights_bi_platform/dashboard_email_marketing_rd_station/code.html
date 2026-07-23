@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>GTO Insights - Email Marketing Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "on-error-container": "#93000a",
+                "on-secondary-container": "#00714d",
+                "primary-container": "#2563eb",
+                "secondary-container": "#6cf8bb",
+                "on-tertiary-fixed-variant": "#7d2d00",
+                "on-tertiary-fixed": "#360f00",
+                "on-secondary-fixed": "#002113",
+                "error-container": "#ffdad6",
+                "tertiary": "#943700",
+                "inverse-on-surface": "#ecf1ff",
+                "error": "#ba1a1a",
+                "surface-container-low": "#f0f3ff",
+                "outline-variant": "#c3c6d7",
+                "on-secondary-fixed-variant": "#005236",
+                "secondary-fixed": "#6ffbbe",
+                "secondary-fixed-dim": "#4edea3",
+                "on-tertiary-container": "#ffede6",
+                "surface-container": "#e7eeff",
+                "surface-dim": "#cfdaf2",
+                "on-primary-fixed-variant": "#003ea8",
+                "surface-container-lowest": "#ffffff",
+                "on-surface": "#111c2d",
+                "secondary": "#006c49",
+                "on-primary": "#ffffff",
+                "on-primary-container": "#eeefff",
+                "on-error": "#ffffff",
+                "tertiary-fixed": "#ffdbcd",
+                "primary-fixed": "#dbe1ff",
+                "inverse-primary": "#b4c5ff",
+                "surface-tint": "#0053db",
+                "on-background": "#111c2d",
+                "tertiary-fixed-dim": "#ffb596",
+                "outline": "#737686",
+                "on-secondary": "#ffffff",
+                "surface-container-high": "#dee8ff",
+                "surface": "#f9f9ff",
+                "surface-container-highest": "#d8e3fb",
+                "surface-bright": "#f9f9ff",
+                "on-tertiary": "#ffffff",
+                "on-primary-fixed": "#00174b",
+                "primary": "#004ac6",
+                "primary-fixed-dim": "#b4c5ff",
+                "background": "#f9f9ff",
+                "tertiary-container": "#bc4800",
+                "on-surface-variant": "#434655",
+                "inverse-surface": "#263143",
+                "surface-variant": "#d8e3fb",
+                "sidebar-bg": "#0F172A"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+            },
+            "spacing": {
+                "sidebar-width": "260px",
+                "base": "4px",
+                "xs": "8px",
+                "sm": "12px",
+                "md": "16px",
+                "lg": "24px",
+                "container-padding": "32px",
+                "xl": "32px",
+                "grid-gutter": "20px"
+            },
+            "fontFamily": {
+                "body-md": ["Inter"],
+                "data-mono": ["JetBrains Mono"],
+                "label-md": ["Inter"],
+                "display-lg": ["Inter"],
+                "body-lg": ["Inter"],
+                "headline-sm": ["Inter"],
+                "headline-md": ["Inter"]
+            },
+            "fontSize": {
+                "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                "data-mono": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                "display-lg": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                "headline-sm": ["18px", {"lineHeight": "28px", "fontWeight": "600"}],
+                "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body {
+            background-color: #F8FAFC;
+            color: #111C2D;
+            font-family: 'Inter', sans-serif;
+        }
+        .sidebar-active-item {
+            color: #FFFFFF;
+            border-left: 3px solid #2563EB;
+            background-color: rgba(37, 99, 235, 0.1);
+            font-weight: 700;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
+            border: 1px solid #E2E8F0;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="bg-background">
+<!-- SideNavBar Component -->
+<aside class="fixed left-0 top-0 h-full w-sidebar-width bg-sidebar-bg flex flex-col py-md border-r border-outline-variant z-50">
+<div class="px-lg mb-xl">
+<h1 class="text-headline-md font-headline-md text-on-primary">GTO Insights</h1>
+<p class="text-body-md text-outline-variant opacity-70">BI Platform</p>
+</div>
+<nav class="flex-1 flex flex-col gap-xs overflow-y-auto custom-scrollbar px-sm">
+<a class="flex items-center gap-md px-md py-sm rounded-r-none transition-colors text-outline-variant hover:text-on-primary hover:bg-primary/5" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-body-md text-body-md">Dashboard Geral</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-r-none transition-colors text-outline-variant hover:text-on-primary hover:bg-primary/5" href="#">
+<span class="material-symbols-outlined" data-icon="credit_card">credit_card</span>
+<span class="font-body-md text-body-md">Cartão Próprio</span>
+</a>
+<!-- Active Tab: Email Marketing -->
+<a class="flex items-center gap-md px-md py-sm text-on-primary border-l-[3px] border-primary-container bg-primary/10 font-bold transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="mail">mail</span>
+<span class="font-body-md text-body-md">Email Marketing</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-r-none transition-colors text-outline-variant hover:text-on-primary hover:bg-primary/5" href="#">
+<span class="material-symbols-outlined" data-icon="share">share</span>
+<span class="font-body-md text-body-md">Redes Sociais</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-r-none transition-colors text-outline-variant hover:text-on-primary hover:bg-primary/5" href="#">
+<span class="material-symbols-outlined" data-icon="upload_file">upload_file</span>
+<span class="font-body-md text-body-md">Importar Planilhas</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-r-none transition-colors text-outline-variant hover:text-on-primary hover:bg-primary/5" href="#">
+<span class="material-symbols-outlined" data-icon="lightbulb">lightbulb</span>
+<span class="font-body-md text-body-md">Insights</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-r-none transition-colors text-outline-variant hover:text-on-primary hover:bg-primary/5" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-body-md text-body-md">Configurações</span>
+</a>
+</nav>
+<div class="px-lg mt-auto pt-md border-t border-white/10">
+<div class="flex items-center gap-md">
+<img class="w-10 h-10 rounded-full border-2 border-primary-container" data-alt="A professional corporate portrait of a high-level marketing executive with sharp features, wearing a sleek modern navy suit, set against a blurred high-end office background with soft bokeh lighting and professional color grading in a clean corporate aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCzHXUi8R0E7oU9qYbTP6D3V3L4Vk2zAepTo3MczPZ36Njes2icW5Me7mhj5IQRdF4z7jI64Nnr6Q58zBLDEaEBcb-yOoNB8xKSjpzhCRasbNaPrjz2JHfsGyI8G5lOAt2fdYV1QTmN7-A3k8gJEg1h7TDV67_jhXCJE8uRBFIn1iyZZ76a9mllX-Dj0tUodCCL3M8UpkcGk9wvKeeGg6Ko-1PDy7jWTYqEp7zU0W2OIuVAIMl0VlTMhyW_HctClDwLPDVsjfv8poo"/>
+<div>
+<p class="text-on-primary font-label-md text-label-md">Alex Silva</p>
+<p class="text-outline-variant text-[10px]">Administrador</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Shell -->
+<main class="ml-sidebar-width flex-1 min-h-screen relative">
+<!-- TopNavBar Component -->
+<header class="flex justify-between items-center px-container-padding h-16 w-full bg-surface border-b border-outline-variant sticky top-0 z-40 shadow-sm">
+<div class="flex items-center gap-xl">
+<h2 class="text-headline-sm font-headline-sm text-on-surface">Email Performance Dashboard</h2>
+<nav class="hidden md:flex items-center gap-lg">
+<a class="text-primary font-bold border-b-2 border-primary pb-1 font-label-md text-label-md" href="#">Period</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#">Brand</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-label-md text-label-md" href="#">Source/Channel</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" data-icon="search">search</span>
+<input class="pl-10 pr-md py-xs bg-white border border-outline-variant rounded-lg text-body-md focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all w-64" placeholder="Buscar campanhas..." type="text"/>
+</div>
+<button class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-container rounded-full transition-colors relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border-2 border-surface"></span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-container rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+</div>
+</header>
+<!-- Dashboard Canvas -->
+<div class="p-container-padding space-y-grid-gutter">
+<!-- Performance Highlights -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-grid-gutter">
+<!-- KPI Card 1 -->
+<div class="bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-all">
+<div class="flex justify-between items-start mb-sm">
+<p class="text-label-md font-label-md text-on-surface-variant uppercase tracking-wider">Enviados</p>
+<span class="p-xs bg-primary/10 text-primary rounded-lg material-symbols-outlined" data-icon="send">send</span>
+</div>
+<p class="text-headline-md font-headline-md text-on-surface">124.502</p>
+<div class="flex items-center gap-xs mt-xs">
+<span class="text-[#10B981] font-label-md flex items-center">
+<span class="material-symbols-outlined text-[16px]" data-icon="arrow_upward">arrow_upward</span> 12.5%
+                        </span>
+<span class="text-outline text-[11px]">vs. mês anterior</span>
+</div>
+</div>
+<!-- KPI Card 2 -->
+<div class="bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-all">
+<div class="flex justify-between items-start mb-sm">
+<p class="text-label-md font-label-md text-on-surface-variant uppercase tracking-wider">Entregues</p>
+<span class="p-xs bg-secondary/10 text-secondary rounded-lg material-symbols-outlined" data-icon="mark_email_read">mark_email_read</span>
+</div>
+<p class="text-headline-md font-headline-md text-on-surface">98.4%</p>
+<div class="flex items-center gap-xs mt-xs">
+<span class="text-[#10B981] font-label-md flex items-center">
+<span class="material-symbols-outlined text-[16px]" data-icon="check_circle">check_circle</span> Estável
+                        </span>
+<span class="text-outline text-[11px]">Health Score excelente</span>
+</div>
+</div>
+<!-- KPI Card 3 -->
+<div class="bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-all">
+<div class="flex justify-between items-start mb-sm">
+<p class="text-label-md font-label-md text-on-surface-variant uppercase tracking-wider">Taxa de Abertura</p>
+<span class="p-xs bg-tertiary-container/10 text-tertiary-container rounded-lg material-symbols-outlined" data-icon="drafts">drafts</span>
+</div>
+<p class="text-headline-md font-headline-md text-on-surface">24.8%</p>
+<div class="flex items-center gap-xs mt-xs">
+<span class="text-[#EF4444] font-label-md flex items-center">
+<span class="material-symbols-outlined text-[16px]" data-icon="arrow_downward">arrow_downward</span> 2.1%
+                        </span>
+<span class="text-outline text-[11px]">Queda em campanhas B2C</span>
+</div>
+</div>
+<!-- KPI Card 4 -->
+<div class="bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-all">
+<div class="flex justify-between items-start mb-sm">
+<p class="text-label-md font-label-md text-on-surface-variant uppercase tracking-wider">Descadastros</p>
+<span class="p-xs bg-error/10 text-error rounded-lg material-symbols-outlined" data-icon="person_remove">person_remove</span>
+</div>
+<p class="text-headline-md font-headline-md text-on-surface">0.12%</p>
+<div class="flex items-center gap-xs mt-xs">
+<span class="text-[#10B981] font-label-md flex items-center">
+<span class="material-symbols-outlined text-[16px]" data-icon="trending_down">trending_down</span> 0.05%
+                        </span>
+<span class="text-outline text-[11px]">Retenção em alta</span>
+</div>
+</div>
+</div>
+<!-- Bento Grid Section -->
+<div class="grid grid-cols-12 gap-grid-gutter">
+<!-- Main Chart: Comparativo Taxa de Abertura vs Clique -->
+<div class="col-span-12 lg:col-span-8 bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-sm">
+<div class="flex justify-between items-center mb-xl">
+<div>
+<h3 class="text-headline-sm font-headline-sm text-on-surface">Taxa de Abertura vs. Clique</h3>
+<p class="text-body-md text-on-surface-variant">Performance comparativa das últimas 6 campanhas</p>
+</div>
+<div class="flex bg-surface-container p-1 rounded-lg">
+<button class="px-md py-1 bg-white shadow-sm rounded-md text-label-md font-label-md text-primary">Barra</button>
+<button class="px-md py-1 text-label-md font-label-md text-outline hover:text-on-surface transition-colors">Linha</button>
+</div>
+</div>
+<!-- Comparative Bar Chart UI -->
+<div class="h-64 flex items-end justify-between px-md gap-lg">
+<!-- Campaign 1 -->
+<div class="flex-1 flex flex-col items-center group relative">
+<div class="flex gap-1 items-end h-48 w-full justify-center">
+<div class="w-4 bg-primary rounded-t-sm transition-all duration-500 hover:brightness-110" style="height: 65%;"></div>
+<div class="w-4 bg-secondary-container rounded-t-sm transition-all duration-500 hover:brightness-110" style="height: 22%;"></div>
+</div>
+<span class="mt-md text-[10px] text-outline font-label-md uppercase rotate-[-25deg] origin-top-left">News Jan</span>
+</div>
+<!-- Campaign 2 -->
+<div class="flex-1 flex flex-col items-center group relative">
+<div class="flex gap-1 items-end h-48 w-full justify-center">
+<div class="w-4 bg-primary rounded-t-sm transition-all duration-500" style="height: 80%;"></div>
+<div class="w-4 bg-secondary-container rounded-t-sm transition-all duration-500" style="height: 35%;"></div>
+</div>
+<span class="mt-md text-[10px] text-outline font-label-md uppercase rotate-[-25deg] origin-top-left">Promo Verão</span>
+</div>
+<!-- Campaign 3 -->
+<div class="flex-1 flex flex-col items-center group relative">
+<div class="flex gap-1 items-end h-48 w-full justify-center">
+<div class="w-4 bg-primary rounded-t-sm transition-all duration-500" style="height: 45%;"></div>
+<div class="w-4 bg-secondary-container rounded-t-sm transition-all duration-500" style="height: 12%;"></div>
+</div>
+<span class="mt-md text-[10px] text-outline font-label-md uppercase rotate-[-25deg] origin-top-left">Webinar IT</span>
+</div>
+<!-- Campaign 4 -->
+<div class="flex-1 flex flex-col items-center group relative">
+<div class="flex gap-1 items-end h-48 w-full justify-center">
+<div class="w-4 bg-primary rounded-t-sm transition-all duration-500" style="height: 92%;"></div>
+<div class="w-4 bg-secondary-container rounded-t-sm transition-all duration-500" style="height: 48%;"></div>
+</div>
+<span class="mt-md text-[10px] text-outline font-label-md uppercase rotate-[-25deg] origin-top-left">Black Friday</span>
+</div>
+<!-- Campaign 5 -->
+<div class="flex-1 flex flex-col items-center group relative">
+<div class="flex gap-1 items-end h-48 w-full justify-center">
+<div class="w-4 bg-primary rounded-t-sm transition-all duration-500" style="height: 70%;"></div>
+<div class="w-4 bg-secondary-container rounded-t-sm transition-all duration-500" style="height: 25%;"></div>
+</div>
+<span class="mt-md text-[10px] text-outline font-label-md uppercase rotate-[-25deg] origin-top-left">Recuperação</span>
+</div>
+<!-- Campaign 6 -->
+<div class="flex-1 flex flex-col items-center group relative">
+<div class="flex gap-1 items-end h-48 w-full justify-center">
+<div class="w-4 bg-primary rounded-t-sm transition-all duration-500" style="height: 55%;"></div>
+<div class="w-4 bg-secondary-container rounded-t-sm transition-all duration-500" style="height: 18%;"></div>
+</div>
+<span class="mt-md text-[10px] text-outline font-label-md uppercase rotate-[-25deg] origin-top-left">Boas-vindas</span>
+</div>
+</div>
+<div class="mt-xl pt-lg border-t border-outline-variant flex gap-xl justify-center">
+<div class="flex items-center gap-xs">
+<span class="w-3 h-3 bg-primary rounded-full"></span>
+<span class="text-body-md text-on-surface-variant">Taxa de Abertura</span>
+</div>
+<div class="flex items-center gap-xs">
+<span class="w-3 h-3 bg-secondary-container rounded-full"></span>
+<span class="text-body-md text-on-surface-variant">Taxa de Clique</span>
+</div>
+</div>
+</div>
+<!-- Flag Performance (Bandeiras) -->
+<div class="col-span-12 lg:col-span-4 flex flex-col gap-grid-gutter">
+<div class="bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-sm flex-1">
+<h3 class="text-headline-sm font-headline-sm text-on-surface mb-md">Performance por Provedor</h3>
+<div class="space-y-sm">
+<div class="flex items-center justify-between p-sm rounded-lg bg-surface-container-low border border-transparent hover:border-primary-container/30 transition-all cursor-default">
+<div class="flex items-center gap-md">
+<div class="w-8 h-8 rounded bg-white flex items-center justify-center shadow-sm">
+<img class="w-6 h-6 object-contain" data-alt="A clean, minimalist high-resolution logo for Gmail, featuring its iconic multicolored M, displayed as a sharp vector graphic against a pure white background with professional lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAXLhkeBFuMbdQQeqaND8WIwSO2ypsEtrMMBrMkD_cDvjGpMBrwXE7DV4DWXazEJF2Q_M-Rh48SfqO1xBTUAneao4EnLrl84C0Lj4NMhKOb_mOo9309uL5AqFsoYOoaK-ueY0WSbodDPpY9MaHtg7IdEkNQm3jO__0v5LAFf5nsJTE1H_jZ6ANc6FNLB78OW7Z_zAbNB833P3AeoAAJ6hCvPR1Xd7WwVTUKTrkIoecsBcnewfgFCb6l2Q6HkZ0QEK9fWSTnPEGGsEo"/>
+</div>
+<span class="font-body-md text-body-md">Gmail</span>
+</div>
+<div class="text-right">
+<p class="font-data-mono text-data-mono text-primary">28.4%</p>
+<div class="w-24 h-1 bg-surface-container rounded-full mt-1 overflow-hidden">
+<div class="h-full bg-primary" style="width: 85%"></div>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between p-sm rounded-lg bg-surface-container-low border border-transparent hover:border-primary-container/30 transition-all cursor-default">
+<div class="flex items-center gap-md">
+<div class="w-8 h-8 rounded bg-white flex items-center justify-center shadow-sm">
+<img class="w-6 h-6 object-contain" data-alt="A professional high-resolution logo for Microsoft Outlook, featuring its corporate blue icon design, rendered as a sharp and crisp graphic against a neutral white backdrop in a modern software branding style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDbA-R5beXx-9KEK45gdBgO3szhU_r-uRSiKdpXKfRJuPy96BVm3J6u-3AEsIfLPc8bLg-V5mexgxeflRDNK8AYeBAKgwSxpkh4JKanOPiBQ0rYPf4ESQkpA1HYqcBXKzAIXtiQCXxzthni8ZrY8uAZEfOuL8iwkCB3AHpD517u2ScyDUWOiY-O1cI7Cs9i8rgvkcVYS_UUNwGvJdWkQiTlssQEcF5iO63Dv5_cO1XrX8xnbhpNiJHRjdpxuzQPtYf8TyF0Z00a4C8"/>
+</div>
+<span class="font-body-md text-body-md">Outlook</span>
+</div>
+<div class="text-right">
+<p class="font-data-mono text-data-mono text-primary">21.2%</p>
+<div class="w-24 h-1 bg-surface-container rounded-full mt-1 overflow-hidden">
+<div class="h-full bg-primary" style="width: 65%"></div>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between p-sm rounded-lg bg-surface-container-low border border-transparent hover:border-primary-container/30 transition-all cursor-default">
+<div class="flex items-center gap-md">
+<div class="w-8 h-8 rounded bg-white flex items-center justify-center shadow-sm">
+<img class="w-6 h-6 object-contain" data-alt="A high-quality minimalist logo for Apple Mail, showcasing its distinctive blue envelope and stamp design, rendered with professional clarity and sharp edges on a clean white background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnGcXJBYNOdKY0Y9SHGNzhnzsAyd-8K4RyxpId3VKNmRb8wHs6npjJ3qCUi5oHlJmR-iPQxdupY8ecMiYduZwtJI80XE2trFPw3IAHFk2bndSFDDUcH-xbzw0tjJDPJp9OBl3stzcVZ6mteiCTvc4Tqdtkn7vcVsopzoI-i4WR1jZ3MwL0o8tdW-7NrQse00mmIGX650ckuJmKYh8G-KRPK2d8gc8D5D8WKMn2vK5GHVRhc-N3DH2TvOUoFmLx_sbIWnCnVM3qSlY"/>
+</div>
+<span class="font-body-md text-body-md">Apple Mail</span>
+</div>
+<div class="text-right">
+<p class="font-data-mono text-data-mono text-primary">19.8%</p>
+<div class="w-24 h-1 bg-surface-container rounded-full mt-1 overflow-hidden">
+<div class="h-full bg-primary" style="width: 60%"></div>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between p-sm rounded-lg bg-surface-container-low border border-transparent hover:border-primary-container/30 transition-all cursor-default">
+<div class="flex items-center gap-md">
+<div class="w-8 h-8 rounded bg-white flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-outline" data-icon="alternate_email">alternate_email</span>
+</div>
+<span class="font-body-md text-body-md">Outros</span>
+</div>
+<div class="text-right">
+<p class="font-data-mono text-data-mono text-primary">14.5%</p>
+<div class="w-24 h-1 bg-surface-container rounded-full mt-1 overflow-hidden">
+<div class="h-full bg-primary" style="width: 45%"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Small Brand Highlights -->
+<div class="grid grid-cols-2 gap-md">
+<div class="bg-primary/5 p-md rounded-xl border border-primary/20 flex flex-col justify-center items-center">
+<span class="text-primary font-bold text-headline-sm">A+</span>
+<span class="text-label-md text-primary/70 uppercase">Reputação IP</span>
+</div>
+<div class="bg-secondary-container/10 p-md rounded-xl border border-secondary/20 flex flex-col justify-center items-center">
+<span class="text-secondary font-bold text-headline-sm">0.0%</span>
+<span class="text-label-md text-secondary/70 uppercase">Blacklist</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Melhores Campanhas (List/Table) -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+<div class="px-lg py-md border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+<h3 class="text-headline-sm font-headline-sm text-on-surface">Melhores Campanhas (Top Performance)</h3>
+<button class="text-primary font-label-md text-label-md hover:underline flex items-center gap-xs">
+                        Ver Relatório Completo <span class="material-symbols-outlined text-[18px]" data-icon="open_in_new">open_in_new</span>
+</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface sticky top-0">
+<tr>
+<th class="px-lg py-md text-label-md font-label-md text-outline uppercase tracking-wider">Campanha</th>
+<th class="px-lg py-md text-label-md font-label-md text-outline uppercase tracking-wider text-center">Data</th>
+<th class="px-lg py-md text-label-md font-label-md text-outline uppercase tracking-wider text-center">Cliques Únicos</th>
+<th class="px-lg py-md text-label-md font-label-md text-outline uppercase tracking-wider text-center">CTR (%)</th>
+<th class="px-lg py-md text-label-md font-label-md text-outline uppercase tracking-wider text-center">Conversão</th>
+<th class="px-lg py-md text-label-md font-label-md text-outline uppercase tracking-wider text-right">Ação</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<tr class="hover:bg-primary/5 transition-colors group">
+<td class="px-lg py-md">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="rocket_launch">rocket_launch</span>
+</div>
+<div>
+<p class="font-body-md text-body-md font-semibold text-on-surface">Lançamento Coleção Outono</p>
+<p class="text-outline text-[12px]">Segmentação: Leads Quentes</p>
+</div>
+</div>
+</td>
+<td class="px-lg py-md text-center font-data-mono text-on-surface-variant">12/03/2024</td>
+<td class="px-lg py-md text-center font-data-mono text-on-surface-variant">15.420</td>
+<td class="px-lg py-md text-center">
+<span class="px-sm py-1 bg-[#10B981]/10 text-[#10B981] rounded-full text-label-md font-label-md">6.82%</span>
+</td>
+<td class="px-lg py-md text-center font-data-mono text-on-surface-variant">R$ 42.500</td>
+<td class="px-lg py-md text-right">
+<button class="w-8 h-8 rounded-full hover:bg-surface-container flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-outline" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-primary/5 transition-colors group">
+<td class="px-lg py-md">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="local_offer">local_offer</span>
+</div>
+<div>
+<p class="font-body-md text-body-md font-semibold text-on-surface">Promoção Relâmpago 24h</p>
+<p class="text-outline text-[12px]">Segmentação: Base Geral</p>
+</div>
+</div>
+</td>
+<td class="px-lg py-md text-center font-data-mono text-on-surface-variant">08/03/2024</td>
+<td class="px-lg py-md text-center font-data-mono text-on-surface-variant">12.105</td>
+<td class="px-lg py-md text-center">
+<span class="px-sm py-1 bg-[#10B981]/10 text-[#10B981] rounded-full text-label-md font-label-md">4.15%</span>
+</td>
+<td class="px-lg py-md text-center font-data-mono text-on-surface-variant">R$ 28.120</td>
+<td class="px-lg py-md text-right">
+<button class="w-8 h-8 rounded-full hover:bg-surface-container flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-outline" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-primary/5 transition-colors group">
+<td class="px-lg py-md">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+</div>
+<div>
+<p class="font-body-md text-body-md font-semibold text-on-surface">Dicas de Estilo Semanal</p>
+<p class="text-outline text-[12px]">Segmentação: Engajados 30d</p>
+</div>
+</div>
+</td>
+<td class="px-lg py-md text-center font-data-mono text-on-surface-variant">05/03/2024</td>
+<td class="px-lg py-md text-center font-data-mono text-on-surface-variant">8.940</td>
+<td class="px-lg py-md text-center">
+<span class="px-sm py-1 bg-[#10B981]/10 text-[#10B981] rounded-full text-label-md font-label-md">3.92%</span>
+</td>
+<td class="px-lg py-md text-center font-data-mono text-on-surface-variant">R$ 12.400</td>
+<td class="px-lg py-md text-right">
+<button class="w-8 h-8 rounded-full hover:bg-surface-container flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-outline" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Footer-style Action Section -->
+<div class="flex flex-col md:flex-row gap-lg items-center justify-between mt-xl pb-xl">
+<div class="flex items-center gap-md">
+<button class="bg-primary text-on-primary px-lg py-md rounded-lg font-label-md text-label-md shadow-lg shadow-primary/30 hover:scale-105 active:scale-95 transition-transform flex items-center gap-md">
+<span class="material-symbols-outlined" data-icon="add">add</span> Criar Nova Campanha
+                    </button>
+<button class="bg-white border border-outline-variant text-on-surface px-lg py-md rounded-lg font-label-md text-label-md hover:bg-surface transition-colors flex items-center gap-md">
+<span class="material-symbols-outlined" data-icon="file_download">file_download</span> Exportar PDF
+                    </button>
+</div>
+<div class="flex items-center gap-xs text-outline text-label-md">
+<span class="material-symbols-outlined text-[16px]" data-icon="sync">sync</span>
+                    Última atualização: Hoje, às 09:42
+                </div>
+</div>
+</div>
+</main>
+<script>
+        // Simple micro-interaction for sidebar expansion/collapse or hover states
+        document.querySelectorAll('aside nav a').forEach(link => {
+            link.addEventListener('mouseenter', function() {
+                this.classList.add('translate-x-1');
+            });
+            link.addEventListener('mouseleave', function() {
+                this.classList.remove('translate-x-1');
+            });
+        });
+
+        // Add visual interest to charts on load
+        window.addEventListener('DOMContentLoaded', () => {
+            const bars = document.querySelectorAll('.bg-primary, .bg-secondary-container');
+            bars.forEach((bar, index) => {
+                const originalHeight = bar.style.height;
+                bar.style.height = '0%';
+                setTimeout(() => {
+                    bar.style.height = originalHeight;
+                    bar.style.transition = 'height 1s cubic-bezier(0.16, 1, 0.3, 1)';
+                }, 100 * index);
+            });
+        });
+    </script>
+</body></html>

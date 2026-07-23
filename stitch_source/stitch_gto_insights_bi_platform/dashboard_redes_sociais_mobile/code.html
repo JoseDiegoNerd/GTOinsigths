@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+
+<html class="light" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>GTO Insights - Redes Sociais</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary-fixed": "#ffdbcd",
+                    "inverse-primary": "#b4c5ff",
+                    "tertiary-container": "#bc4800",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-error": "#ffffff",
+                    "background": "#f9f9ff",
+                    "primary-container": "#2563eb",
+                    "on-tertiary": "#ffffff",
+                    "on-tertiary-fixed-variant": "#7d2d00",
+                    "on-surface": "#111c2d",
+                    "secondary-container": "#6cf8bb",
+                    "on-primary": "#ffffff",
+                    "surface-tint": "#0053db",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "inverse-surface": "#263143",
+                    "secondary-fixed": "#6ffbbe",
+                    "on-secondary-container": "#00714d",
+                    "outline-variant": "#c3c6d7",
+                    "on-surface-variant": "#434655",
+                    "surface-container": "#e7eeff",
+                    "surface-container-low": "#f0f3ff",
+                    "secondary-fixed-dim": "#4edea3",
+                    "surface-dim": "#cfdaf2",
+                    "error": "#ba1a1a",
+                    "primary-fixed": "#dbe1ff",
+                    "on-primary-container": "#eeefff",
+                    "on-secondary-fixed-variant": "#005236",
+                    "surface-bright": "#f9f9ff",
+                    "on-secondary-fixed": "#002113",
+                    "surface-container-highest": "#d8e3fb",
+                    "surface": "#f9f9ff",
+                    "on-secondary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "surface-variant": "#d8e3fb",
+                    "surface-container-lowest": "#ffffff",
+                    "on-tertiary-container": "#ffede6",
+                    "on-background": "#111c2d",
+                    "tertiary": "#943700",
+                    "secondary": "#006c49",
+                    "inverse-on-surface": "#ecf1ff",
+                    "primary": "#004ac6",
+                    "outline": "#737686",
+                    "tertiary-fixed-dim": "#ffb596",
+                    "on-tertiary-fixed": "#360f00",
+                    "on-error-container": "#93000a",
+                    "on-primary-fixed": "#00174b",
+                    "surface-container-high": "#dee8ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "md": "16px",
+                    "sm": "12px",
+                    "sidebar-width": "260px",
+                    "xs": "8px",
+                    "container-padding": "32px",
+                    "base": "4px",
+                    "xl": "32px",
+                    "lg": "24px",
+                    "grid-gutter": "20px"
+            },
+            "fontFamily": {
+                    "body-md": ["Inter"],
+                    "label-md": ["Inter"],
+                    "headline-sm": ["Inter"],
+                    "headline-md-mobile": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "data-mono": ["JetBrains Mono"]
+            },
+            "fontSize": {
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-sm": ["18px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "headline-md-mobile": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "display-lg": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "data-mono": ["14px", {"lineHeight": "20px", "fontWeight": "500"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+        .glass-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(226, 232, 240, 0.5); }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .active-tab { position: relative; color: var(--tw-color-primary); }
+        .active-tab::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 3px; background-color: #004ac6; border-radius: 9999px; }
+        
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+            100% { transform: translateY(0px); }
+        }
+        .float-animation { animation: float 3s ease-in-out infinite; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen pb-24">
+<!-- Top AppBar Mobile -->
+<header class="sticky top-0 z-50 bg-surface/80 backdrop-blur-md px-md h-16 flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-sm">
+<button class="p-xs text-on-surface hover:bg-surface-container rounded-lg transition-colors">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<h1 class="font-headline-sm text-headline-sm text-on-surface tracking-tight">Redes Sociais</h1>
+</div>
+<div class="flex items-center gap-xs">
+<button class="p-xs text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-container-highest border border-outline-variant overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Close-up professional headshot of a female executive with a confident expression, set against a blurred corporate office background with soft bokeh. The lighting is warm and natural, following a high-end SaaS light-mode aesthetic with clean lines and soft shadows." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB2Etoe4ofaeDKpN_Dc23OFHagUh_y7B6t6A4KalkWqAE9RThrc8jw_7EVvb1HhXBE_DGyz1jNPcNh2LFfm2hnl_XMoIaYierBn-nbpUqrPcm5DXCmR0fYfDVsG_ZHWWef6AAnqGfVLcUh9Qn8x23-7o3d83tJ5Z42-WEZq9aOCiQ3XyorQjKrfLqbwTes2YrIz6UZ9h_aVbhmq19TbASIwg8sI9iZt-KwoK-goAju3a-ehmDNxSf4KOWf1wKio3rEu1RTjEX4drW4"/>
+</div>
+</div>
+</header>
+<!-- Horizontal Category Tabs -->
+<nav class="bg-surface sticky top-16 z-40 border-b border-outline-variant overflow-x-auto scrollbar-hide">
+<div class="flex px-md min-w-max">
+<button class="px-md py-sm font-label-md text-label-md active-tab text-primary transition-all">Geral</button>
+<button class="px-md py-sm font-label-md text-label-md text-on-surface-variant hover:text-primary transition-all">Tesoura de Ouro</button>
+<button class="px-md py-sm font-label-md text-label-md text-on-surface-variant hover:text-primary transition-all">Magazine da Economia</button>
+<button class="px-md py-sm font-label-md text-label-md text-on-surface-variant hover:text-primary transition-all">Free Center</button>
+</div>
+</nav>
+<main class="px-md py-md space-y-md">
+<!-- KPI Grid 2x2 -->
+<div class="grid grid-cols-2 gap-md">
+<!-- Followers -->
+<div class="glass-card p-md rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between mb-xs">
+<span class="text-on-surface-variant font-label-md text-label-md">Seguidores</span>
+<div class="bg-primary-container/10 p-1 rounded-md">
+<span class="material-symbols-outlined text-[18px] text-primary" data-icon="group">group</span>
+</div>
+</div>
+<div>
+<div class="font-headline-md text-headline-md text-on-surface">1.2M</div>
+<div class="flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[14px] text-secondary" data-icon="trending_up">trending_up</span>
+<span class="text-secondary font-label-md text-[10px]">+12.4%</span>
+</div>
+</div>
+</div>
+<!-- Reach -->
+<div class="glass-card p-md rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between mb-xs">
+<span class="text-on-surface-variant font-label-md text-label-md">Alcance</span>
+<div class="bg-primary-container/10 p-1 rounded-md">
+<span class="material-symbols-outlined text-[18px] text-primary" data-icon="visibility">visibility</span>
+</div>
+</div>
+<div>
+<div class="font-headline-md text-headline-md text-on-surface">4.8M</div>
+<div class="flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[14px] text-secondary" data-icon="trending_up">trending_up</span>
+<span class="text-secondary font-label-md text-[10px]">+8.1%</span>
+</div>
+</div>
+</div>
+<!-- Engagement -->
+<div class="glass-card p-md rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between mb-xs">
+<span class="text-on-surface-variant font-label-md text-label-md">Engajamento</span>
+<div class="bg-primary-container/10 p-1 rounded-md">
+<span class="material-symbols-outlined text-[18px] text-primary" data-icon="favorite">favorite</span>
+</div>
+</div>
+<div>
+<div class="font-headline-md text-headline-md text-on-surface">245K</div>
+<div class="flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[14px] text-error" data-icon="trending_down">trending_down</span>
+<span class="text-error font-label-md text-[10px]">-2.3%</span>
+</div>
+</div>
+</div>
+<!-- Clicks -->
+<div class="glass-card p-md rounded-xl shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between mb-xs">
+<span class="text-on-surface-variant font-label-md text-label-md">Cliques</span>
+<div class="bg-primary-container/10 p-1 rounded-md">
+<span class="material-symbols-outlined text-[18px] text-primary" data-icon="ads_click">ads_click</span>
+</div>
+</div>
+<div>
+<div class="font-headline-md text-headline-md text-on-surface">18.2K</div>
+<div class="flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[14px] text-secondary" data-icon="trending_up">trending_up</span>
+<span class="text-secondary font-label-md text-[10px]">+15.7%</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Line Chart: Crescimento de Seguidores -->
+<section class="glass-card p-md rounded-xl shadow-sm">
+<div class="flex items-center justify-between mb-md">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Crescimento</h3>
+<span class="text-on-surface-variant font-label-md text-[11px] uppercase tracking-wider">Últimos 30 dias</span>
+</div>
+<div class="h-48 w-full relative flex items-end justify-between gap-1 px-1">
+<!-- Simulating a line chart with CSS/Divs for visualization -->
+<div class="absolute inset-0 flex items-end">
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 100 40">
+<path d="M0,35 Q10,32 20,25 T40,28 T60,15 T80,18 T100,5" fill="none" stroke="#004ac6" stroke-width="2" vector-effect="non-scaling-stroke"></path>
+<path d="M0,35 Q10,32 20,25 T40,28 T60,15 T80,18 T100,5 V40 H0 Z" fill="url(#lineGradient)" opacity="0.1"></path>
+<defs>
+<lineargradient id="lineGradient" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#004ac6"></stop>
+<stop offset="100%" stop-color="transparent"></stop>
+</lineargradient>
+</defs>
+</svg>
+</div>
+<!-- Data Mono Axis labels -->
+<div class="absolute bottom-0 left-0 right-0 flex justify-between text-on-surface-variant font-data-mono text-[10px] opacity-60 translate-y-4">
+<span>01 Out</span>
+<span>10 Out</span>
+<span>20 Out</span>
+<span>30 Out</span>
+</div>
+</div>
+</section>
+<!-- Donut Chart: Share de Engajamento -->
+<section class="glass-card p-md rounded-xl shadow-sm">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-md">Share de Engajamento</h3>
+<div class="flex items-center gap-lg">
+<div class="relative w-28 h-28 flex-shrink-0">
+<svg class="w-full h-full transform -rotate-90" viewbox="0 0 36 36">
+<path class="text-surface-container-highest" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="100, 100" stroke-width="4"></path>
+<path class="text-primary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="60, 100" stroke-width="4"></path>
+<path class="text-secondary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="25, 100" stroke-dashoffset="-60" stroke-width="4"></path>
+<path class="text-tertiary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="15, 100" stroke-dashoffset="-85" stroke-width="4"></path>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="font-headline-md text-headline-sm text-on-surface">60%</span>
+</div>
+</div>
+<div class="space-y-sm flex-grow">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-xs">
+<div class="w-3 h-3 rounded-full bg-primary"></div>
+<span class="text-on-surface-variant font-label-md text-label-md">Instagram</span>
+</div>
+<span class="font-data-mono text-on-surface">60%</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-xs">
+<div class="w-3 h-3 rounded-full bg-secondary"></div>
+<span class="text-on-surface-variant font-label-md text-label-md">Facebook</span>
+</div>
+<span class="font-data-mono text-on-surface">25%</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-xs">
+<div class="w-3 h-3 rounded-full bg-tertiary"></div>
+<span class="text-on-surface-variant font-label-md text-label-md">TikTok</span>
+</div>
+<span class="font-data-mono text-on-surface">15%</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Destaques da Semana -->
+<section class="space-y-sm">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Destaques da Semana</h3>
+<button class="text-primary font-label-md text-label-md">Ver tudo</button>
+</div>
+<div class="space-y-xs">
+<!-- Post Item 1 -->
+<div class="glass-card p-xs rounded-lg flex items-center gap-md">
+<div class="w-16 h-16 rounded-md overflow-hidden bg-surface-container-highest flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="A vibrant, high-contrast lifestyle photograph showing a fashionable model posing in modern retail clothing, styled for a high-end social media campaign. The lighting is crisp and colorful, featuring blue and pink neon highlights against a clean minimalist backdrop. The overall aesthetic is polished, modern, and aligned with premium corporate branding." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAqHndZm6oGdJkJlDdxGXlSnhYKEmuACVk1tEB4A1xi1x48F31am0jstHAZI4xX1nGu6ETo7cDuAgzg8bm0llTLVcNdPZck332ji1Nr85MSQ1ND9gJnDp6y1yHqY6nM-8xNFWpbb5W24a6aA5Xg3zUBaadx1yVqdoQLtcYnRqPjuZ65p3eLyWkrSEtuW_yjduqQp-CwqlsjFNh0-ooSserlBqv0XCiTbwtkT67KKIu1T22jEKQkKv3bkM7R6_YYzYcF4YaAlzO39NY"/>
+</div>
+<div class="flex-grow min-w-0">
+<div class="flex items-center gap-xs mb-1">
+<span class="material-symbols-outlined text-primary text-[16px]" data-icon="photo_camera">photo_camera</span>
+<span class="text-on-surface-variant font-label-md text-[10px] uppercase">Instagram</span>
+</div>
+<p class="text-on-surface font-body-md text-body-md truncate">Nova Coleção Primavera/Verão</p>
+<p class="text-secondary font-label-md text-[11px] font-bold">12.4K Curtidas</p>
+</div>
+<button class="p-xs text-outline hover:text-primary">
+<span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+<!-- Post Item 2 -->
+<div class="glass-card p-xs rounded-lg flex items-center gap-md">
+<div class="w-16 h-16 rounded-md overflow-hidden bg-surface-container-highest flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="A professional promotional graphic showing a group of happy shoppers in a bright, modern department store. The image is captured with a wide-angle lens, showing clean aisles, premium signage, and a warm, inviting atmosphere. The color palette is dominated by soft whites and corporate blues, maintaining a high-fidelity SaaS interface feel." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGXw1ud5ig4DtmFSa6guRS5IpRuZC_rALV22TpFIbPBjjvpj7K_R8mcGtXKbVLHdDi5R_1PUKMiewmitvbDX6lkcWlLE4FsNUQalnfH3M95gBS0R9sGzGjpO0HM8ZY34Eiyv9ICyA-Ml9_JkzqdqM8SrW8HXJx__s9xFEtes8btMHSJmVsMgvs8eSSilcqsgNoXnaXlV5-9l8bNoDZZ3RLl-4tm139jjFOSVwlyPlbL17THP7ezdmTy2ecDSAkoGa5BeywO44TP_Y"/>
+</div>
+<div class="flex-grow min-w-0">
+<div class="flex items-center gap-xs mb-1">
+<span class="material-symbols-outlined text-[#1877F2] text-[16px]" data-icon="facebook">face_nod</span>
+<span class="text-on-surface-variant font-label-md text-[10px] uppercase">Facebook</span>
+</div>
+<p class="text-on-surface font-body-md text-body-md truncate">Ofertas Imbatíveis - Magazine</p>
+<p class="text-secondary font-label-md text-[11px] font-bold">452 Compartilhamentos</p>
+</div>
+<button class="p-xs text-outline hover:text-primary">
+<span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+<!-- Post Item 3 -->
+<div class="glass-card p-xs rounded-lg flex items-center gap-md">
+<div class="w-16 h-16 rounded-md overflow-hidden bg-surface-container-highest flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="A dynamic action shot of a running shoe with light trails, emphasizing speed and modern technology. The background is a dark, sleek athletic track with high-contrast cinematic lighting. This image represents the 'Free Center' brand segment, using professional sports photography techniques within a clean, executive dashboard context." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHHc2Z3Zx5o_hvnpslavz92lWC1G46Gz78ILlAs83M9qAA0A__iaOmCAA4MdKW1I-O26NtvXXCZOIBz2yug6_2cLgC6TSr1F8xla044pz1rTEym4dhXgmKUGGaz1O91pxMWutkrYIAXkSiVScEA8FTx25B4bKOR4pAfTMRodeCarNUjdrpEPNM6bSOpmIl5gbUoxEbjjIvJZ-LpkYD-FPFlLON1y1c8DVWrzOAEXz_37gxInY1RGzrso0e2sdz2Ob4vdJpBzVUSAI"/>
+</div>
+<div class="flex-grow min-w-0">
+<div class="flex items-center gap-xs mb-1">
+<span class="material-symbols-outlined text-primary text-[16px]" data-icon="photo_camera">photo_camera</span>
+<span class="text-on-surface-variant font-label-md text-[10px] uppercase">Instagram</span>
+</div>
+<p class="text-on-surface font-body-md text-body-md truncate">Review: O Novo Air Max 2024</p>
+<p class="text-secondary font-label-md text-[11px] font-bold">8.1K Visualizações</p>
+</div>
+<button class="p-xs text-outline hover:text-primary">
+<span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Mobile -->
+<nav class="fixed bottom-0 left-0 right-0 z-50 bg-surface/95 backdrop-blur-xl border-t border-outline-variant h-20 flex items-center justify-around px-md pb-safe">
+<button class="flex flex-col items-center gap-1 text-on-surface-variant hover:text-primary transition-all">
+<span class="material-symbols-outlined text-[24px]" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-[10px]">Geral</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-primary transition-all">
+<div class="relative">
+<span class="material-symbols-outlined text-[24px]" data-icon="share" style="font-variation-settings: 'FILL' 1;">share</span>
+<div class="absolute -top-1 -right-1 w-2 h-2 bg-error rounded-full"></div>
+</div>
+<span class="font-label-md text-[10px] font-bold">Social</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-on-surface-variant hover:text-primary transition-all">
+<span class="material-symbols-outlined text-[24px]" data-icon="lightbulb">lightbulb</span>
+<span class="font-label-md text-[10px]">Insights</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-on-surface-variant hover:text-primary transition-all">
+<span class="material-symbols-outlined text-[24px]" data-icon="person">person</span>
+<span class="font-label-md text-[10px]">Perfil</span>
+</button>
+</nav>
+<!-- Floating Action Button Contextual (Insights) -->
+<button class="fixed bottom-24 right-md w-14 h-14 bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center float-animation z-40 active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-[28px]" data-icon="bolt">bolt</span>
+</button>
+<script>
+        // Micro-interactions and Lightweight atmospheric effects
+        document.addEventListener('DOMContentLoaded', () => {
+            const cards = document.querySelectorAll('.glass-card');
+            cards.forEach(card => {
+                card.addEventListener('touchstart', () => {
+                    card.classList.add('scale-[0.98]');
+                });
+                card.addEventListener('touchend', () => {
+                    card.classList.remove('scale-[0.98]');
+                });
+            });
+
+            // Smooth horizontal scroll for tabs
+            const tabNav = document.querySelector('nav div');
+            let isDown = false;
+            let startX;
+            let scrollLeft;
+
+            tabNav.addEventListener('mousedown', (e) => {
+                isDown = true;
+                startX = e.pageX - tabNav.offsetLeft;
+                scrollLeft = tabNav.scrollLeft;
+            });
+            tabNav.addEventListener('mouseleave', () => { isDown = false; });
+            tabNav.addEventListener('mouseup', () => { isDown =</script></body></html>

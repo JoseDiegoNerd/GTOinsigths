@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>GTO Insights - Insights Automáticos</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-container": "#6cf8bb",
+                        "on-primary-fixed": "#00174b",
+                        "on-primary": "#ffffff",
+                        "secondary-fixed-dim": "#4edea3",
+                        "surface-dim": "#cfdaf2",
+                        "on-tertiary-fixed": "#360f00",
+                        "tertiary-fixed": "#ffdbcd",
+                        "on-tertiary-fixed-variant": "#7d2d00",
+                        "primary-container": "#2563eb",
+                        "surface-variant": "#d8e3fb",
+                        "on-secondary": "#ffffff",
+                        "surface-container": "#e7eeff",
+                        "on-secondary-fixed": "#002113",
+                        "error-container": "#ffdad6",
+                        "tertiary-container": "#bc4800",
+                        "tertiary-fixed-dim": "#ffb596",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-container": "#ffede6",
+                        "on-secondary-container": "#00714d",
+                        "background": "#f9f9ff",
+                        "on-surface": "#111c2d",
+                        "secondary-fixed": "#6ffbbe",
+                        "surface-container-low": "#f0f3ff",
+                        "secondary": "#006c49",
+                        "on-tertiary": "#ffffff",
+                        "surface": "#f9f9ff",
+                        "primary-fixed": "#dbe1ff",
+                        "inverse-primary": "#b4c5ff",
+                        "inverse-on-surface": "#ecf1ff",
+                        "surface-tint": "#0053db",
+                        "inverse-surface": "#263143",
+                        "tertiary": "#943700",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "primary": "#004ac6",
+                        "on-error": "#ffffff",
+                        "surface-container-highest": "#d8e3fb",
+                        "on-background": "#111c2d",
+                        "surface-container-high": "#dee8ff",
+                        "error": "#ba1a1a",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "surface-bright": "#f9f9ff",
+                        "outline-variant": "#c3c6d7",
+                        "on-surface-variant": "#434655",
+                        "on-secondary-fixed-variant": "#005236",
+                        "outline": "#737686",
+                        "on-primary-container": "#eeefff",
+                        "on-error-container": "#93000a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-padding": "32px",
+                        "sm": "12px",
+                        "base": "4px",
+                        "xs": "8px",
+                        "grid-gutter": "20px",
+                        "xl": "32px",
+                        "sidebar-width": "260px",
+                        "lg": "24px",
+                        "md": "16px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-md-mobile": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "data-mono": ["JetBrains Mono"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-md-mobile": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "display-lg": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-sm": ["18px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "data-mono": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-tab {
+            font-variation-settings: 'FILL' 1;
+        }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #c3c6d7; border-radius: 10px; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-body-md overflow-x-hidden">
+<!-- Top Navigation Bar -->
+<header class="sticky top-0 z-50 bg-surface/80 backdrop-blur-md shadow-sm px-md py-sm flex justify-between items-center transition-all duration-300">
+<div class="flex flex-col">
+<h1 class="font-headline-md-mobile text-headline-md-mobile text-on-surface flex items-center gap-xs">
+                Insights de IA
+                <span class="bg-primary/10 text-primary text-[10px] uppercase px-xs py-[2px] rounded-full tracking-widest font-bold">Beta</span>
+</h1>
+<span class="text-on-surface-variant font-label-md text-[11px]">Atualizado há 2 min</span>
+</div>
+<button aria-label="Atualizar Insights" class="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container hover:bg-surface-container-high transition-transform active:scale-90">
+<span class="material-symbols-outlined text-on-surface-variant">refresh</span>
+</button>
+</header>
+<!-- Filter Bar (Period & Brand) -->
+<section class="px-md pt-md pb-xs sticky top-16 bg-background z-40">
+<div class="flex gap-xs overflow-x-auto pb-xs no-scrollbar">
+<!-- Period Filter -->
+<div class="flex-shrink-0 flex items-center gap-xs bg-surface border border-outline-variant rounded-lg px-sm py-xs text-on-surface-variant font-label-md">
+<span class="material-symbols-outlined text-[18px]">calendar_today</span>
+<span>Últimos 30 Dias</span>
+<span class="material-symbols-outlined text-[16px]">expand_more</span>
+</div>
+<!-- Brand Filter -->
+<div class="flex-shrink-0 flex items-center gap-xs bg-surface border border-outline-variant rounded-lg px-sm py-xs text-on-surface-variant font-label-md">
+<span class="material-symbols-outlined text-[18px]">storefront</span>
+<span>Todas as Marcas</span>
+<span class="material-symbols-outlined text-[16px]">expand_more</span>
+</div>
+</div>
+</section>
+<!-- Main Content Canvas -->
+<main class="flex-1 px-md py-sm flex flex-col gap-md pb-32">
+<!-- Category Banner (AI Summary) -->
+<div class="relative overflow-hidden bg-primary-container rounded-xl p-md text-on-primary-container shadow-sm">
+<div class="absolute -right-4 -top-4 opacity-20 transform rotate-12">
+<span class="material-symbols-outlined text-[120px]" style="font-variation-settings: 'FILL' 1;">psychology</span>
+</div>
+<div class="relative z-10">
+<p class="font-label-md text-[11px] uppercase tracking-wider mb-xs opacity-80">Panorama Geral</p>
+<h2 class="font-headline-sm text-headline-sm mb-xs">3 Insights Estratégicos</h2>
+<p class="font-body-md text-body-md opacity-90 max-w-[80%]">Detectamos padrões de comportamento no faturamento que requerem sua atenção imediata.</p>
+</div>
+</div>
+<!-- High Impact / Alert Card -->
+<article class="bg-surface border border-outline-variant rounded-xl overflow-hidden shadow-sm transition-all active:scale-[0.98]">
+<div class="h-1.5 w-full bg-[#E5007E]"></div> <!-- Magenta #E5007E -->
+<div class="p-md">
+<div class="flex justify-between items-start mb-sm">
+<div class="bg-[#E5007E]/10 p-xs rounded-lg">
+<span class="material-symbols-outlined text-[#E5007E]">error</span>
+</div>
+<span class="font-label-md text-[10px] px-xs py-[2px] rounded border border-[#E5007E] text-[#E5007E] uppercase">Alto Impacto</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-xs">Reativação de Clientes</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-md">
+<span class="font-bold text-[#E5007E]">ALERTA:</span> O <span class="font-semibold">Magazine da Economia</span> possui 15k clientes inativos há mais de 90 dias.
+                </p>
+<div class="flex items-center gap-xs bg-surface-container-low p-sm rounded-lg border border-outline-variant/30 mb-md">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">auto_fix_high</span>
+<p class="font-label-md text-on-surface text-[12px]">Oportunidade de reativação via <span class="text-[#E5007E] font-bold">RD Station</span>.</p>
+</div>
+<button class="w-full bg-on-background text-background py-sm rounded-lg font-label-md text-label-md transition-colors hover:bg-on-background/90 flex justify-center items-center gap-xs">
+                    Executar Campanha <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</article>
+<!-- Medium Impact / Opportunity Card -->
+<article class="bg-surface border border-outline-variant rounded-xl overflow-hidden shadow-sm transition-all active:scale-[0.98]">
+<div class="h-1.5 w-full bg-[#2E3192]"></div> <!-- Blue #2E3192 -->
+<div class="p-md">
+<div class="flex justify-between items-start mb-sm">
+<div class="bg-[#2E3192]/10 p-xs rounded-lg">
+<span class="material-symbols-outlined text-[#2E3192]">trending_up</span>
+</div>
+<span class="font-label-md text-[10px] px-xs py-[2px] rounded border border-[#2E3192] text-[#2E3192] uppercase">Oportunidade</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-xs">Crescimento de Cartões</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-md">
+<span class="font-bold text-[#2E3192]">OPORTUNIDADE:</span> A <span class="font-semibold">Tesoura de Ouro</span> teve crescimento de <span class="font-bold text-secondary">12%</span> em cartões ativos no período.
+                </p>
+<div class="flex items-center gap-xs bg-surface-container-low p-sm rounded-lg border border-outline-variant/30 mb-md">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">lightbulb</span>
+<p class="font-label-md text-on-surface text-[12px]">Recomenda-se campanha de <span class="font-bold">upsell</span> para o próximo mês.</p>
+</div>
+<button class="w-full border border-outline text-on-surface py-sm rounded-lg font-label-md text-label-md transition-colors hover:bg-surface-container flex justify-center items-center gap-xs">
+                    Ver Detalhes do Público
+                </button>
+</div>
+</article>
+<!-- Low Impact / Risk Card -->
+<article class="bg-surface border border-outline-variant rounded-xl overflow-hidden shadow-sm transition-all active:scale-[0.98]">
+<div class="h-1.5 w-full bg-[#FF6608]"></div> <!-- Orange #FF6608 -->
+<div class="p-md">
+<div class="flex justify-between items-start mb-sm">
+<div class="bg-[#FF6608]/10 p-xs rounded-lg">
+<span class="material-symbols-outlined text-[#FF6608]">warning</span>
+</div>
+<span class="font-label-md text-[10px] px-xs py-[2px] rounded border border-[#FF6608] text-[#FF6608] uppercase">Risco Social</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-xs">Engajamento Digital</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-md">
+<span class="font-bold text-[#FF6608]">RISCO:</span> A <span class="font-semibold">Free Center</span> apresentou queda de <span class="font-bold text-error">8%</span> no engajamento das redes sociais.
+                </p>
+<div class="flex items-center gap-xs bg-surface-container-low p-sm rounded-lg border border-outline-variant/30 mb-md">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">share</span>
+<p class="font-label-md text-on-surface text-[12px]">Verifique a frequência de postagens e o CTR dos anúncios atuais.</p>
+</div>
+<button class="w-full border border-outline text-on-surface py-sm rounded-lg font-label-md text-label-md transition-colors hover:bg-surface-container flex justify-center items-center gap-xs">
+                    Analisar Canais
+                </button>
+</div>
+</article>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 right-0 bg-surface shadow-[0_-4px_16px_rgba(0,0,0,0.05)] px-sm py-xs flex justify-around items-center z-50 md:hidden">
+<button class="flex flex-col items-center gap-1 p-xs text-on-surface-variant transition-colors hover:text-primary">
+<span class="material-symbols-outlined text-[24px]">dashboard</span>
+<span class="font-label-md text-[10px]">Dashboard</span>
+</button>
+<button class="flex flex-col items-center gap-1 p-xs text-on-surface-variant transition-colors hover:text-primary">
+<span class="material-symbols-outlined text-[24px]">credit_card</span>
+<span class="font-label-md text-[10px]">Cartão</span>
+</button>
+<!-- Active Tab: Insights -->
+<button class="flex flex-col items-center gap-1 p-xs text-primary transition-colors">
+<span class="material-symbols-outlined text-[24px] active-tab">lightbulb</span>
+<span class="font-label-md text-[10px]">Insights</span>
+<div class="w-1 h-1 bg-primary rounded-full mt-[2px]"></div>
+</button>
+<button class="flex flex-col items-center gap-1 p-xs text-on-surface-variant transition-colors hover:text-primary">
+<span class="material-symbols-outlined text-[24px]">person</span>
+<span class="font-label-md text-[10px]">Perfil</span>
+</button>
+<button class="flex flex-col items-center gap-1 p-xs text-on-surface-variant transition-colors hover:text-primary">
+<span class="material-symbols-outlined text-[24px]">settings</span>
+<span class="font-label-md text-[10px]">Config</span>
+</button>
+</nav>
+<script>
+        // Simple Micro-interaction for refresh button
+        const refreshBtn = document.querySelector('button[aria-label="Atualizar Insights"]');
+        refreshBtn.addEventListener('click', () => {
+            const icon = refreshBtn.querySelector('.material-symbols-outlined');
+            icon.classList.add('animate-spin');
+            setTimeout(() => {
+                icon.classList.remove('animate-spin');
+            }, 1000);
+        });
+
+        // Horizontal scroll momentum helper for filters
+        const filters = document.querySelector('.no-scrollbar');
+        let isDown = false;
+        let startDate;
+        let scrollLeft;
+
+        filters.addEventListener('mousedown', (e) => {
+            isDown = true;
+            startDate = e.pageX - filters.offsetLeft;
+            scrollLeft = filters.scrollLeft;
+        });
+        filters.addEventListener('mouseleave', () => { isDown = false; });
+        filters.addEventListener('mouseup', () => { isDown = false; });
+        filters.addEventListener('mousemove', (e) => {
+            if(!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - filters.offsetLeft;
+            const walk = (x - startDate) * 2;
+            filters.scrollLeft = scrollLeft - walk;
+        });
+    </script>
+</body></html>

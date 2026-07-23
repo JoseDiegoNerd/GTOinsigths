@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+
+<html class="light" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>GTO Insights - Importar Dados</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#ffdbcd",
+                        "inverse-primary": "#b4c5ff",
+                        "tertiary-container": "#bc4800",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-error": "#ffffff",
+                        "background": "#f9f9ff",
+                        "primary-container": "#2563eb",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#7d2d00",
+                        "on-surface": "#111c2d",
+                        "secondary-container": "#6cf8bb",
+                        "on-primary": "#ffffff",
+                        "surface-tint": "#0053db",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "inverse-surface": "#263143",
+                        "secondary-fixed": "#6ffbbe",
+                        "on-secondary-container": "#00714d",
+                        "outline-variant": "#c3c6d7",
+                        "on-surface-variant": "#434655",
+                        "surface-container": "#e7eeff",
+                        "surface-container-low": "#f0f3ff",
+                        "secondary-fixed-dim": "#4edea3",
+                        "surface-dim": "#cfdaf2",
+                        "error": "#ba1a1a",
+                        "primary-fixed": "#dbe1ff",
+                        "on-primary-container": "#eeefff",
+                        "on-secondary-fixed-variant": "#005236",
+                        "surface-bright": "#f9f9ff",
+                        "on-secondary-fixed": "#002113",
+                        "surface-container-highest": "#d8e3fb",
+                        "surface": "#f9f9ff",
+                        "on-secondary": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "surface-variant": "#d8e3fb",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-container": "#ffede6",
+                        "on-background": "#111c2d",
+                        "tertiary": "#943700",
+                        "secondary": "#006c49",
+                        "inverse-on-surface": "#ecf1ff",
+                        "primary": "#004ac6",
+                        "outline": "#737686",
+                        "tertiary-fixed-dim": "#ffb596",
+                        "on-tertiary-fixed": "#360f00",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed": "#00174b",
+                        "surface-container-high": "#dee8ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "md": "16px",
+                        "sm": "12px",
+                        "sidebar-width": "260px",
+                        "xs": "8px",
+                        "container-padding": "32px",
+                        "base": "4px",
+                        "xl": "32px",
+                        "lg": "24px",
+                        "grid-gutter": "20px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "headline-md-mobile": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "data-mono": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-sm": ["18px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "headline-md-mobile": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "display-lg": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "data-mono": ["14px", {"lineHeight": "20px", "fontWeight": "500"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-step {
+            @apply border-primary text-primary font-bold;
+        }
+        .inactive-step {
+            @apply border-outline-variant text-outline;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background font-body-md text-on-surface antialiased mb-20 overflow-x-hidden">
+<!-- Header Section -->
+<header class="bg-surface fixed top-0 left-0 right-0 z-50 shadow-sm px-md h-16 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary cursor-pointer">arrow_back</span>
+<h1 class="font-headline-md-mobile text-headline-md-mobile text-on-surface">Importar Dados</h1>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant">help</span>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="mt-20 px-md pb-10 space-y-lg">
+<!-- Simplified Horizontal Stepper -->
+<nav class="flex items-center justify-between bg-surface p-sm rounded-xl border border-outline-variant shadow-sm">
+<div class="flex flex-col items-center flex-1 relative">
+<div class="w-8 h-8 rounded-full border-2 border-primary bg-primary-container/10 flex items-center justify-center text-primary font-bold z-10">1</div>
+<span class="text-label-md font-label-md mt-1 text-primary">Origem</span>
+</div>
+<div class="h-0.5 flex-1 bg-outline-variant -mt-5"></div>
+<div class="flex flex-col items-center flex-1 relative">
+<div class="w-8 h-8 rounded-full border-2 border-outline-variant bg-surface flex items-center justify-center text-outline z-10">2</div>
+<span class="text-label-md font-label-md mt-1 text-outline">Arquivo</span>
+</div>
+<div class="h-0.5 flex-1 bg-outline-variant -mt-5"></div>
+<div class="flex flex-col items-center flex-1 relative">
+<div class="w-8 h-8 rounded-full border-2 border-outline-variant bg-surface flex items-center justify-center text-outline z-10">3</div>
+<span class="text-label-md font-label-md mt-1 text-outline">Sucesso</span>
+</div>
+</nav>
+<!-- Brand Selection Section -->
+<section class="space-y-sm">
+<h2 class="text-headline-sm font-headline-sm">1. Selecione a Bandeira</h2>
+<div class="flex gap-md overflow-x-auto hide-scrollbar pb-2">
+<!-- Brand Card 1 -->
+<button class="min-w-[120px] bg-surface p-md rounded-xl border-2 border-primary bg-primary/5 flex flex-col items-center justify-center gap-sm transition-all shadow-sm" onclick="selectBrand(this)">
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A premium professional logo for a retail brand named 'Tesoura de Ouro' displayed in a minimalist corporate style with gold and dark navy tones. The visual identity is clean and modern, fitting for a high-end dashboard interface with light mode aesthetics and subtle reflections." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCXIPTOHku7xG1rIdMMAJJyxA5_o1jARb6Tfl6doHqZ0SAVdxUGc-OCo6t8yccu3QrZYNTkawBEe0FNoFos9pFZmNC1pPLU1bBSxFvm-q_o7QdrWZzLb9A8-eFFDK7RQ3STMOEvvVvPUJiqVvOGMS3q5fMrSHUk-IWHELNCLIf8rxpUycyxyHeOHiv9QWQuc9lzwNyRVKhkwNUVtYOyHCWE9JsNzSKo-QDOI_mrVkVK_WmHoy94mwitljJKuKe1Dygeqy6k7TmZQi0"/>
+</div>
+<span class="text-label-md font-label-md text-center">Tesoura de Ouro</span>
+</button>
+<!-- Brand Card 2 -->
+<button class="min-w-[120px] bg-surface p-md rounded-xl border-2 border-transparent flex flex-col items-center justify-center gap-sm transition-all shadow-sm" onclick="selectBrand(this)">
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A sophisticated retail brand logo for 'Magazine da Economia' with a professional and trustworthy visual style. The colors are deep greens and crisp whites, set against a clean white background. The aesthetic is modern corporate SaaS, emphasizing precision and accessibility." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAwib3m-MJOaEiiyVP0xgReEY_5M7uJepozyjKG2SAiWwZySosFcVbyyq6tqUVKL5SRdyM9MYLi8gy8JZyGUNNKANQcSJPDPhG9VyQeftFl4dYaLtH5aiMFZHvFM92BdWwSjnGcbl6FSoN-x-KtwwcMs-XPHUg9d_COPWuzePOktfEq3rol4HlmWjYhcg0HPXKBwA76teHLp2fwq7rWs8Zzu2cGtPNUBmx-0ifg5r3sJ9wYRyvJ5eBNrVlTakufHNCS3tY7cgkX9rA"/>
+</div>
+<span class="text-label-md font-label-md text-center">Magazine Economia</span>
+</button>
+<!-- Brand Card 3 -->
+<button class="min-w-[120px] bg-surface p-md rounded-xl border-2 border-transparent flex flex-col items-center justify-center gap-sm transition-all shadow-sm" onclick="selectBrand(this)">
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A modern footwear retail logo for 'Free Center' featuring a dynamic and athletic design. The branding uses bold blues and silver tones on a clean, white corporate backdrop. The visual style is high-density data visualization ready, representing a key business entity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB19a0RTsCMk_vEocgNF9TNPWtU5N0BAMLWgGdq5PshgJCJlz8NFG_JExmaYLCooi0qDYsX8tnEnpIvrV7y1dBWDJfYSt81GUx7dpp3AnuiVgJP13AbZmCmnVQ4DY_zJQmNJ-4ugxH15TPww6oRB5iVMX9nEtbAFtT1e7neZBVSdOEaMLJVXLgqEpTpsyi3cKDGh0Na1HXv7T0XdRslBnzY_C_hj_ATAdGR1Tn__otYeUPNyPH-SzqyyL5bwoBVANlnWM4AiJJBg6I"/>
+</div>
+<span class="text-label-md font-label-md text-center">Free Center</span>
+</button>
+</div>
+</section>
+<!-- Source Selection Section -->
+<section class="space-y-sm">
+<h2 class="text-headline-sm font-headline-sm">2. Fonte de Dados</h2>
+<div class="grid grid-cols-4 gap-md">
+<button class="flex flex-col items-center gap-xs">
+<div class="w-12 h-12 rounded-lg bg-surface border border-outline-variant flex items-center justify-center text-primary shadow-sm">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">payments</span>
+</div>
+<span class="text-[10px] font-bold text-center uppercase tracking-wider text-outline">CredSystem</span>
+</button>
+<button class="flex flex-col items-center gap-xs">
+<div class="w-12 h-12 rounded-lg bg-surface border border-outline-variant flex items-center justify-center text-secondary shadow-sm">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">campaign</span>
+</div>
+<span class="text-[10px] font-bold text-center uppercase tracking-wider text-outline">RD Station</span>
+</button>
+<button class="flex flex-col items-center gap-xs">
+<div class="w-12 h-12 rounded-lg bg-surface border border-outline-variant flex items-center justify-center text-blue-600 shadow-sm">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">ads_click</span>
+</div>
+<span class="text-[10px] font-bold text-center uppercase tracking-wider text-outline">Meta Ads</span>
+</button>
+<button class="flex flex-col items-center gap-xs">
+<div class="w-12 h-12 rounded-lg bg-primary-container flex items-center justify-center text-on-primary shadow-sm">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">table_chart</span>
+</div>
+<span class="text-[10px] font-bold text-center uppercase tracking-wider text-primary">Planilha</span>
+</button>
+</div>
+</section>
+<!-- Simplified Drag & Drop for Mobile -->
+<section class="space-y-sm">
+<h2 class="text-headline-sm font-headline-sm">3. Arquivo</h2>
+<div class="border-2 border-dashed border-outline-variant bg-surface rounded-2xl p-lg flex flex-col items-center justify-center text-center gap-md transition-colors active:border-primary active:bg-primary/5" id="dropZone">
+<div class="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-display-lg text-outline">upload_file</span>
+</div>
+<div>
+<p class="font-body-lg text-body-lg text-on-surface">Toque para selecionar</p>
+<p class="text-label-md text-outline">Formatos aceitos: .XLSX, .CSV</p>
+</div>
+<button class="bg-primary-container text-on-primary px-lg py-sm rounded-full font-label-md flex items-center gap-2 shadow-md">
+<span class="material-symbols-outlined text-body-md">add</span>
+                    Selecionar Arquivo
+                </button>
+<input class="hidden" id="fileInput" type="file"/>
+</div>
+</section>
+<!-- Recent History Section -->
+<section class="space-y-sm">
+<div class="flex items-center justify-between">
+<h2 class="text-headline-sm font-headline-sm">Histórico Recente</h2>
+<button class="text-primary font-label-md">Ver tudo</button>
+</div>
+<div class="bg-surface rounded-xl border border-outline-variant divide-y divide-outline-variant overflow-hidden shadow-sm">
+<!-- Item 1: Success -->
+<div class="p-md flex items-center justify-between">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-secondary-container/20 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined">check_circle</span>
+</div>
+<div>
+<p class="font-bold text-on-surface">vendas_junho.xlsx</p>
+<p class="text-label-md text-outline">Hoje, 14:20 • Tesoura de Ouro</p>
+</div>
+</div>
+<span class="bg-secondary/10 text-secondary px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">Sucesso</span>
+</div>
+<!-- Item 2: Pending -->
+<div class="p-md flex items-center justify-between">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">sync</span>
+</div>
+<div>
+<p class="font-bold text-on-surface">crm_leads.csv</p>
+<p class="text-label-md text-outline">Ontem, 09:15 • Free Center</p>
+</div>
+</div>
+<span class="bg-primary/10 text-primary px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">Pendente</span>
+</div>
+<!-- Item 3: Error -->
+<div class="p-md flex items-center justify-between">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-error-container/20 flex items-center justify-center text-error">
+<span class="material-symbols-outlined">error</span>
+</div>
+<div>
+<p class="font-bold text-on-surface">relatorio_ads_v2.xlsx</p>
+<p class="text-label-md text-outline">05 Jul, 18:30 • RD Station</p>
+</div>
+</div>
+<span class="bg-error/10 text-error px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">Erro</span>
+</div>
+</div>
+</section>
+<!-- Final Action Button (Relative to content, will be sticky or last item) -->
+<div class="pt-4">
+<button class="w-full bg-primary-container text-on-primary py-lg rounded-2xl font-headline-sm shadow-xl active:scale-95 transition-transform">
+                Confirmar Importação
+            </button>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 right-0 h-16 bg-surface flex items-center justify-around px-md z-50 border-t border-outline-variant/30">
+<button class="flex flex-col items-center gap-1 text-outline-variant hover:text-on-primary transition-colors">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[10px] font-medium">Dashboard</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-outline-variant hover:text-on-primary transition-colors">
+<span class="material-symbols-outlined">credit_card</span>
+<span class="text-[10px] font-medium">Cartão</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-on-primary border-t-[3px] border-primary bg-primary/10 font-bold px-2 h-full justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">upload_file</span>
+<span class="text-[10px]">Importar</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-outline-variant hover:text-on-primary transition-colors">
+<span class="material-symbols-outlined">lightbulb</span>
+<span class="text-[10px] font-medium">Insights</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-outline-variant hover:text-on-primary transition-colors">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px] font-medium">Ajustes</span>
+</button>
+</nav>
+<script>
+        function selectBrand(element) {
+            // Reset all cards in the selection row
+            const buttons = element.parentElement.querySelectorAll('button');
+            buttons.forEach(btn => {
+                btn.classList.remove('border-primary', 'bg-primary/5');
+                btn.classList.add('border-transparent');
+            });
+            
+            // Activate selected card
+            element.classList.remove('border-transparent');
+            element.classList.add('border-primary', 'bg-primary/5');
+            
+            // Add subtle vibration haptic feedback if available
+            if (window.navigator.vibrate) {
+                window.navigator.vibrate(10);
+            }
+        }
+
+        // Drag and Drop functional interaction for mobile "tap to select"
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+
+        dropZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                const fileName = e.target.files[0].name;
+                dropZone.innerHTML = `
+                    <div class="w-16 h-16 rounded-full bg-secondary-container/20 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-display-lg text-secondary">check_circle</span>
+                    </div>
+                    <div>
+                        <p class="font-bold text-body-lg text-on-surface">${fileName}</p>
+                        <p class="text-label-md text-secondary">Arquivo pronto para importação</p>
+                    </div>
+                    <button class="text-outline-variant text-label-md underline">Trocar arquivo</button>
+                `;
+                dropZone.classList.add('border-secondary', 'bg-secondary/5');
+            }
+        });
+
+        // Sticky button animation logic on scroll
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('header');
+            if (window.scrollY > 20) {
+                header.classList.add('shadow-md');
+            } else {
+                header.classList.remove('shadow-md');
+            }
+        });
+    </script>
+</body></html>

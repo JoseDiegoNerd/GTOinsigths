@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+
+<html class="light" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Login | GTO Insights</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-error-container": "#93000a",
+                    "on-secondary-container": "#00714d",
+                    "primary-container": "#2563eb",
+                    "secondary-container": "#6cf8bb",
+                    "on-tertiary-fixed-variant": "#7d2d00",
+                    "on-tertiary-fixed": "#360f00",
+                    "on-secondary-fixed": "#002113",
+                    "error-container": "#ffdad6",
+                    "tertiary": "#943700",
+                    "inverse-on-surface": "#ecf1ff",
+                    "error": "#ba1a1a",
+                    "surface-container-low": "#f0f3ff",
+                    "outline-variant": "#c3c6d7",
+                    "on-secondary-fixed-variant": "#005236",
+                    "secondary-fixed": "#6ffbbe",
+                    "secondary-fixed-dim": "#4edea3",
+                    "on-tertiary-container": "#ffede6",
+                    "surface-container": "#e7eeff",
+                    "surface-dim": "#cfdaf2",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "surface-container-lowest": "#ffffff",
+                    "on-surface": "#111c2d",
+                    "secondary": "#006c49",
+                    "on-primary": "#ffffff",
+                    "on-primary-container": "#eeefff",
+                    "on-error": "#ffffff",
+                    "tertiary-fixed": "#ffdbcd",
+                    "primary-fixed": "#dbe1ff",
+                    "inverse-primary": "#b4c5ff",
+                    "surface-tint": "#0053db",
+                    "on-background": "#111c2d",
+                    "tertiary-fixed-dim": "#ffb596",
+                    "outline": "#737686",
+                    "on-secondary": "#ffffff",
+                    "surface-container-high": "#dee8ff",
+                    "surface": "#f9f9ff",
+                    "surface-container-highest": "#d8e3fb",
+                    "surface-bright": "#f9f9ff",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-fixed": "#00174b",
+                    "primary": "#004ac6",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "background": "#f9f9ff",
+                    "tertiary-container": "#bc4800",
+                    "on-surface-variant": "#434655",
+                    "inverse-surface": "#263143",
+                    "surface-variant": "#d8e3fb"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "sidebar-width": "260px",
+                    "base": "4px",
+                    "xs": "8px",
+                    "sm": "12px",
+                    "md": "16px",
+                    "lg": "24px",
+                    "container-padding": "32px",
+                    "xl": "32px",
+                    "grid-gutter": "20px"
+            },
+            "fontFamily": {
+                    "body-md": ["Inter"],
+                    "data-mono": ["JetBrains Mono"],
+                    "label-md": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "headline-md-mobile": ["Inter"],
+                    "headline-sm": ["Inter"],
+                    "headline-md": ["Inter"]
+            },
+            "fontSize": {
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "data-mono": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "display-lg": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-md-mobile": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "headline-sm": ["18px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .input-focus-ring:focus {
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+    </style>
+</head>
+<body class="bg-background font-body-md text-on-surface overflow-hidden">
+<main class="flex min-h-screen">
+<!-- Left Side: Tech/Corporate Visual -->
+<section class="hidden lg:flex relative w-1/2 flex-col justify-between p-xl overflow-hidden bg-on-background">
+<!-- Background Image with Overlay -->
+<div class="absolute inset-0 z-0">
+<div class="absolute inset-0 bg-gradient-to-br from-on-background via-on-background/90 to-primary/20 z-10"></div>
+<div class="w-full h-full bg-cover bg-center opacity-40 scale-105" data-alt="A sophisticated corporate abstract background featuring interconnected neural network lines and glowing data points in deep navy and electric blue tones. The lighting is low-key and professional, with subtle light trails suggesting speed and data flow. The overall aesthetic is high-end tech, clean, and authoritative, perfectly fitting a premium Business Intelligence platform." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD9rQwTmCDyRbI08w7dMS0q645LLq1dCOezdAWr4a9PaWNlxuV1oxi4xNPCgveojn1zCtSXvSXlac6RqeUXqM6CyISq-lgmWRPtg5lASTsRZdyN_26_t5u2L_zJi_E9Dp8YcjS-8MElG9I_JjeqJg8pz1M3PwCJKLbckSdZTy8tD9TPVanIdtE9mV_QxDPh27jZo-kOhV5rjhVGfPgREr5hdYtuy1ig8mUeNgOrsnoLplCLkm-4_3zabAux8QxAzlNL1WhWxbtYsRI')"></div>
+</div>
+<!-- Content Over Background -->
+<div class="relative z-20 flex items-center gap-xs">
+<div class="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-[24px]">insights</span>
+</div>
+<span class="font-headline-sm text-headline-sm text-white tracking-tight">GTO Insights</span>
+</div>
+<div class="relative z-20 max-w-lg">
+<h1 class="font-display-lg text-display-lg text-white mb-md leading-tight">
+                    Panorama em tempo real para tomada de decisão
+                </h1>
+<p class="font-body-lg text-body-lg text-outline-variant/80">
+                    Acesse métricas consolidadas, análise de tendências e inteligência competitiva em uma única interface corporativa.
+                </p>
+</div>
+<div class="relative z-20 flex gap-md items-center">
+<div class="glass-panel p-md rounded-xl flex items-center gap-sm">
+<div class="w-2 h-2 rounded-full bg-secondary shadow-[0_0_8px_#6cf8bb]"></div>
+<span class="text-white/70 font-label-md text-label-md">SISTEMA OPERACIONAL</span>
+</div>
+<div class="text-white/40 font-label-md text-label-md">© 2024 GTO Platform</div>
+</div>
+</section>
+<!-- Right Side: Clean Login Form -->
+<section class="flex-1 flex flex-col justify-center items-center px-container-padding bg-surface">
+<div class="w-full max-w-[400px]">
+<!-- Mobile Logo -->
+<div class="lg:hidden flex justify-center mb-xl">
+<div class="flex items-center gap-xs">
+<div class="w-12 h-12 bg-primary rounded-xl flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-[28px]">insights</span>
+</div>
+<span class="font-headline-md text-headline-md text-on-background">GTO Insights</span>
+</div>
+</div>
+<div class="mb-xl text-center lg:text-left">
+<h2 class="font-headline-md text-headline-md text-on-background mb-xs">Acesse sua conta</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Insira suas credenciais para continuar no dashboard.</p>
+</div>
+<form class="space-y-lg">
+<!-- Email Field -->
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-on-surface-variant" for="email">EMAIL CORPORATIVO</label>
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-md flex items-center pointer-events-none text-outline">
+<span class="material-symbols-outlined text-[20px]">mail</span>
+</div>
+<input class="block w-full pl-11 pr-md py-3 bg-white border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all input-focus-ring" id="email" name="email" placeholder="nome@empresa.com.br" required="" type="email"/>
+</div>
+</div>
+<!-- Password Field -->
+<div class="space-y-xs">
+<div class="flex justify-between items-center">
+<label class="font-label-md text-label-md text-on-surface-variant" for="password">SENHA</label>
+<a class="text-primary font-label-md text-label-md hover:underline transition-all" href="#">Esqueci minha senha</a>
+</div>
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-md flex items-center pointer-events-none text-outline">
+<span class="material-symbols-outlined text-[20px]">lock</span>
+</div>
+<input class="block w-full pl-11 pr-12 py-3 bg-white border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all input-focus-ring" id="password" name="password" placeholder="••••••••" required="" type="password"/>
+<button class="absolute inset-y-0 right-0 pr-md flex items-center text-outline hover:text-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+</div>
+</div>
+<!-- Keep Logged In -->
+<div class="flex items-center gap-xs">
+<input class="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary cursor-pointer" id="remember" type="checkbox"/>
+<label class="font-body-md text-body-md text-on-surface-variant cursor-pointer select-none" for="remember">Manter conectado neste dispositivo</label>
+</div>
+<!-- Submit Button -->
+<button class="w-full bg-primary hover:bg-primary/90 text-on-primary font-body-md text-body-lg font-bold py-3.5 rounded-lg shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-xs group" type="submit">
+                        Entrar na Plataforma
+                        <span class="material-symbols-outlined text-[20px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+</form>
+<!-- Support Footer -->
+<div class="mt-xl pt-lg border-t border-outline-variant flex flex-col gap-sm items-center lg:items-start">
+<p class="font-body-md text-body-md text-on-surface-variant">Não possui acesso?</p>
+<button class="font-label-md text-label-md text-primary border border-primary/20 bg-primary/5 px-lg py-2 rounded-full hover:bg-primary/10 transition-colors">
+                        SOLICITAR ACESSO CORPORATIVO
+                    </button>
+</div>
+</div>
+</section>
+</main>
+<!-- Subtle Background Micro-interactions Script -->
+<script>
+        document.addEventListener('mousemove', (e) => {
+            const leftPanel = document.querySelector('section:first-child .opacity-40');
+            if (leftPanel) {
+                const moveX = (e.clientX - window.innerWidth / 2) * 0.01;
+                const moveY = (e.clientY - window.innerHeight / 2) * 0.01;
+                leftPanel.style.transform = `scale(1.05) translate(${moveX}px, ${moveY}px)`;
+            }
+        });
+    </script>
+</body></html>
