@@ -22,7 +22,7 @@ export function getRequiredEnv(name: string) {
 }
 
 export function getGraphVersion() {
-  return Deno.env.get("META_GRAPH_VERSION") || "v20.0";
+  return Deno.env.get("META_GRAPH_VERSION") || "v25.0";
 }
 
 export function getAdminClient() {

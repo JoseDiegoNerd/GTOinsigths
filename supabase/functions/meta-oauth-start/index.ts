@@ -13,6 +13,8 @@ const DEFAULT_SCOPES = [
   "pages_read_engagement",
   "business_management",
   "read_insights",
+  "instagram_basic",
+  "instagram_manage_insights",
 ];
 
 Deno.serve(async (req) => {

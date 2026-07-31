@@ -85,16 +85,12 @@ function insightTotal(insights: any, name: string) {
 
 async function replaceMetricRow(match: { marca: string; rede_social: string; conta_id: string; post_id: string }, row: Record<string, unknown>) {
   const supabase = getAdminClient();
-  await supabase
+  // Upsert (nao delete+insert): duas sincronizacoes quase simultaneas faziam ambas passar pelo
+  // delete antes de qualquer insert, gerando linhas duplicadas para o mesmo post. O upsert e
+  // atomico no banco e depende da constraint unica stage_social_format_metrics_meta_post_uk.
+  const { error } = await supabase
     .from("stage_social_format_metrics")
-    .delete()
-    .eq("origem_arquivo", "meta_graph_api")
-    .eq("marca", match.marca)
-    .eq("rede_social", match.rede_social)
-    .eq("conta_id", match.conta_id)
-    .eq("post_id", match.post_id);
-
-  const { error } = await supabase.from("stage_social_format_metrics").insert(row);
+    .upsert(row, { onConflict: "marca,rede_social,conta_id,post_id" });
   if (error) throw error;
 }
 
@@ -163,10 +159,27 @@ async function syncInstagram(integration: Integration, warnings: string[]) {
 
   for (const item of media.data || []) {
     const itemWarnings: string[] = [];
-    const insights = await tryMetaGet(`/${item.id}/insights`, {
-      metric: "reach,impressions,engagement,saved,comments,likes,shares,plays,total_interactions",
+    // "engagement" e "plays" nao sao mais nomes de metrica validos na Instagram Insights API
+    // (erro #100); os equivalentes atuais sao total_interactions e views. "impressions" foi removida
+    // da lista: nao e suportada para Reels desde a v22.0 (erro #100 em praticamente todo post),
+    // o que forcava o fallback lento metrica-por-metrica pra quase tudo e estourava o timeout da
+    // function. O campo nao e exibido na UI hoje, entao nao ha perda em tira-la.
+    const instagramMetrics = ["reach", "saved", "comments", "likes", "shares", "views", "total_interactions"];
+    const combinedWarnings: string[] = [];
+    const combined = await tryMetaGet(`/${item.id}/insights`, {
+      metric: instagramMetrics.join(","),
       access_token: integration.access_token,
-    }, itemWarnings) || { data: [] };
+    }, combinedWarnings);
+
+    const insights = combined?.data?.length
+      ? combined
+      : await fetchInsightsMetricByMetric(
+        `/${item.id}/insights`,
+        instagramMetrics,
+        { access_token: integration.access_token },
+        itemWarnings,
+        `Instagram media insights ${item.id}`,
+      );
 
     for (const warning of itemWarnings) {
       await logMetaEvent({
@@ -180,12 +193,12 @@ async function syncInstagram(integration: Integration, warnings: string[]) {
       warnings.push(warning);
     }
 
-    const visualizacoes = insightValue(insights, "plays") || insightValue(insights, "video_views");
+    const visualizacoes = insightValue(insights, "views");
     const salvamentos = insightValue(insights, "saved");
     const comentarios = insightValue(insights, "comments");
     const formato = mapInstagramFormat(item.media_type || "");
     const alcance = insightValue(insights, "reach");
-    const engajamento = insightValue(insights, "engagement") || insightValue(insights, "total_interactions");
+    const engajamento = insightValue(insights, "total_interactions");
 
     await replaceMetricRow(
       { marca: integration.marca, rede_social: "Instagram", conta_id: integration.instagram_business_account_id, post_id: item.id },
@@ -265,11 +278,13 @@ async function fetchFacebookPosts(integration: Integration, warnings: string[]) 
 
 async function syncFacebookPageSummary(integration: Integration, warnings: string[]) {
   // page_impressions, page_impressions_unique e page_consumptions foram descontinuadas pela Meta
-  // (erro #100 "not a valid insights metric"). page_views_total, page_total_actions e
-  // page_post_engagements sao as metricas equivalentes ainda suportadas na Graph API atual.
+  // (erro #100 "not a valid insights metric"). Em 15/jun/2026 a Meta tambem descontinuou o Page
+  // Reach classico em todas as versoes da API, substituindo por "Page Viewer" / media views
+  // (page_total_media_view_unique). Pedimos a metrica nova primeiro; page_views_total fica como
+  // fallback caso a conta ainda a suporte.
   const insights = await fetchInsightsMetricByMetric(
     `/${integration.page_id}/insights`,
-    ["page_views_total", "page_post_engagements", "page_total_actions"],
+    ["page_total_media_view_unique", "page_views_total", "page_post_engagements", "page_total_actions"],
     {
       period: "day",
       since: daysAgoDate(30),
@@ -282,7 +297,7 @@ async function syncFacebookPageSummary(integration: Integration, warnings: strin
 
   if (!insights?.data?.length) return 0;
 
-  const alcance = insightTotal(insights, "page_views_total");
+  const alcance = insightTotal(insights, "page_total_media_view_unique") || insightTotal(insights, "page_views_total");
   const impressoes = insightTotal(insights, "page_total_actions");
   const engajamento = insightTotal(insights, "page_post_engagements");
   const cliques = 0;
@@ -349,15 +364,28 @@ async function syncFacebook(integration: Integration, warnings: string[]) {
   let imported = 0;
 
   for (const post of posts.data || []) {
-    // As metricas de post-insights (post_impressions, post_impressions_unique, post_engaged_users,
-    // post_clicks) foram descontinuadas pela Meta (erro #100) e nao tem substituto direto via API;
-    // o engajamento e calculado a partir dos campos reactions/comments/shares do proprio post.
+    // post_impressions, post_impressions_unique, post_engaged_users e post_clicks foram
+    // descontinuadas pela Meta (erro #100) e nao tem substituto para cliques/impressoes.
+    // Desde 15/jun/2026 o Post Reach classico tambem saiu de todas as versoes da API; o
+    // substituto e post_total_media_view_unique (familia "media views" / Page Viewer).
+    // Engajamento continua calculado a partir de reactions/comments/shares do proprio post.
     const formato = mapFacebookFormat(post);
     const tipoConteudo = post.attachments?.data?.[0]?.media_type || null;
     const reactions = summaryCount(post.reactions);
     const comentarios = summaryCount(post.comments);
     const shares = numberValue(post.shares?.count);
-    const alcance = 0;
+
+    const postInsightWarnings: string[] = [];
+    const postInsights = await fetchInsightsMetricByMetric(
+      `/${post.id}/insights`,
+      ["post_total_media_view_unique"],
+      { access_token: integration.access_token },
+      postInsightWarnings,
+      `Post insights ${post.id}`,
+    );
+    warnings.push(...postInsightWarnings);
+
+    const alcance = insightTotal(postInsights, "post_total_media_view_unique");
     const impressoes = 0;
     const cliques = 0;
     const engajamento = reactions + comentarios + shares;
@@ -422,10 +450,14 @@ async function refreshMetaOverview(marcas: string[], followersByMarca: Map<strin
     if (error) throw error;
     if (!data?.length) continue;
 
-    const alcanceFacebook = data
-      .filter((row: any) => row.rede_social === "Facebook")
-      .reduce((sum: number, row: any) => sum + numberValue(row.alcance), 0);
-    const engajamentoTotal = data.reduce((sum: number, row: any) => sum + numberValue(row.engajamento), 0);
+    const facebookRows = data.filter((row: any) => row.rede_social === "Facebook");
+    const alcanceFacebook = facebookRows.reduce((sum: number, row: any) => sum + numberValue(row.alcance), 0);
+    // engajamento_total fica pareado com alcance_facebook (mesma rede): a coluna
+    // "stage_meta_business_analytics.alcance_facebook" so cobre Facebook, entao somar
+    // engajamento de todas as redes (Facebook + Instagram) contra esse denominador
+    // produzia taxas de engajamento acima de 100% (numerador e denominador de escopos
+    // diferentes). Sem uma coluna alcance_instagram na tabela, o par coerente e Facebook-Facebook.
+    const engajamentoTotal = facebookRows.reduce((sum: number, row: any) => sum + numberValue(row.engajamento), 0);
     const destaque = data.find((row: any) => row.post_url)?.post_url || null;
 
     await supabase.from("stage_meta_business_analytics").upsert({
