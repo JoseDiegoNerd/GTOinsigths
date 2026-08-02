@@ -478,8 +478,13 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
   try {
-    const user = await getAuthenticatedUser(req);
-    await assertAdminOrGestor(user.id);
+    const cronSecret = Deno.env.get("META_SYNC_CRON_SECRET");
+    const isScheduledCall = Boolean(cronSecret) && req.headers.get("x-cron-secret") === cronSecret;
+
+    if (!isScheduledCall) {
+      const user = await getAuthenticatedUser(req);
+      await assertAdminOrGestor(user.id);
+    }
 
     const body = await req.json().catch(() => ({}));
     const supabase = getAdminClient();
