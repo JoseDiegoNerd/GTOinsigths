@@ -158,7 +158,7 @@
         social_format_metrics: "stage_social_format_metrics"
       };
 
-      let state = { session: null, perfil: null, page: "dashboard", marca: "Todas", periodo: "30d", rows: [], rd: [], meta: [], google: null, propostas: [], bi: null, channels: null, email: null, emailSelectedId: null, social: null, socialFormat: null, socialTab: "geral", connections: [] };
+      let state = { session: null, perfil: null, page: "dashboard", marca: "Todas", periodo: "30d", periodoDe: "", periodoAte: "", rows: [], rd: [], meta: [], google: null, propostas: [], bi: null, channels: null, email: null, emailSelectedId: null, social: null, socialFormat: null, socialTab: "geral", connections: [] };
 
       const fmt = new Intl.NumberFormat("pt-BR");
       const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
@@ -287,6 +287,7 @@
 
       function fromDate() {
         if (state.periodo === "all") return null;
+        if (state.periodo === "custom") return state.periodoDe || null;
         const d = new Date();
         if (state.periodo === "7d") d.setDate(d.getDate() - 7);
         if (state.periodo === "30d") d.setDate(d.getDate() - 30);
@@ -294,11 +295,18 @@
         return d.toISOString().slice(0, 10);
       }
 
+      function toDate() {
+        if (state.periodo === "custom") return state.periodoAte || null;
+        return null;
+      }
+
       async function loadDashboard() {
         let q = supabase.from("dados_cartoes_credsystem").select("*").order("data_emissao", { ascending: false }).limit(500);
         if (state.marca !== "Todas") q = q.eq("marca", state.marca);
         const date = fromDate();
         if (date) q = q.gte("data_emissao", date);
+        const until = toDate();
+        if (until) q = q.lte("data_emissao", until);
         const [cards, rd, meta, propostas] = await Promise.all([
           q,
           supabase.from("stage_rd_station_marketing").select("marca,enviados,taxa_abertura,taxa_clique,data_referencia").limit(500),
@@ -1020,7 +1028,17 @@
             <div><div class="eyebrow">Dados reais do Supabase</div><h2>Dashboard Geral</h2><p class="muted">KPIs calculados a partir das tabelas protegidas por RLS.</p></div>
             <div class="filters">
               ${marcaPillsHtml()}
-              <div class="segmented" id="periodo">${[["7d", "7D"], ["30d", "30D"], ["1y", "1A"], ["all", "Tudo"]].map(([value, label]) => `<button type="button" class="periodo-opt ${state.periodo === value ? "active" : ""}" data-periodo="${value}">${label}</button>`).join("")}</div>
+              <div class="segmented" id="periodo">${[["7d", "7D"], ["30d", "30D"], ["1y", "1A"], ["all", "Tudo"], ["custom", "Personalizado"]].map(([value, label]) => `<button type="button" class="periodo-opt ${state.periodo === value ? "active" : ""}" data-periodo="${value}">${label}</button>`).join("")}</div>
+              ${state.periodo === "custom" ? `
+                <div class="filters" style="gap:8px">
+                  <label style="display:flex;flex-direction:row;align-items:center;gap:6px;text-transform:none;font-weight:600;color:#475569">De
+                    <input type="date" id="periodoDe" value="${state.periodoDe}" max="${new Date().toISOString().slice(0, 10)}">
+                  </label>
+                  <label style="display:flex;flex-direction:row;align-items:center;gap:6px;text-transform:none;font-weight:600;color:#475569">Até
+                    <input type="date" id="periodoAte" value="${state.periodoAte}" max="${new Date().toISOString().slice(0, 10)}">
+                  </label>
+                </div>
+              ` : ""}
               <button id="refresh">Atualizar</button>
             </div>
           </div>
@@ -1053,6 +1071,14 @@
         wireMarcaPills(renderDashboard);
         document.querySelectorAll(".periodo-opt").forEach((button) => {
           button.onclick = () => { state.periodo = button.dataset.periodo; renderDashboard(); };
+        });
+        document.querySelector("#periodoDe")?.addEventListener("change", (event) => {
+          state.periodoDe = event.currentTarget.value;
+          renderDashboard();
+        });
+        document.querySelector("#periodoAte")?.addEventListener("change", (event) => {
+          state.periodoAte = event.currentTarget.value;
+          renderDashboard();
         });
         document.querySelector("#refresh").onclick = renderDashboard;
       }
