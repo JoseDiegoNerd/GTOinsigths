@@ -322,7 +322,7 @@
         const hoje = new Date().toISOString().slice(0, 10);
         return `
           <div class="dropdown" id="periodoDropdown">
-            <button type="button" class="secondary" id="periodoToggle">Período <span class="material-symbols-outlined" style="font-size:18px">expand_more</span></button>
+            <button type="button" class="pill ${state.periodoMenuOpen ? "active" : ""}" id="periodoToggle" style="display:inline-flex;align-items:center;gap:4px">Período <span class="material-symbols-outlined" style="font-size:18px">expand_more</span></button>
             ${state.periodoMenuOpen ? `
               <div class="dropdown-menu">
                 ${periodoOpcoes.map(([value, label]) => `<button type="button" class="dropdown-item periodo-opt ${state.periodo === value ? "active" : ""}" data-periodo="${value}">${label}</button>`).join("")}
@@ -420,7 +420,8 @@
           resumo: resumoResult.data || [],
           lojas: lojasResult.data || [],
           motivos: motivosResult.data || [],
-          funil: funilResult.data || []
+          funil: funilResult.data || [],
+          usandoViews: true
         };
       }
 
@@ -429,8 +430,8 @@
         // .limit(500) por ser uma lista "mais recentes" para outra tela; aqui precisamos
         // do total real, senão os KPIs saem sub-contados quando esse fallback é acionado.
         const [rows, propostas] = await Promise.all([
-          fetchAllRows("dados_cartoes_credsystem", "marca,loja_operacao,data_ativacao,valor_compra_inicial,frequencia_recorrencia", state.marca),
-          fetchAllRows("stage_credsystem_propostas", "marca,nm_loja,cd_loja_cs,proposta_aprov,proposta_rejei,motivo", state.marca)
+          fetchAllRows("dados_cartoes_credsystem", "marca,loja_operacao,data_emissao,data_ativacao,valor_compra_inicial,frequencia_recorrencia", state.marca, "data_emissao"),
+          fetchAllRows("stage_credsystem_propostas", "marca,nm_loja,cd_loja_cs,proposta_aprov,proposta_rejei,motivo,dt_proposta", state.marca, "dt_proposta")
         ]);
         const marcasVisiveis = state.marca === "Todas"
           ? Array.from(new Set([...rows.map((r) => r.marca), ...propostas.map((r) => r.marca)].filter(Boolean)))
@@ -505,14 +506,7 @@
           taxa_ativacao: r.total_cartoes ? (r.cartoes_ativados / r.total_cartoes) * 100 : 0
         }));
 
-        state.bi = {
-          resumo,
-          lojas,
-          motivos,
-          funil,
-          fallback: true,
-          fallbackReason: reason?.message || String(reason || "")
-        };
+        state.bi = { resumo, lojas, motivos, funil };
       }
 
 
@@ -527,6 +521,10 @@
           campanhas = campanhas.eq("marca", state.marca);
           resumo = resumo.eq("marca", state.marca);
         }
+        const de = fromDate();
+        const ate = toDate();
+        if (de) campanhas = campanhas.gte("data_referencia", de);
+        if (ate) campanhas = campanhas.lte("data_referencia", ate);
 
         const [campanhasResult, resumoResult] = await Promise.all([campanhas, resumo]);
         const firstError = campanhasResult.error || resumoResult.error;
@@ -674,7 +672,8 @@
         const rdRows = await fetchAllRows(
           "stage_rd_station_marketing",
           "id,marca,id_campanha,nome_campanha,enviados,entregues,taxa_abertura,taxa_clique,descadastros,assunto_email,preheader,corpo_copy,data_referencia,origem_api",
-          state.marca
+          state.marca,
+          "data_referencia"
         );
 
         const campanhas = rdRows.map((row) => {
@@ -717,7 +716,7 @@
       }
 
       async function loadSocialBI() {
-        const metricRows = await fetchAllRows("stage_social_format_metrics", "*", state.marca).catch(() => []);
+        const metricRows = await fetchAllRows("stage_social_format_metrics", "*", state.marca, "data_referencia").catch(() => []);
         if (metricRows.length) {
           await buildSocialBIFromFormatRows(metricRows);
           return;
@@ -836,7 +835,7 @@
       }
 
       async function loadSocialBIFallback(reason = null) {
-        const metricRows = await fetchAllRows("stage_social_format_metrics", "*", state.marca).catch(() => []);
+        const metricRows = await fetchAllRows("stage_social_format_metrics", "*", state.marca, "data_referencia").catch(() => []);
         if (metricRows.length) {
           await buildSocialBIFromFormatRows(metricRows, reason);
           return;
@@ -845,7 +844,8 @@
         const periodos = (await fetchAllRows(
           "stage_meta_business_analytics",
           "id,marca,data_referencia,seguidores_instagram,alcance_facebook,engajamento_total,post_destaque_semana_url",
-          state.marca
+          state.marca,
+          "data_referencia"
         )).map(analyzeSocialRow);
 
         const marcasVisiveis = state.marca === "Todas"
@@ -879,6 +879,15 @@
       }
 
       async function loadSocialFormatBI(rede) {
+        // Prioriza a tabela bruta (permite respeitar o filtro de periodo); as views agregadas
+        // servem como contingencia para dados antigos que nao passaram por essa tabela.
+        const metricRows = await fetchAllRows("stage_social_format_metrics", "*", state.marca, "data_referencia").catch(() => []);
+        const filtered = metricRows.filter((row) => row.rede_social === rede);
+        if (filtered.length) {
+          state.socialFormat = { rede, rows: aggregateSocialFormatRows(filtered, rede), fallback: true };
+          return;
+        }
+
         const view = rede === "Instagram" ? "vw_instagram_metricas_formato" : "vw_facebook_metricas_formato";
         let query = supabase.from(view).select("*").order("formato");
         if (state.marca !== "Todas") query = query.eq("marca", state.marca);
@@ -888,7 +897,7 @@
       }
 
       async function loadSocialFormatFallback(rede, reason = null) {
-        const rows = await fetchAllRows("stage_social_format_metrics", "*", state.marca);
+        const rows = await fetchAllRows("stage_social_format_metrics", "*", state.marca, "data_referencia");
         state.socialFormat = {
           rede,
           rows: aggregateSocialFormatRows(rows.filter((row) => row.rede_social === rede), rede),
@@ -1181,10 +1190,12 @@
         content.innerHTML = `<div class="alert">Carregando views BI do CredSystem...</div>`;
 
         try {
-          await loadCredsystemBI();
+          // Calcula a partir das tabelas brutas primeiro (respeita o filtro de periodo); as
+          // views agregadas do Supabase nao tem dimensao de data, entao ficam como contingencia.
+          await loadCredsystemBIFallback();
         } catch (error) {
           try {
-            await loadCredsystemBIFallback(error);
+            await loadCredsystemBI();
           } catch (fallbackError) {
             content.innerHTML = `
               <div class="alert error">
@@ -1211,10 +1222,11 @@
             <div><div class="eyebrow">Views BI do Supabase</div><h2>Cartão Próprio</h2><p class="muted">Indicadores consolidados por views SQL com RLS por marca.</p></div>
             <div class="filters">
               ${marcaPillsHtml()}
+              ${periodoDropdownHtml()}
               <button id="refresh">Atualizar</button>
             </div>
           </div>
-          ${bi.fallback ? `<div class="alert">Usando cálculo local temporário porque a API ainda recusou as views BI. Detalhe: <code>${bi.fallbackReason || "sem detalhe retornado"}</code>. Rode o check completo <code>supabase/checks/20260706_check_credsystem_bi_views.sql</code> e depois clique em Atualizar.</div>` : ""}
+          ${bi.usandoViews ? `<div class="alert">Usando as views agregadas do Supabase como contingência (tabelas brutas indisponíveis) — o filtro de período não se aplica nesta visão.</div>` : ""}
           <div class="grid kpis">
             ${kpi("Propostas", fmt.format(totals.total_propostas), "assignment")}
             ${kpi("Aprovadas", fmt.format(totals.propostas_aprovadas), "check_circle")}
@@ -1239,6 +1251,7 @@
           </section>`;
 
         wireMarcaPills(renderCredsystemBI);
+        wirePeriodoDropdown(renderCredsystemBI);
         document.querySelector("#refresh").onclick = renderCredsystemBI;
       }
 
@@ -1263,15 +1276,17 @@
         const selectedCampaign = campaigns.find((row) => campaignKey(row) === state.emailSelectedId) || campaigns[0] || null;
         if (selectedCampaign) state.emailSelectedId = campaignKey(selectedCampaign);
         const copyDetail = selectedCampaign ? buildCopyDetail(selectedCampaign) : null;
-        const totals = (email.resumo || []).reduce((acc, row) => ({
-          total_campanhas: acc.total_campanhas + num(row.total_campanhas),
-          total_enviados: acc.total_enviados + num(row.total_enviados),
-          total_entregues: acc.total_entregues + num(row.total_entregues),
-          total_abertos_estimados: acc.total_abertos_estimados + num(row.total_abertos_estimados),
-          total_cliques_estimados: acc.total_cliques_estimados + num(row.total_cliques_estimados)
+        // Totais calculados a partir de "campaigns" (ja filtradas por periodo), nao da view
+        // "resumo" agregada sem dimensao de data - senao os KPIs nao mudariam ao trocar o periodo.
+        const totals = campaigns.reduce((acc, row) => ({
+          total_campanhas: acc.total_campanhas + 1,
+          total_enviados: acc.total_enviados + num(row.enviados),
+          total_entregues: acc.total_entregues + num(row.entregues),
+          total_abertos_estimados: acc.total_abertos_estimados + num(row.abertos_estimados),
+          total_cliques_estimados: acc.total_cliques_estimados + num(row.cliques_estimados)
         }), { total_campanhas: 0, total_enviados: 0, total_entregues: 0, total_abertos_estimados: 0, total_cliques_estimados: 0 });
-        totals.taxa_abertura_media = avg((email.resumo || []).map((r) => num(r.taxa_abertura_media)));
-        totals.taxa_clique_media = avg((email.resumo || []).map((r) => num(r.taxa_clique_media)));
+        totals.taxa_abertura_media = avg(campaigns.map((r) => num(r.taxa_abertura)));
+        totals.taxa_clique_media = avg(campaigns.map((r) => num(r.taxa_clique)));
         totals.score_copy_medio = avg(campaigns.map((r) => num(r.score_copy)));
 
         content.innerHTML = `
@@ -1279,6 +1294,7 @@
             <div><div class="eyebrow">RD Station</div><h2>Email Marketing</h2><p class="muted">Campanhas por marca, entregas, aberturas, cliques e análise de copy.</p></div>
             <div class="filters">
               ${marcaPillsHtml()}
+              ${periodoDropdownHtml()}
               <button id="refresh">Atualizar</button>
             </div>
           </div>
@@ -1357,6 +1373,7 @@
           </section>`;
 
         wireMarcaPills(() => { state.emailSelectedId = null; renderEmailBI(); });
+        wirePeriodoDropdown(() => { state.emailSelectedId = null; renderEmailBI(); });
         document.querySelector("#refresh").onclick = renderEmailBI;
         const copyCampaign = document.querySelector("#copyCampaign");
         if (copyCampaign) copyCampaign.onchange = (event) => { state.emailSelectedId = event.target.value; renderEmailBI(); };
@@ -1391,6 +1408,7 @@
             <div><div class="eyebrow">${isInstagram ? "Rede principal" : "Rede secundaria"}</div><h2>${title}</h2><p class="muted">${subtitle}</p></div>
             <div class="filters">
               ${marcaPillsHtml()}
+              ${periodoDropdownHtml()}
               <button id="refresh">Atualizar</button>
             </div>
           </div>
@@ -1408,6 +1426,7 @@
           </section>`;
 
         wireMarcaPills(() => renderSocialFormatPage(rede));
+        wirePeriodoDropdown(() => renderSocialFormatPage(rede));
         wireSocialTabs();
         document.querySelector("#refresh").onclick = () => renderSocialFormatPage(rede);
       }
@@ -1653,6 +1672,7 @@
             <div><div class="eyebrow">Meta Business</div><h2>Redes Sociais</h2><p class="muted">Alcance, engajamento, ranking de destaques e recomendações de conteúdo.</p></div>
             <div class="filters">
               ${marcaPillsHtml()}
+              ${periodoDropdownHtml()}
               <button id="refresh">Atualizar</button>
             </div>
           </div>
@@ -1691,6 +1711,7 @@
           </div>`;
 
         wireMarcaPills(renderSocialBI);
+        wirePeriodoDropdown(renderSocialBI);
         wireSocialTabs();
         document.querySelector("#refresh").onclick = renderSocialBI;
       }
@@ -2354,10 +2375,12 @@
         document.querySelector("#doImport").onclick = () => importRows(file.name, rows);
       }
 
-      async function fetchAllRows(table, columns, marca = "Todas") {
+      async function fetchAllRows(table, columns, marca = "Todas", dateColumn = null) {
         const pageSize = 1000;
         let from = 0;
         let allRows = [];
+        const de = dateColumn ? fromDate() : null;
+        const ate = dateColumn ? toDate() : null;
 
         while (true) {
           let query = supabase
@@ -2366,6 +2389,8 @@
             .range(from, from + pageSize - 1);
 
           if (marca !== "Todas") query = query.eq("marca", marca);
+          if (de) query = query.gte(dateColumn, de);
+          if (ate) query = query.lte(dateColumn, ate);
 
           const { data, error } = await query;
           if (error) throw error;
