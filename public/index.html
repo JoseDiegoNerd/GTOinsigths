@@ -107,6 +107,13 @@
       .segmented { display: inline-flex; background: #eef2ff; border-radius: 999px; padding: 4px; gap: 2px; }
       .segmented button { background: transparent; color: #475569; padding: 8px 16px; border-radius: 999px; font-size: 13px; }
       .segmented button.active { background: white; color: var(--accent); box-shadow: 0 1px 3px rgba(15,23,42,.12); }
+      .dropdown { position: relative; }
+      .dropdown-menu { position: absolute; top: calc(100% + 8px); left: 0; z-index: 10; background: white; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 16px 32px rgba(15,23,42,.14); padding: 8px; display: grid; gap: 2px; min-width: 200px; }
+      .dropdown-item { display: block; width: 100%; text-align: left; background: transparent; color: #334155; font-weight: 600; padding: 9px 12px; border-radius: 8px; }
+      .dropdown-item:hover:not(.active) { background: #f1f5f9; }
+      .dropdown-item.active { background: var(--accent); color: white; }
+      .dropdown-dates { border-top: 1px solid #e2e8f0; margin-top: 6px; padding-top: 8px; display: grid; gap: 8px; }
+      .dropdown-dates label { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; display: grid; gap: 4px; }
       .login-split { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
       .login-hero { background: linear-gradient(160deg, #0f172a, #1e3a8a); color: white; padding: 48px; display: flex; flex-direction: column; justify-content: space-between; }
       .login-hero h1 { font-size: 34px; line-height: 1.2; margin: 0 0 16px; }
@@ -158,7 +165,7 @@
         social_format_metrics: "stage_social_format_metrics"
       };
 
-      let state = { session: null, perfil: null, page: "dashboard", marca: "Todas", periodo: "30d", periodoDe: "", periodoAte: "", rows: [], rd: [], meta: [], google: null, propostas: [], bi: null, channels: null, email: null, emailSelectedId: null, social: null, socialFormat: null, socialTab: "geral", connections: [] };
+      let state = { session: null, perfil: null, page: "dashboard", marca: "Todas", periodo: "30d", periodoDe: "", periodoAte: "", periodoMenuOpen: false, rows: [], rd: [], meta: [], google: null, propostas: [], bi: null, channels: null, email: null, emailSelectedId: null, social: null, socialFormat: null, socialTab: "geral", connections: [] };
 
       const fmt = new Intl.NumberFormat("pt-BR");
       const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
@@ -290,7 +297,9 @@
         if (state.periodo === "custom") return state.periodoDe || null;
         const d = new Date();
         if (state.periodo === "7d") d.setDate(d.getDate() - 7);
+        if (state.periodo === "15d") d.setDate(d.getDate() - 15);
         if (state.periodo === "30d") d.setDate(d.getDate() - 30);
+        if (state.periodo === "6m") d.setMonth(d.getMonth() - 6);
         if (state.periodo === "1y") d.setFullYear(d.getFullYear() - 1);
         return d.toISOString().slice(0, 10);
       }
@@ -298,6 +307,73 @@
       function toDate() {
         if (state.periodo === "custom") return state.periodoAte || null;
         return null;
+      }
+
+      const periodoOpcoes = [
+        ["7d", "07 Dias"],
+        ["15d", "15 Dias"],
+        ["30d", "30 Dias"],
+        ["6m", "06 Meses"],
+        ["1y", "01 Ano"],
+        ["custom", "Personalizado"]
+      ];
+
+      function periodoDropdownHtml() {
+        const hoje = new Date().toISOString().slice(0, 10);
+        return `
+          <div class="dropdown" id="periodoDropdown">
+            <button type="button" class="secondary" id="periodoToggle">Período <span class="material-symbols-outlined" style="font-size:18px">expand_more</span></button>
+            ${state.periodoMenuOpen ? `
+              <div class="dropdown-menu">
+                ${periodoOpcoes.map(([value, label]) => `<button type="button" class="dropdown-item periodo-opt ${state.periodo === value ? "active" : ""}" data-periodo="${value}">${label}</button>`).join("")}
+                ${state.periodo === "custom" ? `
+                  <div class="dropdown-dates">
+                    <label>Data inicial<input type="date" id="periodoDe" value="${state.periodoDe}" max="${hoje}"></label>
+                    <label>Data final<input type="date" id="periodoAte" value="${state.periodoAte}" max="${hoje}"></label>
+                  </div>
+                ` : ""}
+              </div>
+            ` : ""}
+          </div>`;
+      }
+
+      let periodoOutsideClickBound = false;
+      function bindPeriodoOutsideClick(onSelect) {
+        if (periodoOutsideClickBound) return;
+        periodoOutsideClickBound = true;
+        document.addEventListener("click", (event) => {
+          if (!state.periodoMenuOpen) return;
+          const dropdown = document.querySelector("#periodoDropdown");
+          if (dropdown && !dropdown.contains(event.target)) {
+            state.periodoMenuOpen = false;
+            onSelect();
+          }
+        });
+      }
+
+      function wirePeriodoDropdown(onSelect) {
+        document.querySelector("#periodoToggle")?.addEventListener("click", (event) => {
+          event.stopPropagation();
+          state.periodoMenuOpen = !state.periodoMenuOpen;
+          onSelect();
+        });
+        document.querySelectorAll(".periodo-opt").forEach((button) => {
+          button.onclick = (event) => {
+            event.stopPropagation();
+            state.periodo = button.dataset.periodo;
+            if (state.periodo !== "custom") state.periodoMenuOpen = false;
+            onSelect();
+          };
+        });
+        document.querySelector("#periodoDe")?.addEventListener("change", (event) => {
+          state.periodoDe = event.currentTarget.value;
+          onSelect();
+        });
+        document.querySelector("#periodoAte")?.addEventListener("change", (event) => {
+          state.periodoAte = event.currentTarget.value;
+          onSelect();
+        });
+        bindPeriodoOutsideClick(onSelect);
       }
 
       async function loadDashboard() {
@@ -1028,17 +1104,7 @@
             <div><div class="eyebrow">Dados reais do Supabase</div><h2>Dashboard Geral</h2><p class="muted">KPIs calculados a partir das tabelas protegidas por RLS.</p></div>
             <div class="filters">
               ${marcaPillsHtml()}
-              <div class="segmented" id="periodo">${[["7d", "7D"], ["30d", "30D"], ["1y", "1A"], ["all", "Tudo"], ["custom", "Personalizado"]].map(([value, label]) => `<button type="button" class="periodo-opt ${state.periodo === value ? "active" : ""}" data-periodo="${value}">${label}</button>`).join("")}</div>
-              ${state.periodo === "custom" ? `
-                <div class="filters" style="gap:8px">
-                  <label style="display:flex;flex-direction:row;align-items:center;gap:6px;text-transform:none;font-weight:600;color:#475569">De
-                    <input type="date" id="periodoDe" value="${state.periodoDe}" max="${new Date().toISOString().slice(0, 10)}">
-                  </label>
-                  <label style="display:flex;flex-direction:row;align-items:center;gap:6px;text-transform:none;font-weight:600;color:#475569">Até
-                    <input type="date" id="periodoAte" value="${state.periodoAte}" max="${new Date().toISOString().slice(0, 10)}">
-                  </label>
-                </div>
-              ` : ""}
+              ${periodoDropdownHtml()}
               <button id="refresh">Atualizar</button>
             </div>
           </div>
@@ -1069,17 +1135,7 @@
           </section>
           <section class="card"><h3>Últimos registros CredSystem</h3><div class="table-wrap"><table><thead><tr><th>Marca</th><th>Emissão</th><th>Ativação</th><th>Loja</th><th>Cliente</th><th>Valor inicial</th></tr></thead><tbody>${rows.slice(0, 12).map((r) => `<tr><td>${r.marca}</td><td>${r.data_emissao}</td><td>${r.data_ativacao || "-"}</td><td>${r.loja_operacao}</td><td>${r.nome_cliente || "-"}</td><td>${money.format(num(r.valor_compra_inicial))}</td></tr>`).join("")}</tbody></table></div></section>`;
         wireMarcaPills(renderDashboard);
-        document.querySelectorAll(".periodo-opt").forEach((button) => {
-          button.onclick = () => { state.periodo = button.dataset.periodo; renderDashboard(); };
-        });
-        document.querySelector("#periodoDe")?.addEventListener("change", (event) => {
-          state.periodoDe = event.currentTarget.value;
-          renderDashboard();
-        });
-        document.querySelector("#periodoAte")?.addEventListener("change", (event) => {
-          state.periodoAte = event.currentTarget.value;
-          renderDashboard();
-        });
+        wirePeriodoDropdown(renderDashboard);
         document.querySelector("#refresh").onclick = renderDashboard;
       }
 
