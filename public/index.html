@@ -8,10 +8,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Symbols+Outlined:wght@400&display=swap" rel="stylesheet" />
     <style>
+      :root { --accent: #2563eb; --accent-rgb: 37,99,235; }
       * { box-sizing: border-box; }
       body { margin: 0; font-family: Inter, system-ui, sans-serif; background: #f8fafc; color: #111c2d; }
       button, input, select { font: inherit; }
-      button { border: 0; border-radius: 8px; background: #2563eb; color: white; padding: 10px 14px; font-weight: 700; cursor: pointer; }
+      button { border: 0; border-radius: 8px; background: var(--accent); color: white; padding: 10px 14px; font-weight: 700; cursor: pointer; }
       button.secondary { background: white; color: #334155; border: 1px solid #cbd5e1; }
       input, select { border: 1px solid #d8e3fb; border-radius: 8px; padding: 10px 12px; background: white; }
       label { display: grid; gap: 6px; color: #475569; font-size: 12px; font-weight: 800; text-transform: uppercase; }
@@ -27,7 +28,7 @@
       aside small, aside span { color: #cbd5e1; }
       nav { display: grid; gap: 6px; }
       nav button { display: flex; gap: 10px; align-items: center; justify-content: flex-start; background: transparent; color: #cbd5e1; border-left: 3px solid transparent; }
-      nav button.active, nav button:hover { background: rgba(37,99,235,.12); color: white; border-left-color: #2563eb; }
+      nav button.active, nav button:hover { background: rgba(var(--accent-rgb),.12); color: white; border-left-color: var(--accent); }
       .profile { margin-top: auto; display: grid; gap: 8px; border-top: 1px solid rgba(255,255,255,.12); padding: 12px; }
       .profile button { background: rgba(255,255,255,.08); }
       header { min-height: 64px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 32px; background: white; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 2; }
@@ -37,7 +38,7 @@
       .page-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; align-items: end; }
       .page-head h2 { margin: 4px 0; font-size: 30px; overflow-wrap: anywhere; }
       .muted { color: #64748b; }
-      .eyebrow { color: #2563eb; font-size: 12px; text-transform: uppercase; font-weight: 800; letter-spacing: .05em; }
+      .eyebrow { color: var(--accent); font-size: 12px; text-transform: uppercase; font-weight: 800; letter-spacing: .05em; }
       .filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
       .grid { display: grid; gap: 20px; min-width: 0; }
       .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -61,7 +62,7 @@
       .bars { display: grid; gap: 16px; }
       .bar-row { display: grid; grid-template-columns: 220px 1fr 80px; gap: 16px; align-items: center; }
       .track { height: 12px; border-radius: 999px; background: #e7eeff; overflow: hidden; }
-      .fill { height: 100%; background: #2563eb; border-radius: inherit; }
+      .fill { height: 100%; background: var(--accent); border-radius: inherit; }
       .insight-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
       .insight-panel { border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; background: #f8fafc; min-width: 0; }
       .insight-panel h4 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; color: #475569; }
@@ -75,7 +76,7 @@
       .stars { color: #f59e0b; white-space: nowrap; }
       .stars .material-symbols-outlined { font-size: 16px; vertical-align: middle; }
       .stars .off { color: #cbd5e1; }
-      .review-reply { border-left: 3px solid #2563eb; background: white; border-radius: 8px; padding: 10px 12px; margin-top: 4px; }
+      .review-reply { border-left: 3px solid var(--accent); background: white; border-radius: 8px; padding: 10px 12px; margin-top: 4px; }
       .reply-box { display: grid; gap: 8px; margin-top: 8px; }
       .reply-box textarea { border: 1px solid #d8e3fb; border-radius: 8px; padding: 10px 12px; font: inherit; min-height: 72px; resize: vertical; }
       .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
@@ -83,7 +84,7 @@
       .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
       .edit-row td { background: #f8fafc; }
       .edit-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; align-items: end; }
-      input:focus, select:focus, textarea:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.15); }
+      input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb),.15); }
       thead th { position: sticky; top: 0; z-index: 1; }
       tbody tr:hover { background: #f1f5f9; }
       tbody tr:nth-child(even) { background: #fafbfd; }
@@ -91,8 +92,8 @@
       .insight-card { display: flex; gap: 12px; align-items: flex-start; border: 1px solid #e2e8f0; border-left: 4px solid #94a3b8; border-radius: 10px; padding: 14px 16px; background: white; }
       .insight-card .material-symbols-outlined { font-size: 22px; }
       .insight-card p { margin: 0; color: #334155; line-height: 1.5; }
-      .insight-card.info { border-left-color: #2563eb; }
-      .insight-card.info .material-symbols-outlined { color: #2563eb; }
+      .insight-card.info { border-left-color: var(--accent); }
+      .insight-card.info .material-symbols-outlined { color: var(--accent); }
       .insight-card.success { border-left-color: #16a34a; }
       .insight-card.success .material-symbols-outlined { color: #16a34a; }
       .insight-card.warning { border-left-color: #d97706; }
@@ -102,10 +103,10 @@
       .insight-cards { display: grid; gap: 10px; }
       .pills { display: flex; gap: 8px; flex-wrap: wrap; }
       .pill { border-radius: 999px; padding: 8px 16px; background: white; border: 1px solid #d8e3fb; color: #475569; font-weight: 700; font-size: 13px; cursor: pointer; }
-      .pill.active { background: #2563eb; color: white; border-color: #2563eb; }
+      .pill.active { background: var(--accent); color: white; border-color: var(--accent); }
       .segmented { display: inline-flex; background: #eef2ff; border-radius: 999px; padding: 4px; gap: 2px; }
       .segmented button { background: transparent; color: #475569; padding: 8px 16px; border-radius: 999px; font-size: 13px; }
-      .segmented button.active { background: white; color: #2563eb; box-shadow: 0 1px 3px rgba(15,23,42,.12); }
+      .segmented button.active { background: white; color: var(--accent); box-shadow: 0 1px 3px rgba(15,23,42,.12); }
       .login-split { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
       .login-hero { background: linear-gradient(160deg, #0f172a, #1e3a8a); color: white; padding: 48px; display: flex; flex-direction: column; justify-content: space-between; }
       .login-hero h1 { font-size: 34px; line-height: 1.2; margin: 0 0 16px; }
@@ -132,6 +133,22 @@
       const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
       const app = document.querySelector("#app");
       const marcas = ["Todas", "Tesoura de Ouro", "Magazine da Economia", "Free Center Calçados"];
+      const brandColors = {
+        "Todas": "#2563eb",
+        "Tesoura de Ouro": "#2e3192",
+        "Magazine da Economia": "#ec078d",
+        "Free Center Calçados": "#f16e2c"
+      };
+      function hexToRgb(hex) {
+        const clean = hex.replace("#", "");
+        const value = parseInt(clean.length === 3 ? clean.split("").map((c) => c + c).join("") : clean, 16);
+        return `${(value >> 16) & 255},${(value >> 8) & 255},${value & 255}`;
+      }
+      function applyBrandTheme() {
+        const color = brandColors[state.marca] || brandColors.Todas;
+        document.documentElement.style.setProperty("--accent", color);
+        document.documentElement.style.setProperty("--accent-rgb", hexToRgb(color));
+      }
       const sourceTables = {
         credsystem_emissoes: "dados_cartoes_credsystem",
         credsystem_propostas: "stage_credsystem_propostas",
@@ -915,6 +932,7 @@
 
       async function render() {
         if (!state.session) return renderLogin();
+        applyBrandTheme();
         app.className = "shell";
         app.innerHTML = `
           <aside>
@@ -1054,6 +1072,7 @@
         document.querySelectorAll(".marca-pill").forEach((button) => {
           button.onclick = () => {
             state.marca = button.dataset.marca;
+            applyBrandTheme();
             onSelect();
           };
         });
