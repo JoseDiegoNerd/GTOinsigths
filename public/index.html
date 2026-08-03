@@ -1218,39 +1218,6 @@
           : `${facebookIcon(size)} <span>Facebook</span>`;
       }
 
-      function followerLineChartHtml(points, seriesLabel) {
-        if (!points.length) return `<p class="muted" style="margin:0">Sem histórico de seguidores sincronizado ainda.</p>`;
-        const w = 560, h = 200, padL = 44, padR = 12, padT = 16, padB = 28;
-        const values = points.map((p) => p.value);
-        const minV = Math.min(...values), maxV = Math.max(...values);
-        const span = Math.max(1, maxV - minV);
-        const padTop = 28;
-        const x = (i) => padL + (i / Math.max(1, points.length - 1)) * (w - padL - padR);
-        const y = (v) => padTop + (1 - (v - minV) / (Math.max(1, maxV - minV))) * (h - padTop - padB);
-        const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(p.value).toFixed(1)}`).join(" ");
-        const areaPath = `${linePath} L${x(points.length - 1).toFixed(1)},${(h - padB).toFixed(1)} L${x(0).toFixed(1)},${(h - padB).toFixed(1)} Z`;
-        const first = points[0], last = points[points.length - 1];
-        // Rotula todos os pontos quando ha poucos (ate 14); com mais pontos, so os relevantes
-        // (primeiro, ultimo, minimo, maximo) para nao empilhar numero em cima de numero.
-        const idxMin = values.indexOf(minV), idxMax = values.indexOf(maxV);
-        const destaque = new Set(points.length <= 14 ? points.map((_, i) => i) : [0, points.length - 1, idxMin, idxMax]);
-        return `
-          <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:220px" role="img" aria-label="Evolução de ${escapeHtml(seriesLabel)}: de ${fmt.format(first.value)} em ${first.label} para ${fmt.format(last.value)} em ${last.label}">
-            <line x1="${padL}" y1="${(h - padB).toFixed(1)}" x2="${w - padR}" y2="${(h - padB).toFixed(1)}" stroke="#e2e8f0" stroke-width="1"/>
-            <path d="${areaPath}" fill="#2a78d6" opacity="0.10"/>
-            <path d="${linePath}" fill="none" stroke="#2a78d6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            ${points.map((p, i) => {
-              const cx = x(i).toFixed(1), cy = y(p.value).toFixed(1);
-              const label = destaque.has(i)
-                ? `<text x="${cx}" y="${(y(p.value) - 8).toFixed(1)}" font-size="11" fill="#1e3a8a" text-anchor="middle" font-weight="700">${fmt.format(p.value)}</text>`
-                : "";
-              return `<circle cx="${cx}" cy="${cy}" r="${i === points.length - 1 ? 4 : 2.5}" fill="#2a78d6"><title>${escapeHtml(p.label)}: ${fmt.format(p.value)}</title></circle>${label}`;
-            }).join("")}
-            <text x="${padL}" y="${h - 6}" font-size="11" fill="#64748b">${escapeHtml(first.label)}</text>
-            <text x="${w - padR}" y="${h - 6}" font-size="11" fill="#64748b" text-anchor="end">${escapeHtml(last.label)}</text>
-          </svg>`;
-      }
-
       function dailyChangeBarChartHtml(points) {
         if (!points.length) return `<p class="muted" style="margin:0">Sem dados suficientes para calcular variação diária.</p>`;
         const w = 420, h = 200, padL = 12, padR = 12, padT = 24, padB = 40;
@@ -1286,28 +1253,6 @@
           </div>`;
       }
 
-      async function loadFollowerHistory(field) {
-        let query = supabase
-          .from("stage_meta_business_analytics")
-          .select(`marca,data_referencia,${field}`)
-          .order("data_referencia", { ascending: true })
-          .limit(2000);
-        if (state.marca !== "Todas") query = query.eq("marca", state.marca);
-        const { data, error } = await query;
-        if (error || !data?.length) return [];
-
-        const porData = new Map();
-        for (const row of data) {
-          const atual = porData.get(row.data_referencia) || 0;
-          porData.set(row.data_referencia, atual + num(row[field]));
-        }
-        const dias = [...porData.entries()].sort((a, b) => a[0].localeCompare(b[0])).slice(-30);
-        return dias.map(([data_referencia, value]) => ({
-          label: new Date(`${data_referencia}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
-          value
-        }));
-      }
-
       function dailyChangeFromSeries(points) {
         const changes = [];
         for (let i = 1; i < points.length; i++) {
@@ -1316,24 +1261,115 @@
         return changes;
       }
 
-      function followerEvolutionSectionHtml(seriesPoints, seriesLabel) {
-        if (state.marca === "Todas") {
-          return `<section class="card">
-            <h3>Evolução de seguidores</h3>
-            <p class="muted" style="margin:0">Selecione uma marca específica no filtro para ver a evolução de seguidores. Somar contas diferentes não faz sentido aqui: cada marca só tem registro nos dias em que foi sincronizada, então o total "de todas" pode saltar quando uma marca aparece pela primeira vez — parecendo um ganho gigante que não é real.</p>
-          </section>`;
+      const CORES_MARCA = {
+        "Tesoura de Ouro": "#2a78d6",
+        "Magazine da Economia": "#eb6834",
+        "Free Center Calçados": "#1baf7a"
+      };
+
+      async function loadFollowerHistoryPorMarca(field) {
+        const { data, error } = await supabase
+          .from("stage_meta_business_analytics")
+          .select(`marca,data_referencia,${field}`)
+          .order("data_referencia", { ascending: true })
+          .limit(3000);
+        if (error || !data?.length) return new Map();
+
+        const porMarca = new Map();
+        for (const row of data) {
+          if (!porMarca.has(row.marca)) porMarca.set(row.marca, new Map());
+          const mapa = porMarca.get(row.marca);
+          mapa.set(row.data_referencia, (mapa.get(row.data_referencia) || 0) + num(row[field]));
         }
-        const changePoints = dailyChangeFromSeries(seriesPoints);
+
+        const result = new Map();
+        for (const [marca, mapa] of porMarca) {
+          const pontos = [...mapa.entries()].sort((a, b) => a[0].localeCompare(b[0])).slice(-30);
+          result.set(marca, pontos.map(([date, value]) => ({ date, value })));
+        }
+        return result;
+      }
+
+      // Linha por marca (nunca somadas): cada marca so tem registro nos dias em que foi
+      // sincronizada, entao somar contas diferentes faria o total "saltar" quando uma marca
+      // aparece pela primeira vez no periodo, parecendo um ganho que nao e real. Aqui cada
+      // marca mantem seu ultimo valor conhecido (forward-fill) ate a proxima sincronizacao,
+      // para a linha ficar continua sem inventar dado.
+      function multiLineChartHtml(seriesPorMarca) {
+        const marcasComDados = [...seriesPorMarca.entries()].filter(([, pts]) => pts.length);
+        if (!marcasComDados.length) return `<p class="muted" style="margin:0">Sem histórico de seguidores sincronizado ainda.</p>`;
+
+        const datasSet = new Set();
+        for (const [, pts] of marcasComDados) for (const p of pts) datasSet.add(p.date);
+        const datas = [...datasSet].sort().slice(-30);
+        if (datas.length < 2) return `<p class="muted" style="margin:0">Ainda não há dias suficientes sincronizados para desenhar a evolução.</p>`;
+
+        const valoresPorMarca = new Map();
+        for (const [marca, pts] of marcasComDados) {
+          const mapa = new Map(pts.map((p) => [p.date, p.value]));
+          let ultimo = null;
+          valoresPorMarca.set(marca, datas.map((d) => {
+            if (mapa.has(d)) ultimo = mapa.get(d);
+            return ultimo;
+          }));
+        }
+
+        const todosValores = [...valoresPorMarca.values()].flat().filter((v) => v !== null);
+        const minV = Math.min(...todosValores), maxV = Math.max(...todosValores);
+        const span = Math.max(1, maxV - minV);
+
+        const w = 620, h = 240, padL = 54, padR = 16, padT = 20, padB = 40;
+        const x = (i) => padL + (i / Math.max(1, datas.length - 1)) * (w - padL - padR);
+        const y = (v) => padT + (1 - (v - minV) / span) * (h - padT - padB);
+        const paletaExtra = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100"];
+
+        const linhas = [...valoresPorMarca.entries()].map(([marca, serie], idx) => {
+          const cor = CORES_MARCA[marca] || paletaExtra[idx % paletaExtra.length];
+          let path = "", started = false;
+          serie.forEach((v, i) => {
+            if (v === null) { started = false; return; }
+            path += `${started ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)} `;
+            started = true;
+          });
+          const indicesComDado = serie.map((v, i) => (v === null ? -1 : i)).filter((i) => i >= 0);
+          const ultimoIdx = indicesComDado[indicesComDado.length - 1];
+          const ultimoValor = ultimoIdx !== undefined ? serie[ultimoIdx] : null;
+          const pontos = indicesComDado.map((i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(serie[i]).toFixed(1)}" r="${i === ultimoIdx ? 4 : 2}" fill="${cor}"><title>${escapeHtml(marca)} — ${formatDateOnly(datas[i])}: ${fmt.format(serie[i])}</title></circle>`).join("");
+          const rotulo = ultimoValor !== null ? `<text x="${(x(ultimoIdx) + 6).toFixed(1)}" y="${(y(ultimoValor) + 4).toFixed(1)}" font-size="11" fill="${cor}" font-weight="700">${fmt.format(ultimoValor)}</text>` : "";
+          return { marca, cor, svg: `<path d="${path.trim()}" fill="none" stroke="${cor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>${pontos}${rotulo}` };
+        });
+
+        return `
+          <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:260px" role="img" aria-label="Evolução de seguidores por marca">
+            <line x1="${padL}" y1="${(h - padB).toFixed(1)}" x2="${w - padR}" y2="${(h - padB).toFixed(1)}" stroke="#e2e8f0" stroke-width="1"/>
+            <text x="${padL}" y="${padT - 4}" font-size="11" fill="#64748b">${fmt.format(maxV)}</text>
+            <text x="${padL}" y="${(h - padB + 12).toFixed(1)}" font-size="11" fill="#64748b">${fmt.format(minV)}</text>
+            ${linhas.map((l) => l.svg).join("")}
+            <text x="${padL}" y="${h - 6}" font-size="11" fill="#64748b">${escapeHtml(formatDateOnly(datas[0]))}</text>
+            <text x="${w - padR}" y="${h - 6}" font-size="11" fill="#64748b" text-anchor="end">${escapeHtml(formatDateOnly(datas[datas.length - 1]))}</text>
+          </svg>
+          <div style="display:flex;gap:16px;margin-top:6px;font-size:12px;color:#64748b;flex-wrap:wrap">
+            ${linhas.map((l) => `<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:2px;background:${l.cor};display:inline-block"></span>${escapeHtml(l.marca)}</span>`).join("")}
+          </div>`;
+      }
+
+      function followerEvolutionSectionHtml(seriesPorMarca, seriesMarcaSelecionada, redeLabel) {
+        const variacaoHtml = state.marca === "Todas"
+          ? `<p class="muted" style="margin:0">Selecione uma marca específica no filtro para ver a variação diária dela — ganho/perda só faz sentido calculado dentro de uma mesma conta.</p>`
+          : seriesMarcaSelecionada.length
+            ? dailyChangeBarChartHtml(dailyChangeFromSeries(seriesMarcaSelecionada))
+            : `<p class="muted" style="margin:0">Sem histórico suficiente de ${escapeHtml(state.marca)} ainda.</p>`;
+
         return `<div class="grid cols">
           <section class="card">
             <h3>Evolução de seguidores</h3>
-            <p class="muted" style="margin-top:-6px">${escapeHtml(seriesLabel)} — últimos ${seriesPoints.length} dias com dado sincronizado.</p>
-            ${followerLineChartHtml(seriesPoints, seriesLabel)}
+            <p class="muted" style="margin-top:-6px">${escapeHtml(redeLabel)} das 3 marcas — últimos dias com dado sincronizado.</p>
+            ${multiLineChartHtml(seriesPorMarca)}
           </section>
           <section class="card">
-            <h3>Variação diária</h3>
+            <h3>Variação diária${state.marca !== "Todas" ? ` — ${escapeHtml(state.marca)}` : ""}</h3>
             <p class="muted" style="margin-top:-6px">Diferença do total de seguidores entre um dia e o anterior.</p>
-            ${dailyChangeBarChartHtml(changePoints)}
+            ${variacaoHtml}
           </section>
         </div>`;
       }
@@ -1635,9 +1671,12 @@
           ? "Rede principal: descoberta, relacionamento e autoridade por formato."
           : "Rede secundária: distribuição, tráfego externo e lembrança de marca.";
 
-        const followerSeries = state.marca === "Todas"
-          ? []
-          : await loadFollowerHistory(isInstagram ? "seguidores_instagram" : "seguidores_facebook").catch(() => []);
+        const followerField = isInstagram ? "seguidores_instagram" : "seguidores_facebook";
+        const followerSeriesPorMarca = await loadFollowerHistoryPorMarca(followerField).catch(() => new Map());
+        const followerSeriesSelecionada = state.marca === "Todas" ? [] : (followerSeriesPorMarca.get(state.marca) || []).map((p) => ({
+          label: new Date(`${p.date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
+          value: p.value
+        }));
         const reelsFormato = isInstagram ? "instagram_reels" : "facebook_reels";
         const feedFormato = isInstagram ? "instagram_feed" : "facebook_feed";
 
@@ -1654,7 +1693,7 @@
           ${data.fallback && rows.length ? `<div class="alert success">Dados carregados da tabela <code>stage_social_format_metrics</code>. ${hasDetailedSocialMetrics(rows, rede) ? "Métricas detalhadas disponíveis para a rede." : "Posts capturados, mas a Meta ainda não liberou métricas detalhadas para esses conteúdos."}</div>` : ""}
           ${rows.length ? "" : `<div class="alert">Ainda não há métricas granulares de ${rede}. Confirme a página correta em <strong>Conexões</strong> e clique em <strong>Sincronizar confirmadas</strong>.</div>`}
           ${isInstagram ? instagramSummaryHtml(totals) : facebookSummaryHtml(totals)}
-          ${followerEvolutionSectionHtml(followerSeries, `Seguidores ${title}`)}
+          ${followerEvolutionSectionHtml(followerSeriesPorMarca, followerSeriesSelecionada, `Seguidores ${title}`)}
           ${topBottomPostsHtml(rows, reelsFormato, "Reels")}
           ${topBottomPostsHtml(rows, feedFormato, "Feed")}
           ${isInstagram ? instagramSectionsHtml(rows) : facebookSectionsHtml(rows)}
