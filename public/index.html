@@ -1317,6 +1317,12 @@
       }
 
       function followerEvolutionSectionHtml(seriesPoints, seriesLabel) {
+        if (state.marca === "Todas") {
+          return `<section class="card">
+            <h3>Evolução de seguidores</h3>
+            <p class="muted" style="margin:0">Selecione uma marca específica no filtro para ver a evolução de seguidores. Somar contas diferentes não faz sentido aqui: cada marca só tem registro nos dias em que foi sincronizada, então o total "de todas" pode saltar quando uma marca aparece pela primeira vez — parecendo um ganho gigante que não é real.</p>
+          </section>`;
+        }
         const changePoints = dailyChangeFromSeries(seriesPoints);
         return `<div class="grid cols">
           <section class="card">
@@ -1627,15 +1633,17 @@
         const title = isInstagram ? "Instagram" : "Facebook";
         const subtitle = isInstagram
           ? "Rede principal: descoberta, relacionamento e autoridade por formato."
-          : "Rede secundaria: distribuicao, trafego externo e lembranca de marca.";
+          : "Rede secundária: distribuição, tráfego externo e lembrança de marca.";
 
-        const followerSeries = await loadFollowerHistory(isInstagram ? "seguidores_instagram" : "seguidores_facebook").catch(() => []);
+        const followerSeries = state.marca === "Todas"
+          ? []
+          : await loadFollowerHistory(isInstagram ? "seguidores_instagram" : "seguidores_facebook").catch(() => []);
         const reelsFormato = isInstagram ? "instagram_reels" : "facebook_reels";
         const feedFormato = isInstagram ? "instagram_feed" : "facebook_feed";
 
         content.innerHTML = `
           <div class="page-head">
-            <div><div class="eyebrow">${isInstagram ? "Rede principal" : "Rede secundaria"}</div><h2 style="display:flex;align-items:center;gap:10px">${isInstagram ? instagramIcon(28) : facebookIcon(28)} ${title}</h2><p class="muted">${subtitle}</p></div>
+            <div><div class="eyebrow">${isInstagram ? "Rede principal" : "Rede secundária"}</div><h2 style="display:flex;align-items:center;gap:10px">${isInstagram ? instagramIcon(28) : facebookIcon(28)} ${title}</h2><p class="muted">${subtitle}</p></div>
             <div class="filters">
               ${marcaPillsHtml()}
               ${periodoDropdownHtml()}
