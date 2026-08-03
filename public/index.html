@@ -44,7 +44,7 @@
       .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
       .cols { grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr); }
       .card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(15,23,42,.08); min-width: 0; }
-      .kpi { min-height: 126px; display: grid; align-content: space-between; }
+      .kpi { min-height: 92px; display: grid; align-content: space-between; gap: 10px; }
       .kpi-top { display: flex; justify-content: space-between; color: #64748b; font-size: 12px; font-weight: 800; text-transform: uppercase; }
       .kpi strong { font-size: 26px; overflow-wrap: anywhere; line-height: 1.15; }
       .alert { border: 1px solid #bfdbfe; background: #eff6ff; color: #1d4ed8; border-radius: 10px; padding: 12px; }
@@ -771,30 +771,58 @@
       }
 
       async function buildSocialBIFromFormatRows(metricRows, reason = null) {
-        const periodos = metricRows.map((row) => {
+        const rawPeriodos = metricRows.map((row) => {
           const alcance = num(row.alcance);
           const engajamento = num(row.engajamento) || num(row.curtidas) + num(row.comentarios) + num(row.compartilhamentos) + num(row.salvos);
           const referencia = row.data_publicacao || row.data_referencia || row.criado_em;
-          const temMetricas = alcance > 0 || engajamento > 0 || num(row.visualizacoes) > 0 || num(row.cliques) > 0;
           return {
             id: row.id,
             marca: row.marca,
             rede_social: row.rede_social,
             conta_nome: row.conta_nome,
             data_referencia: referencia,
-            seguidores_instagram: 0,
             alcance_facebook: row.rede_social === "Facebook" ? alcance : 0,
             alcance_instagram: row.rede_social === "Instagram" ? alcance : 0,
             engajamento_total: engajamento,
             taxa_engajamento: alcance ? (engajamento / alcance) * 100 : 0,
-            diagnostico_conteudo: temMetricas ? "Com insights" : "Post capturado",
-            recomendacao_conteudo: temMetricas
-              ? "Usar este conteúdo no ranking por alcance e engajamento."
-              : "A Meta retornou o post, mas não liberou métricas detalhadas para ele nesta sincronização.",
             post_destaque_semana_url: row.post_url,
             tema: row.tema || row.tipo_conteudo || "Conteúdo Meta"
           };
-        }).sort((a, b) => num(b.engajamento_total) - num(a.engajamento_total) || num(b.alcance_facebook) - num(a.alcance_facebook));
+        });
+
+        // Diagnostico por post: comparado com a media de engajamento (engajamento/alcance) da
+        // propria marca+rede, nao com um limiar fixo — um post de uma marca pequena e outro de
+        // uma marca grande nao sao comparaveis em numero absoluto, mas "acima/na media/abaixo da
+        // media de quem postou" e uma leitura que faz sentido para qualquer marca.
+        const taxasPorGrupo = new Map();
+        for (const p of rawPeriodos) {
+          if (p.alcance_facebook + p.alcance_instagram <= 0) continue;
+          const key = `${p.marca}|${p.rede_social}`;
+          if (!taxasPorGrupo.has(key)) taxasPorGrupo.set(key, []);
+          taxasPorGrupo.get(key).push(p.taxa_engajamento);
+        }
+        const mediaPorGrupo = new Map();
+        for (const [key, taxas] of taxasPorGrupo) mediaPorGrupo.set(key, taxas.reduce((s, t) => s + t, 0) / taxas.length);
+
+        const periodos = rawPeriodos.map((p) => {
+          const semAlcance = p.alcance_facebook + p.alcance_instagram <= 0;
+          const media = mediaPorGrupo.get(`${p.marca}|${p.rede_social}`) || 0;
+          let diagnostico_conteudo, recomendacao_conteudo;
+          if (semAlcance) {
+            diagnostico_conteudo = "Sem dados";
+            recomendacao_conteudo = "A Meta ainda não liberou métricas detalhadas para este conteúdo.";
+          } else if (media > 0 && p.taxa_engajamento >= media * 1.5) {
+            diagnostico_conteudo = "Forte";
+            recomendacao_conteudo = "Engajamento bem acima da média da marca — repetir formato e tema.";
+          } else if (media > 0 && p.taxa_engajamento >= media * 0.7) {
+            diagnostico_conteudo = "Saudável";
+            recomendacao_conteudo = "Engajamento na média da marca — manter a cadência atual.";
+          } else {
+            diagnostico_conteudo = "Atenção";
+            recomendacao_conteudo = "Engajamento abaixo da média da marca — revisar gancho, formato ou horário de publicação.";
+          }
+          return { ...p, diagnostico_conteudo, recomendacao_conteudo };
+        }).sort((a, b) => num(b.engajamento_total) - num(a.engajamento_total) || (num(b.alcance_facebook) + num(b.alcance_instagram)) - (num(a.alcance_facebook) + num(a.alcance_instagram)));
 
         const marcasVisiveis = state.marca === "Todas"
           ? Array.from(new Set(periodos.map((r) => r.marca).filter(Boolean)))
@@ -811,16 +839,27 @@
 
         const resumo = marcasVisiveis.map((marca) => {
           const rows = periodos.filter((r) => r.marca === marca);
-          const alcance = rows.reduce((s, r) => s + num(r.alcance_facebook), 0);
-          const engajamento = rows.reduce((s, r) => s + num(r.engajamento_total), 0);
+          const fbRows = rows.filter((r) => r.rede_social === "Facebook");
+          const igRows = rows.filter((r) => r.rede_social === "Instagram");
+          const alcanceFacebook = fbRows.reduce((s, r) => s + num(r.alcance_facebook), 0);
+          const engajamentoFacebook = fbRows.reduce((s, r) => s + num(r.engajamento_total), 0);
+          const alcanceInstagram = igRows.reduce((s, r) => s + num(r.alcance_instagram), 0);
+          const engajamentoInstagram = igRows.reduce((s, r) => s + num(r.engajamento_total), 0);
+          const alcanceTotal = alcanceFacebook + alcanceInstagram;
+          const engajamentoTotal = engajamentoFacebook + engajamentoInstagram;
           return {
             marca,
             total_periodos: rows.length,
             seguidores_instagram: seguidoresPorMarca.get(marca)?.valor || 0,
             seguidores_facebook: seguidoresPorMarca.get(marca)?.valorFacebook || 0,
-            alcance_facebook: alcance,
-            engajamento_total: engajamento,
-            taxa_engajamento: alcance ? (engajamento / alcance) * 100 : 0,
+            alcance_facebook: alcanceFacebook,
+            engajamento_facebook: engajamentoFacebook,
+            taxa_engajamento_facebook: alcanceFacebook ? (engajamentoFacebook / alcanceFacebook) * 100 : 0,
+            alcance_instagram: alcanceInstagram,
+            engajamento_instagram: engajamentoInstagram,
+            taxa_engajamento_instagram: alcanceInstagram ? (engajamentoInstagram / alcanceInstagram) * 100 : 0,
+            engajamento_total: engajamentoTotal,
+            taxa_engajamento: alcanceTotal ? (engajamentoTotal / alcanceTotal) * 100 : 0,
             ultima_referencia: rows.map((r) => r.data_referencia).filter(Boolean).sort().at(-1) || null
           };
         });
@@ -1314,7 +1353,7 @@
       }
 
       function kpi(label, value, icon) {
-        return `<article class="card kpi"><div class="kpi-top"><span>${label}</span><span class="material-symbols-outlined">${icon}</span></div><strong>${value}</strong><small class="muted">Registros visíveis pelo perfil</small></article>`;
+        return `<article class="card kpi"><div class="kpi-top"><span>${label}</span><span class="material-symbols-outlined">${icon}</span></div><strong>${value}</strong></article>`;
       }
 
       function marcaPillsHtml(restrictTodas = false) {
@@ -1795,7 +1834,7 @@
         if (!rows.length) return ["Sem dados sincronizados ainda para gerar leitura executiva."];
 
         const insights = [];
-        const comAlcance = rows.filter((r) => num(r.alcance_facebook) > 0);
+        const comAlcance = rows.filter((r) => num(r.alcance_facebook) + num(r.alcance_instagram) > 0);
 
         if (comAlcance.length >= 2) {
           const ordenado = [...comAlcance].sort((a, b) => num(b.taxa_engajamento) - num(a.taxa_engajamento));
@@ -1811,13 +1850,23 @@
           insights.push(`Adicionar URL do post destaque em ${semPostDestaque} registro(s) para habilitar leitura editorial completa.`);
         }
 
-        const atencao = ranking.find((r) => r.diagnostico_conteudo === "Atencao" || r.diagnostico_conteudo === "Atenção");
+        const atencao = ranking.find((r) => r.diagnostico_conteudo === "Atenção");
         if (atencao) {
-          insights.push(`Revisar conteudo de ${atencao.marca}${atencao.data_referencia ? ` em ${atencao.data_referencia}` : ""}: engajamento de ${fmt.format(num(atencao.engajamento_total))} frente a alcance de ${fmt.format(num(atencao.alcance_facebook))} (diagnostico: Atencao).`);
+          const alcanceAtencao = num(atencao.alcance_facebook) + num(atencao.alcance_instagram);
+          insights.push(`Revisar conteúdo de ${atencao.marca} (${atencao.rede_social || "Meta"})${atencao.data_referencia ? ` em ${formatDateOnly(atencao.data_referencia)}` : ""}: engajamento de ${fmt.format(num(atencao.engajamento_total))} frente a alcance de ${fmt.format(alcanceAtencao)} — abaixo da média da marca.`);
         }
 
         if (!insights.length) insights.push("Sem sinais de alerta pelas regras atuais nos dados sincronizados — manter cadencia.");
         return insights;
+      }
+
+      function diagnosticoPill(value) {
+        const classe = value === "Forte" || value === "Saudável" ? "active" : value === "Atenção" ? "inactive" : "";
+        return `<span class="status-pill ${classe}" style="${classe ? "" : "background:#f1f5f9;color:#64748b"}">${escapeHtml(value || "-")}</span>`;
+      }
+
+      function redeIconSmall(rede) {
+        return rede === "Instagram" ? instagramIcon(16) : rede === "Facebook" ? facebookIcon(16) : "-";
       }
 
       async function renderSocialBI() {
@@ -1843,10 +1892,12 @@
           seguidores_instagram: acc.seguidores_instagram + num(row.seguidores_instagram),
           seguidores_facebook: acc.seguidores_facebook + num(row.seguidores_facebook),
           alcance_facebook: acc.alcance_facebook + num(row.alcance_facebook),
-          engajamento_total: acc.engajamento_total + num(row.engajamento_total)
-        }), { total_periodos: 0, seguidores_instagram: 0, seguidores_facebook: 0, alcance_facebook: 0, engajamento_total: 0 });
-        totals.taxa_engajamento = totals.alcance_facebook ? (totals.engajamento_total / totals.alcance_facebook) * 100 : 0;
-        const top = ranking[0] || null;
+          engajamento_facebook: acc.engajamento_facebook + num(row.engajamento_facebook),
+          alcance_instagram: acc.alcance_instagram + num(row.alcance_instagram),
+          engajamento_instagram: acc.engajamento_instagram + num(row.engajamento_instagram)
+        }), { total_periodos: 0, seguidores_instagram: 0, seguidores_facebook: 0, alcance_facebook: 0, engajamento_facebook: 0, alcance_instagram: 0, engajamento_instagram: 0 });
+        totals.taxa_facebook = totals.alcance_facebook ? (totals.engajamento_facebook / totals.alcance_facebook) * 100 : 0;
+        totals.taxa_instagram = totals.alcance_instagram ? (totals.engajamento_instagram / totals.alcance_instagram) * 100 : 0;
 
         content.innerHTML = `
           <div class="page-head">
@@ -1859,29 +1910,40 @@
           </div>
           ${socialTabsHtml("geral")}
           ${social.fallback ? `<div class="alert ${social.usingMetaStage ? "success" : ""}">${social.usingMetaStage ? "Resumo montado com os registros sincronizados diretamente da Meta em <code>stage_social_format_metrics</code>." : "Usando base stage antiga como contingência."} ${social.fallbackReason ? `Detalhe técnico: <code>${escapeHtml(social.fallbackReason)}</code>` : ""}</div>` : ""}
-          <div class="grid kpis">
-            ${kpi("Períodos", fmt.format(totals.total_periodos), "calendar_month")}
-            ${kpi("Seguidores Instagram", fmt.format(totals.seguidores_instagram), "group")}
-            ${kpi("Seguidores Facebook", fmt.format(totals.seguidores_facebook), "thumb_up")}
-            ${kpi("Alcance Facebook", fmt.format(totals.alcance_facebook), "sensors")}
-            ${kpi("Engajamento", fmt.format(totals.engajamento_total), "favorite")}
-            ${kpi("Taxa engajamento", `${totals.taxa_engajamento.toFixed(2).replace(".", ",")}%`, "monitoring")}
-            ${kpi("Melhor marca", top?.marca || "-", "workspace_premium")}
-            ${kpi("Melhor alcance", fmt.format(num(top?.alcance_facebook)), "trending_up")}
-            ${kpi("Diagnóstico", top?.diagnostico_conteudo || "-", "psychology")}
+          <div class="grid kpis" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+            ${kpi("Períodos sincronizados", fmt.format(totals.total_periodos), "calendar_month")}
+            ${kpi("Diagnóstico do melhor post", ranking[0]?.diagnostico_conteudo || "-", "psychology")}
           </div>
           <section class="card">
+            <h3 style="display:flex;align-items:center;gap:8px">${facebookIcon(22)} Informações do Facebook</h3>
+            <div class="grid kpis" style="margin-top:14px">
+              ${kpi("Seguidores", fmt.format(totals.seguidores_facebook), "thumb_up")}
+              ${kpi("Alcance", fmt.format(totals.alcance_facebook), "sensors")}
+              ${kpi("Engajamento", fmt.format(totals.engajamento_facebook), "favorite")}
+              ${kpi("Taxa engajamento", `${totals.taxa_facebook.toFixed(2).replace(".", ",")}%`, "monitoring")}
+            </div>
+          </section>
+          <section class="card">
+            <h3 style="display:flex;align-items:center;gap:8px">${instagramIcon(22)} Informações do Instagram</h3>
+            <div class="grid kpis" style="margin-top:14px">
+              ${kpi("Seguidores", fmt.format(totals.seguidores_instagram), "group")}
+              ${kpi("Alcance", fmt.format(totals.alcance_instagram), "sensors")}
+              ${kpi("Engajamento", fmt.format(totals.engajamento_instagram), "favorite")}
+              ${kpi("Taxa engajamento", `${totals.taxa_instagram.toFixed(2).replace(".", ",")}%`, "monitoring")}
+            </div>
+          </section>
+          <section class="card">
             <h3>Resumo por marca</h3>
-            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Períodos</th><th>Seg. Instagram</th><th>Seg. Facebook</th><th>Alcance</th><th>Engajamento</th><th>Taxa engajamento</th><th>Última referência</th></tr></thead><tbody>${rows.map((r) => `<tr><td>${r.marca}</td><td>${fmt.format(num(r.total_periodos))}</td><td>${fmt.format(num(r.seguidores_instagram))}</td><td>${fmt.format(num(r.seguidores_facebook))}</td><td>${fmt.format(num(r.alcance_facebook))}</td><td>${fmt.format(num(r.engajamento_total))}</td><td>${num(r.taxa_engajamento).toFixed(2).replace(".", ",")}%</td><td>${r.ultima_referencia || "-"}</td></tr>`).join("") || `<tr><td colspan="8">Sem dados de Meta Business.</td></tr>`}</tbody></table></div>
+            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Períodos</th><th>Seg. Instagram</th><th>Seg. Facebook</th><th>Alcance FB</th><th>Engaj. FB</th><th>Alcance IG</th><th>Engaj. IG</th><th>Última referência</th></tr></thead><tbody>${rows.map((r) => `<tr><td>${r.marca}</td><td>${fmt.format(num(r.total_periodos))}</td><td>${fmt.format(num(r.seguidores_instagram))}</td><td>${fmt.format(num(r.seguidores_facebook))}</td><td>${fmt.format(num(r.alcance_facebook))}</td><td>${fmt.format(num(r.engajamento_facebook))}</td><td>${fmt.format(num(r.alcance_instagram))}</td><td>${fmt.format(num(r.engajamento_instagram))}</td><td>${r.ultima_referencia || "-"}</td></tr>`).join("") || `<tr><td colspan="9">Sem dados de Meta Business.</td></tr>`}</tbody></table></div>
           </section>
           <section class="card">
             <h3>Ranking de destaques</h3>
-            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Data</th><th>Alcance</th><th>Engajamento</th><th>Taxa</th><th>Diagnóstico</th><th>Post destaque</th></tr></thead><tbody>${ranking.map((r) => `<tr><td>${r.marca}</td><td>${r.data_referencia || "-"}</td><td>${fmt.format(num(r.alcance_facebook))}</td><td>${fmt.format(num(r.engajamento_total))}</td><td>${num(r.taxa_engajamento).toFixed(2).replace(".", ",")}%</td><td>${r.diagnostico_conteudo || "-"}</td><td>${r.post_destaque_semana_url ? `<a href="${r.post_destaque_semana_url}" target="_blank" rel="noreferrer">Abrir</a>` : "-"}</td></tr>`).join("") || `<tr><td colspan="7">Sem ranking de conteúdo.</td></tr>`}</tbody></table></div>
+            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Rede</th><th>Data</th><th>Alcance</th><th>Engajamento</th><th>Taxa</th><th>Diagnóstico</th><th>Post</th></tr></thead><tbody>${ranking.map((r) => `<tr><td>${r.marca}</td><td>${redeIconSmall(r.rede_social)}</td><td>${formatDateOnly(r.data_referencia)}</td><td>${fmt.format(num(r.alcance_facebook) + num(r.alcance_instagram))}</td><td>${fmt.format(num(r.engajamento_total))}</td><td>${num(r.taxa_engajamento).toFixed(2).replace(".", ",")}%</td><td>${diagnosticoPill(r.diagnostico_conteudo)}</td><td>${r.post_destaque_semana_url ? `<a href="${r.post_destaque_semana_url}" target="_blank" rel="noreferrer">Abrir</a>` : "-"}</td></tr>`).join("") || `<tr><td colspan="8">Sem ranking de conteúdo.</td></tr>`}</tbody></table></div>
           </section>
           <div class="grid cols">
             <section class="card">
               <h3>Recomendações de conteúdo</h3>
-              <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Diagnóstico</th><th>Recomendação</th></tr></thead><tbody>${ranking.slice(0, 8).map((r) => `<tr><td>${r.marca}</td><td>${r.diagnostico_conteudo || "-"}</td><td>${r.recomendacao_conteudo || "-"}</td></tr>`).join("") || `<tr><td colspan="3">Sem recomendações.</td></tr>`}</tbody></table></div>
+              <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Rede</th><th>Diagnóstico</th><th>Recomendação</th></tr></thead><tbody>${ranking.slice(0, 8).map((r) => `<tr><td>${r.marca}</td><td>${redeIconSmall(r.rede_social)}</td><td>${diagnosticoPill(r.diagnostico_conteudo)}</td><td>${r.recomendacao_conteudo || "-"}</td></tr>`).join("") || `<tr><td colspan="4">Sem recomendações.</td></tr>`}</tbody></table></div>
             </section>
             <section class="card">
               <h3>Leitura executiva</h3>
