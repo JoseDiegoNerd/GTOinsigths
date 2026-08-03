@@ -165,7 +165,7 @@
         social_format_metrics: "stage_social_format_metrics"
       };
 
-      let state = { session: null, perfil: null, page: "dashboard", marca: "Todas", periodo: "30d", periodoDe: "", periodoAte: "", periodoMenuOpen: false, rows: [], rd: [], meta: [], google: null, propostas: [], bi: null, channels: null, email: null, emailSelectedId: null, social: null, socialFormat: null, socialTab: "geral", connections: [] };
+      let state = { session: null, perfil: null, page: "dashboard", marca: "Todas", periodo: "30d", periodoDe: "", periodoAte: "", periodoMenuOpen: false, rows: [], rd: [], meta: [], google: null, propostas: [], bi: null, channels: null, email: null, emailSelectedId: null, social: null, socialFormat: null, socialTab: "geral", connections: [], followerMarca: "Todas", followerPeriodo: "30d", followerPeriodoDe: "", followerPeriodoAte: "", followerMarcaMenuOpen: false, followerPeriodoMenuOpen: false };
 
       const fmt = new Intl.NumberFormat("pt-BR");
       const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
@@ -1267,12 +1267,17 @@
         "Free Center Calçados": "#1baf7a"
       };
 
-      async function loadFollowerHistoryPorMarca(field) {
-        const { data, error } = await supabase
+      async function loadFollowerHistoryPorMarca(field, options = {}) {
+        const { marcaFiltro = "Todas", from = null, to = null } = options;
+        let query = supabase
           .from("stage_meta_business_analytics")
           .select(`marca,data_referencia,${field}`)
           .order("data_referencia", { ascending: true })
           .limit(3000);
+        if (marcaFiltro !== "Todas") query = query.eq("marca", marcaFiltro);
+        if (from) query = query.gte("data_referencia", from);
+        if (to) query = query.lte("data_referencia", to);
+        const { data, error } = await query;
         if (error || !data?.length) return new Map();
 
         const porMarca = new Map();
@@ -1282,12 +1287,120 @@
           mapa.set(row.data_referencia, (mapa.get(row.data_referencia) || 0) + num(row[field]));
         }
 
+        // Sem intervalo customizado, mantem so os ultimos 30 registros por marca para nao
+        // sobrecarregar o grafico quando o historico crescer.
         const result = new Map();
         for (const [marca, mapa] of porMarca) {
-          const pontos = [...mapa.entries()].sort((a, b) => a[0].localeCompare(b[0])).slice(-30);
+          let pontos = [...mapa.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+          if (!from && !to) pontos = pontos.slice(-30);
           result.set(marca, pontos.map(([date, value]) => ({ date, value })));
         }
         return result;
+      }
+
+      function followerFromDate() {
+        if (state.followerPeriodo === "all") return null;
+        if (state.followerPeriodo === "custom") return state.followerPeriodoDe || null;
+        const d = new Date();
+        if (state.followerPeriodo === "7d") d.setDate(d.getDate() - 7);
+        if (state.followerPeriodo === "15d") d.setDate(d.getDate() - 15);
+        if (state.followerPeriodo === "30d") d.setDate(d.getDate() - 30);
+        if (state.followerPeriodo === "6m") d.setMonth(d.getMonth() - 6);
+        if (state.followerPeriodo === "1y") d.setFullYear(d.getFullYear() - 1);
+        return d.toISOString().slice(0, 10);
+      }
+
+      function followerToDate() {
+        if (state.followerPeriodo === "custom") return state.followerPeriodoAte || null;
+        return new Date().toISOString().slice(0, 10);
+      }
+
+      function followerMarcaDropdownHtml() {
+        return `
+          <div class="dropdown" id="followerMarcaDropdown">
+            <button type="button" class="pill ${state.followerMarcaMenuOpen ? "active" : ""}" id="followerMarcaToggle" style="display:inline-flex;align-items:center;gap:4px">Marca: ${escapeHtml(state.followerMarca)} <span class="material-symbols-outlined" style="font-size:18px">expand_more</span></button>
+            ${state.followerMarcaMenuOpen ? `
+              <div class="dropdown-menu">
+                ${marcas.map((m) => `<button type="button" class="dropdown-item follower-marca-opt ${state.followerMarca === m ? "active" : ""}" data-marca="${escapeHtml(m)}">${escapeHtml(m)}</button>`).join("")}
+              </div>
+            ` : ""}
+          </div>`;
+      }
+
+      function followerPeriodoDropdownHtml() {
+        const hoje = new Date().toISOString().slice(0, 10);
+        return `
+          <div class="dropdown" id="followerPeriodoDropdown">
+            <button type="button" class="pill ${state.followerPeriodoMenuOpen ? "active" : ""}" id="followerPeriodoToggle" style="display:inline-flex;align-items:center;gap:4px">Data <span class="material-symbols-outlined" style="font-size:18px">expand_more</span></button>
+            ${state.followerPeriodoMenuOpen ? `
+              <div class="dropdown-menu">
+                ${periodoOpcoes.map(([value, label]) => `<button type="button" class="dropdown-item follower-periodo-opt ${state.followerPeriodo === value ? "active" : ""}" data-periodo="${value}">${label}</button>`).join("")}
+                ${state.followerPeriodo === "custom" ? `
+                  <div class="dropdown-dates">
+                    <label>Data inicial<input type="date" id="followerPeriodoDe" value="${state.followerPeriodoDe}" max="${hoje}"></label>
+                    <label>Data final<input type="date" id="followerPeriodoAte" value="${state.followerPeriodoAte}" max="${hoje}"></label>
+                  </div>
+                ` : ""}
+              </div>
+            ` : ""}
+          </div>`;
+      }
+
+      let followerMarcaOutsideClickBound = false;
+      let followerPeriodoOutsideClickBound = false;
+
+      function wireFollowerFilters(onSelect) {
+        document.querySelector("#followerMarcaToggle")?.addEventListener("click", (event) => {
+          event.stopPropagation();
+          state.followerMarcaMenuOpen = !state.followerMarcaMenuOpen;
+          onSelect();
+        });
+        document.querySelectorAll(".follower-marca-opt").forEach((button) => {
+          button.onclick = (event) => {
+            event.stopPropagation();
+            state.followerMarca = button.dataset.marca;
+            state.followerMarcaMenuOpen = false;
+            onSelect();
+          };
+        });
+        if (!followerMarcaOutsideClickBound) {
+          followerMarcaOutsideClickBound = true;
+          document.addEventListener("click", (event) => {
+            if (!state.followerMarcaMenuOpen) return;
+            const dropdown = document.querySelector("#followerMarcaDropdown");
+            if (dropdown && !dropdown.contains(event.target)) { state.followerMarcaMenuOpen = false; onSelect(); }
+          });
+        }
+
+        document.querySelector("#followerPeriodoToggle")?.addEventListener("click", (event) => {
+          event.stopPropagation();
+          state.followerPeriodoMenuOpen = !state.followerPeriodoMenuOpen;
+          onSelect();
+        });
+        document.querySelectorAll(".follower-periodo-opt").forEach((button) => {
+          button.onclick = (event) => {
+            event.stopPropagation();
+            state.followerPeriodo = button.dataset.periodo;
+            if (state.followerPeriodo !== "custom") state.followerPeriodoMenuOpen = false;
+            onSelect();
+          };
+        });
+        document.querySelector("#followerPeriodoDe")?.addEventListener("change", (event) => {
+          state.followerPeriodoDe = event.currentTarget.value;
+          onSelect();
+        });
+        document.querySelector("#followerPeriodoAte")?.addEventListener("change", (event) => {
+          state.followerPeriodoAte = event.currentTarget.value;
+          onSelect();
+        });
+        if (!followerPeriodoOutsideClickBound) {
+          followerPeriodoOutsideClickBound = true;
+          document.addEventListener("click", (event) => {
+            if (!state.followerPeriodoMenuOpen) return;
+            const dropdown = document.querySelector("#followerPeriodoDropdown");
+            if (dropdown && !dropdown.contains(event.target)) { state.followerPeriodoMenuOpen = false; onSelect(); }
+          });
+        }
       }
 
       // Linha por marca (nunca somadas): cada marca so tem registro nos dias em que foi
@@ -1353,25 +1466,36 @@
           </div>`;
       }
 
-      function followerEvolutionSectionHtml(seriesPorMarca, seriesMarcaSelecionada, redeLabel) {
-        const variacaoHtml = state.marca === "Todas"
-          ? `<p class="muted" style="margin:0">Selecione uma marca específica no filtro para ver a variação diária dela — ganho/perda só faz sentido calculado dentro de uma mesma conta.</p>`
-          : seriesMarcaSelecionada.length
-            ? dailyChangeBarChartHtml(dailyChangeFromSeries(seriesMarcaSelecionada))
-            : `<p class="muted" style="margin:0">Sem histórico suficiente de ${escapeHtml(state.marca)} ainda.</p>`;
+      function followerEvolutionSectionHtml(seriesPorMarca, redeLabel) {
+        const marcaAtiva = state.followerMarca;
+        const seriesSelecionada = marcaAtiva === "Todas" ? [] : (seriesPorMarca.get(marcaAtiva) || []).map((p) => ({
+          label: new Date(`${p.date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
+          value: p.value
+        }));
 
-        return `<div class="grid cols">
-          <section class="card">
-            <h3>Evolução de seguidores</h3>
-            <p class="muted" style="margin-top:-6px">${escapeHtml(redeLabel)} das 3 marcas — últimos dias com dado sincronizado.</p>
-            ${multiLineChartHtml(seriesPorMarca)}
-          </section>
-          <section class="card">
-            <h3>Variação diária${state.marca !== "Todas" ? ` — ${escapeHtml(state.marca)}` : ""}</h3>
-            <p class="muted" style="margin-top:-6px">Diferença do total de seguidores entre um dia e o anterior.</p>
-            ${variacaoHtml}
-          </section>
-        </div>`;
+        const variacaoHtml = marcaAtiva === "Todas"
+          ? `<p class="muted" style="margin:0">Selecione uma marca no filtro acima para ver a perda de seguidores dela — ganho/perda só faz sentido calculado dentro de uma mesma conta.</p>`
+          : seriesSelecionada.length > 1
+            ? dailyChangeBarChartHtml(dailyChangeFromSeries(seriesSelecionada))
+            : `<p class="muted" style="margin:0">Sem histórico suficiente de ${escapeHtml(marcaAtiva)} nesse período.</p>`;
+
+        return `
+          <div class="filters" style="margin:-8px 0 -4px">
+            ${followerMarcaDropdownHtml()}
+            ${followerPeriodoDropdownHtml()}
+          </div>
+          <div class="grid cols">
+            <section class="card">
+              <h3>Evolução de seguidores</h3>
+              <p class="muted" style="margin-top:-6px">${escapeHtml(redeLabel)}${marcaAtiva === "Todas" ? " das 3 marcas" : ` — ${escapeHtml(marcaAtiva)}`}, no período selecionado.</p>
+              ${multiLineChartHtml(seriesPorMarca)}
+            </section>
+            <section class="card">
+              <h3>Perda de seguidores${marcaAtiva !== "Todas" ? ` — ${escapeHtml(marcaAtiva)}` : ""}</h3>
+              <p class="muted" style="margin-top:-6px">Diferença do total de seguidores entre um dia e o anterior.</p>
+              ${variacaoHtml}
+            </section>
+          </div>`;
       }
 
       function topBottomPostsHtml(rows, formato, title) {
@@ -1672,11 +1796,11 @@
           : "Rede secundária: distribuição, tráfego externo e lembrança de marca.";
 
         const followerField = isInstagram ? "seguidores_instagram" : "seguidores_facebook";
-        const followerSeriesPorMarca = await loadFollowerHistoryPorMarca(followerField).catch(() => new Map());
-        const followerSeriesSelecionada = state.marca === "Todas" ? [] : (followerSeriesPorMarca.get(state.marca) || []).map((p) => ({
-          label: new Date(`${p.date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
-          value: p.value
-        }));
+        const followerSeriesPorMarca = await loadFollowerHistoryPorMarca(followerField, {
+          marcaFiltro: state.followerMarca,
+          from: followerFromDate(),
+          to: followerToDate()
+        }).catch(() => new Map());
         const reelsFormato = isInstagram ? "instagram_reels" : "facebook_reels";
         const feedFormato = isInstagram ? "instagram_feed" : "facebook_feed";
 
@@ -1693,12 +1817,12 @@
           ${data.fallback && rows.length ? `<div class="alert success">Dados carregados da tabela <code>stage_social_format_metrics</code>. ${hasDetailedSocialMetrics(rows, rede) ? "Métricas detalhadas disponíveis para a rede." : "Posts capturados, mas a Meta ainda não liberou métricas detalhadas para esses conteúdos."}</div>` : ""}
           ${rows.length ? "" : `<div class="alert">Ainda não há métricas granulares de ${rede}. Confirme a página correta em <strong>Conexões</strong> e clique em <strong>Sincronizar confirmadas</strong>.</div>`}
           ${isInstagram ? instagramSummaryHtml(totals) : facebookSummaryHtml(totals)}
-          ${followerEvolutionSectionHtml(followerSeriesPorMarca, followerSeriesSelecionada, `Seguidores ${title}`)}
+          ${followerEvolutionSectionHtml(followerSeriesPorMarca, `Seguidores ${title}`)}
           ${topBottomPostsHtml(rows, reelsFormato, "Reels")}
           ${topBottomPostsHtml(rows, feedFormato, "Feed")}
           ${isInstagram ? instagramSectionsHtml(rows) : facebookSectionsHtml(rows)}
           <section class="card">
-            <h3>Insights e proximos passos</h3>
+            <h3>Insights e próximos passos</h3>
             <div class="insight-grid">
               <div class="insight-panel"><h4>O que funcionou melhor</h4>${insightCardsHtml(bestSocialSignals(rows, rede), "success", "trending_up")}</div>
               <div class="insight-panel"><h4>O que precisa ajuste</h4>${insightCardsHtml(nextSocialActions(rows, rede), "warning", "priority_high")}</div>
@@ -1707,6 +1831,7 @@
 
         wireMarcaPills(() => renderSocialFormatPage(rede));
         wirePeriodoDropdown(() => renderSocialFormatPage(rede));
+        wireFollowerFilters(() => renderSocialFormatPage(rede));
         wireSocialTabs();
         document.querySelector("#refresh").onclick = () => renderSocialFormatPage(rede);
       }
