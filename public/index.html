@@ -1154,6 +1154,165 @@
         document.querySelector("#refresh").onclick = renderDashboard;
       }
 
+      function instagramIcon(size = 18) {
+        return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" style="vertical-align:middle;flex:none">
+          <defs><linearGradient id="igGrad" x1="0" y1="24" x2="24" y2="0">
+            <stop offset="0" stop-color="#FEDA75"/><stop offset=".3" stop-color="#FA7E1E"/><stop offset=".6" stop-color="#D62976"/><stop offset="1" stop-color="#962FBF"/>
+          </linearGradient></defs>
+          <rect x="1.5" y="1.5" width="21" height="21" rx="6.5" fill="url(#igGrad)"/>
+          <rect x="6.5" y="6.5" width="11" height="11" rx="3.5" fill="none" stroke="#fff" stroke-width="1.6"/>
+          <circle cx="12" cy="12" r="3.2" fill="none" stroke="#fff" stroke-width="1.6"/>
+          <circle cx="16.6" cy="7.4" r="1.1" fill="#fff"/>
+        </svg>`;
+      }
+
+      function facebookIcon(size = 18) {
+        return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" style="vertical-align:middle;flex:none">
+          <circle cx="12" cy="12" r="10.5" fill="#1877F2"/>
+          <path d="M15.1 12.6h-2.05v7.3h-2.9v-7.3H8.7v-2.5h1.45V8.55c0-1.85 1.05-3.05 3.05-3.05h1.85v2.5H13.9c-.4 0-.7.2-.7.75v1.35h1.95l-.05 2.5z" fill="#fff"/>
+        </svg>`;
+      }
+
+      function networkLabel(rede, size = 18) {
+        return rede === "Instagram"
+          ? `${instagramIcon(size)} <span>Instagram</span>`
+          : `${facebookIcon(size)} <span>Facebook</span>`;
+      }
+
+      function followerLineChartHtml(points, seriesLabel) {
+        if (!points.length) return `<p class="muted" style="margin:0">Sem historico de seguidores sincronizado ainda.</p>`;
+        const w = 560, h = 200, padL = 44, padR = 12, padT = 16, padB = 28;
+        const values = points.map((p) => p.value);
+        const minV = Math.min(...values), maxV = Math.max(...values);
+        const span = Math.max(1, maxV - minV);
+        const x = (i) => padL + (i / Math.max(1, points.length - 1)) * (w - padL - padR);
+        const y = (v) => padT + (1 - (v - minV) / span) * (h - padT - padB);
+        const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(p.value).toFixed(1)}`).join(" ");
+        const areaPath = `${linePath} L${x(points.length - 1).toFixed(1)},${(h - padB).toFixed(1)} L${x(0).toFixed(1)},${(h - padB).toFixed(1)} Z`;
+        const first = points[0], last = points[points.length - 1];
+        return `
+          <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:220px" role="img" aria-label="Evolucao de ${escapeHtml(seriesLabel)}: de ${fmt.format(first.value)} em ${first.label} para ${fmt.format(last.value)} em ${last.label}">
+            <line x1="${padL}" y1="${(h - padB).toFixed(1)}" x2="${w - padR}" y2="${(h - padB).toFixed(1)}" stroke="#e2e8f0" stroke-width="1"/>
+            <text x="${padL}" y="${padT - 4}" font-size="11" fill="#64748b">${fmt.format(maxV)}</text>
+            <text x="${padL}" y="${(h - padB + 12).toFixed(1)}" font-size="11" fill="#64748b">${fmt.format(minV)}</text>
+            <path d="${areaPath}" fill="#2a78d6" opacity="0.10"/>
+            <path d="${linePath}" fill="none" stroke="#2a78d6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            ${points.map((p, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(p.value).toFixed(1)}" r="${i === points.length - 1 ? 4 : 2.5}" fill="#2a78d6"><title>${escapeHtml(p.label)}: ${fmt.format(p.value)}</title></circle>`).join("")}
+            <text x="${padL}" y="${h - 6}" font-size="11" fill="#64748b">${escapeHtml(first.label)}</text>
+            <text x="${w - padR}" y="${h - 6}" font-size="11" fill="#64748b" text-anchor="end">${escapeHtml(last.label)}</text>
+          </svg>`;
+      }
+
+      function dailyChangeBarChartHtml(points) {
+        if (!points.length) return `<p class="muted" style="margin:0">Sem dados suficientes para calcular variacao diaria.</p>`;
+        const w = 420, h = 200, padL = 12, padR = 12, padT = 16, padB = 28;
+        const deltas = points.map((p) => p.delta);
+        const maxAbs = Math.max(1, ...deltas.map((d) => Math.abs(d)));
+        const zeroY = padT + (h - padT - padB) / 2;
+        const halfH = (h - padT - padB) / 2;
+        const barW = Math.max(2, ((w - padL - padR) / points.length) - 2);
+        const x = (i) => padL + i * ((w - padL - padR) / points.length);
+        const bars = points.map((p, i) => {
+          const barH = (Math.abs(p.delta) / maxAbs) * halfH;
+          const color = p.delta >= 0 ? "#0ca30c" : "#d03b3b";
+          const yTop = p.delta >= 0 ? zeroY - barH : zeroY;
+          return `<rect x="${x(i).toFixed(1)}" y="${yTop.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(0.5, barH).toFixed(1)}" rx="2" fill="${color}"><title>${escapeHtml(p.label)}: ${p.delta >= 0 ? "+" : ""}${fmt.format(p.delta)}</title></rect>`;
+        }).join("");
+        return `
+          <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:220px" role="img" aria-label="Variacao diaria de seguidores, ganhos em verde e perdas em vermelho">
+            <line x1="${padL}" y1="${zeroY.toFixed(1)}" x2="${w - padR}" y2="${zeroY.toFixed(1)}" stroke="#e2e8f0" stroke-width="1"/>
+            ${bars}
+          </svg>
+          <div style="display:flex;gap:16px;margin-top:6px;font-size:12px;color:#64748b">
+            <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:2px;background:#0ca30c;display:inline-block"></span>Ganho liquido</span>
+            <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:2px;background:#d03b3b;display:inline-block"></span>Perda liquida</span>
+          </div>`;
+      }
+
+      async function loadFollowerHistory(field) {
+        let query = supabase
+          .from("stage_meta_business_analytics")
+          .select(`marca,data_referencia,${field}`)
+          .order("data_referencia", { ascending: true })
+          .limit(2000);
+        if (state.marca !== "Todas") query = query.eq("marca", state.marca);
+        const { data, error } = await query;
+        if (error || !data?.length) return [];
+
+        const porData = new Map();
+        for (const row of data) {
+          const atual = porData.get(row.data_referencia) || 0;
+          porData.set(row.data_referencia, atual + num(row[field]));
+        }
+        const dias = [...porData.entries()].sort((a, b) => a[0].localeCompare(b[0])).slice(-30);
+        return dias.map(([data_referencia, value]) => ({
+          label: new Date(`${data_referencia}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
+          value
+        }));
+      }
+
+      function dailyChangeFromSeries(points) {
+        const changes = [];
+        for (let i = 1; i < points.length; i++) {
+          changes.push({ label: points[i].label, delta: points[i].value - points[i - 1].value });
+        }
+        return changes;
+      }
+
+      function followerEvolutionSectionHtml(seriesPoints, seriesLabel) {
+        const changePoints = dailyChangeFromSeries(seriesPoints);
+        return `<div class="grid cols">
+          <section class="card">
+            <h3>Evolucao de seguidores</h3>
+            <p class="muted" style="margin-top:-6px">${escapeHtml(seriesLabel)} - ultimos ${seriesPoints.length} dias com dado sincronizado.</p>
+            ${followerLineChartHtml(seriesPoints, seriesLabel)}
+          </section>
+          <section class="card">
+            <h3>Variacao diaria</h3>
+            <p class="muted" style="margin-top:-6px">Diferenca do total de seguidores entre um dia e o anterior.</p>
+            ${dailyChangeBarChartHtml(changePoints)}
+          </section>
+        </div>`;
+      }
+
+      function topBottomPostsHtml(rows, formato, title) {
+        const posts = rows.filter((r) => r.formato === formato && !String(r.post_id || "").startsWith("page-summary:"));
+        if (!posts.length) return "";
+        const ranked = [...posts].sort((a, b) => num(b.engajamento) - num(a.engajamento) || num(b.alcance) - num(a.alcance));
+        const top = ranked.slice(0, 5);
+        const bottom = ranked.length > 5 ? [...ranked].reverse().slice(0, 5) : [];
+
+        const rowsHtml = (list, emptyMsg) => list.length
+          ? list.map((r) => `<tr>
+              <td>${r.post_url ? `<a href="${escapeHtml(r.post_url)}" target="_blank" rel="noreferrer">${escapeHtml(textSnippet(r.tema || "Conteudo", 50))}</a>` : escapeHtml(textSnippet(r.tema || "Conteudo", 50))}</td>
+              <td>${escapeHtml(formatDateOnly(r.data_publicacao))}</td>
+              <td>${fmt.format(num(r.alcance))}</td>
+              <td>${fmt.format(num(r.engajamento))}</td>
+            </tr>`).join("")
+          : `<tr><td colspan="4">${emptyMsg}</td></tr>`;
+
+        return `<div class="grid cols">
+          <section class="card">
+            <h3>Top 5 - ${escapeHtml(title)}</h3>
+            <div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>Post</th><th>Publicado</th><th>Alcance</th><th>Engajamento</th></tr></thead><tbody>${rowsHtml(top, "Sem posts suficientes.")}</tbody></table></div>
+          </section>
+          <section class="card">
+            <h3>5 que menos renderam - ${escapeHtml(title)}</h3>
+            <div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>Post</th><th>Publicado</th><th>Alcance</th><th>Engajamento</th></tr></thead><tbody>${rowsHtml(bottom, "Poucos posts para comparar.")}</tbody></table></div>
+          </section>
+        </div>`;
+      }
+
+      function formatDateOnly(value) {
+        if (!value) return "-";
+        try { return new Date(value).toLocaleDateString("pt-BR"); } catch { return "-"; }
+      }
+
+      function textSnippet(value, max) {
+        const text = String(value || "").trim();
+        return text.length > max ? `${text.slice(0, max - 1)}...` : text;
+      }
+
       function kpi(label, value, icon) {
         return `<article class="card kpi"><div class="kpi-top"><span>${label}</span><span class="material-symbols-outlined">${icon}</span></div><strong>${value}</strong><small class="muted">Registros visíveis pelo perfil</small></article>`;
       }
@@ -1176,8 +1335,12 @@
       }
 
       function socialTabsHtml(active) {
-        const tabs = [["geral", "Visão Geral"], ["instagram", "Instagram"], ["facebook", "Facebook"]];
-        return `<div class="segmented">${tabs.map(([key, label]) => `<button type="button" class="social-tab ${active === key ? "active" : ""}" data-tab="${key}">${label}</button>`).join("")}</div>`;
+        const tabs = [
+          ["geral", "Visão Geral"],
+          ["instagram", `${instagramIcon(16)} <span>Instagram</span>`],
+          ["facebook", `${facebookIcon(16)} <span>Facebook</span>`]
+        ];
+        return `<div class="segmented">${tabs.map(([key, label]) => `<button type="button" class="social-tab ${active === key ? "active" : ""}" data-tab="${key}" style="display:inline-flex;align-items:center;gap:6px">${label}</button>`).join("")}</div>`;
       }
 
       function wireSocialTabs() {
@@ -1409,9 +1572,13 @@
           ? "Rede principal: descoberta, relacionamento e autoridade por formato."
           : "Rede secundaria: distribuicao, trafego externo e lembranca de marca.";
 
+        const followerSeries = await loadFollowerHistory(isInstagram ? "seguidores_instagram" : "seguidores_facebook").catch(() => []);
+        const reelsFormato = isInstagram ? "instagram_reels" : "facebook_reels";
+        const feedFormato = isInstagram ? "instagram_feed" : "facebook_feed";
+
         content.innerHTML = `
           <div class="page-head">
-            <div><div class="eyebrow">${isInstagram ? "Rede principal" : "Rede secundaria"}</div><h2>${title}</h2><p class="muted">${subtitle}</p></div>
+            <div><div class="eyebrow">${isInstagram ? "Rede principal" : "Rede secundaria"}</div><h2 style="display:flex;align-items:center;gap:10px">${isInstagram ? instagramIcon(28) : facebookIcon(28)} ${title}</h2><p class="muted">${subtitle}</p></div>
             <div class="filters">
               ${marcaPillsHtml()}
               ${periodoDropdownHtml()}
@@ -1422,6 +1589,9 @@
           ${data.fallback && rows.length ? `<div class="alert success">Dados carregados da tabela <code>stage_social_format_metrics</code>. ${hasDetailedSocialMetrics(rows, rede) ? "Métricas detalhadas disponíveis para a rede." : "Posts capturados, mas a Meta ainda não liberou métricas detalhadas para esses conteúdos."}</div>` : ""}
           ${rows.length ? "" : `<div class="alert">Ainda nao ha metricas granulares de ${rede}. Confirme a pagina correta em <strong>Conexoes</strong> e clique em <strong>Sincronizar confirmadas</strong>.</div>`}
           ${isInstagram ? instagramSummaryHtml(totals) : facebookSummaryHtml(totals)}
+          ${followerEvolutionSectionHtml(followerSeries, `Seguidores ${title}`)}
+          ${topBottomPostsHtml(rows, reelsFormato, "Reels")}
+          ${topBottomPostsHtml(rows, feedFormato, "Feed")}
           ${isInstagram ? instagramSectionsHtml(rows) : facebookSectionsHtml(rows)}
           <section class="card">
             <h3>Insights e proximos passos</h3>
@@ -1776,6 +1946,28 @@
         return { label: "Revisar", className: "inactive" };
       }
 
+      function campaignStatusPill(status) {
+        const value = String(status || "").toUpperCase();
+        const active = value === "ACTIVE";
+        const label = value === "ACTIVE" ? "Ativa" : value === "PAUSED" ? "Pausada" : value || "-";
+        return `<span class="status-pill ${active ? "active" : "inactive"}">${escapeHtml(label)}</span>`;
+      }
+
+      function campaignObjectiveLabel(objetivo) {
+        const labels = {
+          LINK_CLICKS: "Cliques no link",
+          OUTCOME_TRAFFIC: "Trafego",
+          OUTCOME_ENGAGEMENT: "Engajamento",
+          OUTCOME_LEADS: "Geracao de leads",
+          OUTCOME_SALES: "Vendas",
+          OUTCOME_AWARENESS: "Reconhecimento",
+          POST_ENGAGEMENT: "Engajamento no post",
+          CONVERSIONS: "Conversoes",
+          REACH: "Alcance"
+        };
+        return labels[objetivo] || objetivo || "-";
+      }
+
       async function renderMetaAds() {
         const content = document.querySelector("#content");
         content.innerHTML = `<div class="alert">Carregando campanhas de anúncios Meta...</div>`;
@@ -1805,6 +1997,7 @@
         const cpmMedio = totals.impressoes ? (totals.investimento / totals.impressoes) * 1000 : 0;
         const cpcMedio = totals.cliques ? totals.investimento / totals.cliques : 0;
         const ctrMedio = totals.impressoes ? (totals.cliques / totals.impressoes) * 100 : 0;
+        const melhorCampanha = [...rows].sort((a, b) => num(b.ctr) - num(a.ctr))[0] || null;
 
         content.innerHTML = `
           <div class="page-head">
@@ -1824,6 +2017,10 @@
             ${kpi("CPC médio", `R$ ${cpcMedio.toFixed(2).replace(".", ",")}`, "point_scan")}
             ${kpi("CTR médio", `${ctrMedio.toFixed(2).replace(".", ",")}%`, "trending_up")}
           </div>
+          ${melhorCampanha ? `<div class="insight-card success">
+            <span class="material-symbols-outlined">workspace_premium</span>
+            <p><strong>Melhor CTR:</strong> ${escapeHtml(melhorCampanha.campaign_name || melhorCampanha.campaign_id)} (${escapeHtml(melhorCampanha.marca)}) — ${num(melhorCampanha.ctr).toFixed(2).replace(".", ",")}% de CTR, R$ ${fmt.format(num(melhorCampanha.investimento))} investidos.</p>
+          </div>` : ""}
           <section class="card">
             <h3>Campanhas</h3>
             <div class="table-wrap" style="margin-top:16px">
@@ -1832,8 +2029,8 @@
                 <tbody>${rows.map((r) => `<tr>
                   <td>${escapeHtml(r.marca)}</td>
                   <td>${escapeHtml(r.campaign_name || r.campaign_id)}</td>
-                  <td>${escapeHtml(r.objetivo || "-")}</td>
-                  <td>${escapeHtml(r.status || "-")}</td>
+                  <td>${escapeHtml(campaignObjectiveLabel(r.objetivo))}</td>
+                  <td>${campaignStatusPill(r.status)}</td>
                   <td>R$ ${fmt.format(num(r.investimento))}</td>
                   <td>${fmt.format(num(r.alcance))}</td>
                   <td>${fmt.format(num(r.impressoes))}</td>
