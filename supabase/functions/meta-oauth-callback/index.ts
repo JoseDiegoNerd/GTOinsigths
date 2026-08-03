@@ -13,6 +13,9 @@ const META_SCOPES = [
   "pages_read_engagement",
   "business_management",
   "read_insights",
+  "instagram_basic",
+  "instagram_manage_insights",
+  "ads_read",
 ];
 
 function redirectTo(appReturnUrl: string, params: Record<string, string | number>) {
@@ -128,7 +131,64 @@ Deno.serve(async (req) => {
       });
     }
 
-    return redirectTo(appReturnUrl, { meta_connected: saved.length });
+    const adAccounts = await metaGet("/me/adaccounts", {
+      fields: "id,name,account_status,currency,timezone_name",
+      access_token: userAccessToken,
+    }).catch((adAccountsError) => {
+      // ads_read pode nao estar aprovado ainda para o usuario/app; nao falha a conexao de
+      // Paginas por causa disso, so registra o aviso.
+      logMetaEvent({
+        marca,
+        tipo_evento: "oauth_callback_ads",
+        status: "aviso",
+        mensagem: adAccountsError.message || "Nao foi possivel listar contas de anuncios.",
+      });
+      return { data: [] };
+    });
+
+    let savedAdAccounts = 0;
+    for (const account of adAccounts.data || []) {
+      const { data: existingAdAccount } = await supabase
+        .from("integracao_meta_ads_contas")
+        .select("conta_confirmada,ignorada,observacao")
+        .eq("marca", marca)
+        .eq("ad_account_id", account.id)
+        .maybeSingle();
+
+      const { data: savedAccount, error: adAccountError } = await supabase
+        .from("integracao_meta_ads_contas")
+        .upsert({
+          marca,
+          ad_account_id: account.id,
+          ad_account_name: account.name,
+          moeda: account.currency || null,
+          fuso_horario: account.timezone_name || null,
+          access_token: userAccessToken,
+          token_type: longToken.token_type || shortToken.token_type || "bearer",
+          token_expires_at: tokenExpiresAt,
+          scopes: META_SCOPES,
+          ativo: existingAdAccount?.ignorada ? false : true,
+          conta_confirmada: existingAdAccount?.conta_confirmada ?? false,
+          ignorada: existingAdAccount?.ignorada ?? false,
+          observacao: existingAdAccount?.observacao || "Conta de anuncios recebida via OAuth. Aguardando revisao no GTO Insights.",
+        }, { onConflict: "marca,ad_account_id" })
+        .select("id")
+        .single();
+
+      if (adAccountError) throw adAccountError;
+      savedAdAccounts += 1;
+
+      await logMetaEvent({
+        integracao_id: savedAccount.id,
+        marca,
+        tipo_evento: "oauth_callback_ads",
+        status: "sucesso",
+        mensagem: "Conta de anuncios Meta conectada com sucesso.",
+        payload_resumo: { ad_account_id: account.id, ad_account_name: account.name },
+      });
+    }
+
+    return redirectTo(appReturnUrl, { meta_connected: saved.length, meta_ads_connected: savedAdAccounts });
   } catch (callbackError) {
     await logMetaEvent({
       marca: String(parsedState.marca || "") || null,

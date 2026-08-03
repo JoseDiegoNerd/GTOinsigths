@@ -1037,6 +1037,7 @@
               <button id="navCred" class="${state.page === "credsystem" ? "active" : ""}"><span class="material-symbols-outlined">credit_card</span>Cartão Próprio</button>
               <button id="navEmail" class="${state.page === "email" ? "active" : ""}"><span class="material-symbols-outlined">mail</span>Email Marketing</button>
               <button id="navSocial" class="${state.page === "social" ? "active" : ""}"><span class="material-symbols-outlined">diversity_3</span>Redes Sociais</button>
+              <button id="navAds" class="${state.page === "ads" ? "active" : ""}"><span class="material-symbols-outlined">campaign</span>Anúncios</button>
               <button id="navConnections" class="${state.page === "connections" ? "active" : ""}"><span class="material-symbols-outlined">link</span>Conexões</button>
               <button id="navGMN" class="${state.page === "google_business" ? "active" : ""}"><span class="material-symbols-outlined">store</span>Google Meu Negócio</button>
               <button id="navImport" class="${state.page === "import" ? "active" : ""}"><span class="material-symbols-outlined">upload_file</span>Importar Planilhas</button>
@@ -1052,6 +1053,7 @@
         document.querySelector("#navCred").onclick = () => { state.page = "credsystem"; render(); };
         document.querySelector("#navEmail").onclick = () => { state.page = "email"; render(); };
         document.querySelector("#navSocial").onclick = () => { state.page = "social"; render(); };
+        document.querySelector("#navAds").onclick = () => { state.page = "ads"; render(); };
         document.querySelector("#navConnections").onclick = () => { state.page = "connections"; render(); };
         document.querySelector("#navGMN").onclick = () => { state.page = "google_business"; render(); };
         document.querySelector("#navImport").onclick = () => { state.page = "import"; render(); };
@@ -1063,6 +1065,7 @@
           else if (state.socialTab === "facebook") await renderSocialFormatPage("Facebook");
           else await renderSocialBI();
         }
+        if (state.page === "ads") await renderMetaAds();
         if (state.page === "connections") await renderConnections();
         if (state.page === "google_business") await renderGoogleBusiness();
         if (state.page === "import") renderImport();
@@ -1073,6 +1076,7 @@
         if (state.page === "credsystem") return "Cartão Próprio CredSystem";
         if (state.page === "email") return "Email Marketing";
         if (state.page === "social") return "Redes Sociais";
+        if (state.page === "ads") return "Anúncios Meta";
         if (state.page === "connections") return "Conexões";
         if (state.page === "google_business") return "Google Meu Negócio";
         return "Pipeline de importação";
@@ -1755,6 +1759,14 @@
         const { data, error } = await query;
         if (error) throw error;
         state.connections = data || [];
+
+        let adQuery = supabase
+          .from("vw_integracao_meta_ads_contas_publica")
+          .select("id,marca,ad_account_id,ad_account_name,moeda,ativo,conta_confirmada,ignorada,observacao,ultima_sincronizacao_em,criado_em")
+          .order("criado_em", { ascending: false });
+        if (state.marca !== "Todas") adQuery = adQuery.eq("marca", state.marca);
+        const { data: adData, error: adError } = await adQuery;
+        state.adConnections = adError ? [] : (adData || []);
       }
 
       function connectionStateLabel(row) {
@@ -1762,6 +1774,82 @@
         if (row.conta_confirmada && row.ativo) return { label: "Confirmada", className: "active" };
         if (!row.ativo) return { label: "Inativa", className: "inactive" };
         return { label: "Revisar", className: "inactive" };
+      }
+
+      async function renderMetaAds() {
+        const content = document.querySelector("#content");
+        content.innerHTML = `<div class="alert">Carregando campanhas de anúncios Meta...</div>`;
+
+        let rows = [];
+        try {
+          let query = supabase
+            .from("stage_meta_ads_metrics")
+            .select("marca,ad_account_id,campaign_id,campaign_name,objetivo,status,periodo_inicio,periodo_fim,investimento,impressoes,alcance,cliques,cliques_link,cpm,cpc,ctr,frequencia")
+            .order("investimento", { ascending: false });
+          if (state.marca !== "Todas") query = query.eq("marca", state.marca);
+          const { data, error } = await query;
+          if (error) throw error;
+          rows = data || [];
+        } catch (error) {
+          content.innerHTML = `<div class="alert error">${escapeHtml(error.message)}<br><br>Aplique as migrations <code>supabase/migrations/20260803_013_meta_ads_integration.sql</code> e <code>20260803_014_meta_ads_public_view.sql</code>.</div>`;
+          return;
+        }
+
+        const totals = rows.reduce((acc, row) => ({
+          investimento: acc.investimento + num(row.investimento),
+          impressoes: acc.impressoes + num(row.impressoes),
+          alcance: acc.alcance + num(row.alcance),
+          cliques: acc.cliques + num(row.cliques),
+          cliquesLink: acc.cliquesLink + num(row.cliques_link)
+        }), { investimento: 0, impressoes: 0, alcance: 0, cliques: 0, cliquesLink: 0 });
+        const cpmMedio = totals.impressoes ? (totals.investimento / totals.impressoes) * 1000 : 0;
+        const cpcMedio = totals.cliques ? totals.investimento / totals.cliques : 0;
+        const ctrMedio = totals.impressoes ? (totals.cliques / totals.impressoes) * 100 : 0;
+
+        content.innerHTML = `
+          <div class="page-head">
+            <div><div class="eyebrow">Meta Ads</div><h2>Anúncios</h2><p class="muted">Investimento, alcance e performance de campanhas — últimos 30 dias, atualizado a cada sincronização.</p></div>
+            <div class="filters">
+              ${marcaPillsHtml()}
+              <button id="refresh">Atualizar</button>
+            </div>
+          </div>
+          ${rows.length ? "" : `<div class="alert">Nenhuma campanha sincronizada ainda. Confirme uma conta de anúncios em <strong>Conexões</strong> e clique em <strong>Sincronizar anúncios confirmados</strong>.</div>`}
+          <div class="grid kpis">
+            ${kpi("Investimento", `R$ ${fmt.format(totals.investimento)}`, "payments")}
+            ${kpi("Alcance", fmt.format(totals.alcance), "sensors")}
+            ${kpi("Impressões", fmt.format(totals.impressoes), "visibility")}
+            ${kpi("Cliques", fmt.format(totals.cliques), "ads_click")}
+            ${kpi("CPM médio", `R$ ${cpmMedio.toFixed(2).replace(".", ",")}`, "monitoring")}
+            ${kpi("CPC médio", `R$ ${cpcMedio.toFixed(2).replace(".", ",")}`, "point_scan")}
+            ${kpi("CTR médio", `${ctrMedio.toFixed(2).replace(".", ",")}%`, "trending_up")}
+          </div>
+          <section class="card">
+            <h3>Campanhas</h3>
+            <div class="table-wrap" style="margin-top:16px">
+              <table>
+                <thead><tr><th>Marca</th><th>Campanha</th><th>Objetivo</th><th>Status</th><th>Investimento</th><th>Alcance</th><th>Impressões</th><th>Cliques</th><th>Cliques link</th><th>CPM</th><th>CPC</th><th>CTR</th><th>Frequência</th></tr></thead>
+                <tbody>${rows.map((r) => `<tr>
+                  <td>${escapeHtml(r.marca)}</td>
+                  <td>${escapeHtml(r.campaign_name || r.campaign_id)}</td>
+                  <td>${escapeHtml(r.objetivo || "-")}</td>
+                  <td>${escapeHtml(r.status || "-")}</td>
+                  <td>R$ ${fmt.format(num(r.investimento))}</td>
+                  <td>${fmt.format(num(r.alcance))}</td>
+                  <td>${fmt.format(num(r.impressoes))}</td>
+                  <td>${fmt.format(num(r.cliques))}</td>
+                  <td>${fmt.format(num(r.cliques_link))}</td>
+                  <td>R$ ${num(r.cpm).toFixed(2).replace(".", ",")}</td>
+                  <td>R$ ${num(r.cpc).toFixed(2).replace(".", ",")}</td>
+                  <td>${num(r.ctr).toFixed(2).replace(".", ",")}%</td>
+                  <td>${num(r.frequencia).toFixed(2).replace(".", ",")}</td>
+                </tr>`).join("") || `<tr><td colspan="13">Sem campanhas para este período.</td></tr>`}</tbody>
+              </table>
+            </div>
+          </section>`;
+
+        wireMarcaPills(renderMetaAds);
+        document.querySelector("#refresh").onclick = renderMetaAds;
       }
 
       async function renderConnections(statusMessage = "") {
@@ -1779,6 +1867,7 @@
         }
 
         const rows = state.connections || [];
+        const adRows = state.adConnections || [];
         const confirmedRows = rows.filter((row) => row.conta_confirmada && row.ativo && !row.ignorada);
         const pendingRows = rows.filter((row) => !row.conta_confirmada && !row.ignorada);
         const ignoredRows = rows.filter((row) => row.ignorada);
@@ -1840,16 +1929,49 @@
                 }).join("") || `<tr><td colspan="7">Nenhuma conta conectada ainda.</td></tr>`}</tbody>
               </table>
             </div>
+          </section>
+          <section class="card">
+            <div class="page-head" style="align-items:center">
+              <div><h3>Contas de anúncios para revisão</h3><p class="muted">Descobertas junto com o login do Meta Business (permissão de anúncios). Confirme só a conta que pertence à marca selecionada.</p></div>
+              <div class="actions">
+                <button id="syncAllMetaAds" class="secondary"><span class="material-symbols-outlined" style="vertical-align:middle">sync</span> Sincronizar anúncios confirmados</button>
+              </div>
+            </div>
+            <div class="table-wrap" style="margin-top:16px">
+              <table>
+                <thead><tr><th>Marca</th><th>Conta de anúncios</th><th>Moeda</th><th>Status</th><th>Última sincronização</th><th>Ação</th></tr></thead>
+                <tbody>${adRows.map((row) => {
+                  const stateLabel = connectionStateLabel(row);
+                  return `
+                  <tr>
+                    <td>${escapeHtml(row.marca)}</td>
+                    <td>${escapeHtml(row.ad_account_name || row.ad_account_id || "-")}</td>
+                    <td>${escapeHtml(row.moeda || "-")}</td>
+                    <td><span class="status-pill ${stateLabel.className}">${stateLabel.label}</span></td>
+                    <td>${escapeHtml(formatDateTime(row.ultima_sincronizacao_em))}</td>
+                    <td><div class="actions">
+                      ${row.conta_confirmada && !row.ignorada ? `<button class="secondary sync-one-ads" data-id="${escapeHtml(row.id)}">Sincronizar</button>` : `<button class="confirm-one-ads" data-id="${escapeHtml(row.id)}">Confirmar</button>`}
+                      ${row.ignorada ? `<button class="secondary reactivate-one-ads" data-id="${escapeHtml(row.id)}">Reativar</button>` : `<button class="secondary ignore-one-ads" data-id="${escapeHtml(row.id)}">Ignorar</button>`}
+                    </div></td>
+                  </tr>`;
+                }).join("") || `<tr><td colspan="6">Nenhuma conta de anúncios encontrada ainda. Reconecte o Meta Business para descobrir contas de anúncios (precisa da permissão "ads_read").</td></tr>`}</tbody>
+              </table>
+            </div>
           </section>`;
 
         wireMarcaPills(renderConnections);
         document.querySelector("#refreshConnections").onclick = () => renderConnections();
         document.querySelector("#connectMeta").onclick = connectMetaBusiness;
         document.querySelector("#syncAllMeta").onclick = () => syncMetaInsights();
+        document.querySelector("#syncAllMetaAds").onclick = () => syncMetaAds();
         document.querySelectorAll(".sync-one").forEach((button) => { button.onclick = () => syncMetaInsights(button.dataset.id); });
         document.querySelectorAll(".confirm-one").forEach((button) => { button.onclick = () => saveConnectionMapping(button.dataset.id, "confirm"); });
         document.querySelectorAll(".ignore-one").forEach((button) => { button.onclick = () => saveConnectionMapping(button.dataset.id, "ignore"); });
         document.querySelectorAll(".reactivate-one").forEach((button) => { button.onclick = () => saveConnectionMapping(button.dataset.id, "reactivate"); });
+        document.querySelectorAll(".sync-one-ads").forEach((button) => { button.onclick = () => syncMetaAds(button.dataset.id); });
+        document.querySelectorAll(".confirm-one-ads").forEach((button) => { button.onclick = () => saveAdAccountMapping(button.dataset.id, "confirm"); });
+        document.querySelectorAll(".ignore-one-ads").forEach((button) => { button.onclick = () => saveAdAccountMapping(button.dataset.id, "ignore"); });
+        document.querySelectorAll(".reactivate-one-ads").forEach((button) => { button.onclick = () => saveAdAccountMapping(button.dataset.id, "reactivate"); });
       }
 
       async function saveConnectionMapping(id, action) {
@@ -1877,6 +1999,53 @@
           reactivate: "Conta reativada para revisão. Confirme se ela pertencer à marca."
         };
         await renderConnections(messages[action]);
+      }
+
+      async function saveAdAccountMapping(id, action) {
+        const status = document.querySelector("#connectionActionStatus") || document.querySelector("#content");
+        const payloads = {
+          confirm: { conta_confirmada: true, ignorada: false, ativo: true, observacao: "Conta de anúncios confirmada para sincronização." },
+          ignore: { conta_confirmada: false, ignorada: true, ativo: false, observacao: "Conta de anúncios ignorada na revisão de mapeamento." },
+          reactivate: { conta_confirmada: false, ignorada: false, ativo: true, observacao: "Conta de anúncios reativada para nova revisão." }
+        };
+
+        status.innerHTML = `<div class="alert">Atualizando mapeamento da conta de anúncios...</div>`;
+        const { error } = await supabase
+          .from("integracao_meta_ads_contas")
+          .update(payloads[action])
+          .eq("id", id);
+
+        if (error) {
+          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          return;
+        }
+
+        const messages = {
+          confirm: "Conta de anúncios confirmada. Sincronize para trazer as campanhas.",
+          ignore: "Conta de anúncios ignorada. Ela não será sincronizada.",
+          reactivate: "Conta de anúncios reativada para revisão."
+        };
+        await renderConnections(messages[action]);
+      }
+
+      async function syncMetaAds(integracaoId = null) {
+        const status = document.querySelector("#connectionActionStatus") || document.querySelector("#content");
+        status.innerHTML = `<div class="alert">Sincronizando campanhas de anúncios Meta...</div>`;
+
+        const body = integracaoId ? { integracao_id: integracaoId } : { marca: state.marca };
+        const { data, error } = await supabase.functions.invoke("meta-ads-sync", { body });
+
+        if (error) {
+          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          return;
+        }
+
+        const results = data?.results || [];
+        const totalCampaigns = results.reduce((sum, row) => sum + num(row.campaignsImported), 0);
+        const totalWarnings = results.reduce((sum, row) => sum + (row.warnings?.length || 0), 0);
+        const errors = results.filter((row) => row.error).map((row) => `${row.adAccountName || row.id}: ${row.error}`);
+        const details = errors.length ? ` Erros: ${errors.slice(0, 2).join(" | ")}` : totalWarnings ? ` Avisos da Meta: ${totalWarnings}. Veja logs_integracao_meta para detalhes.` : "";
+        await renderConnections(`Sincronização de anúncios concluída: ${fmt.format(totalCampaigns)} campanhas.${details}`);
       }
 
       async function connectMetaBusiness() {
