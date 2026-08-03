@@ -1261,6 +1261,25 @@
         return changes;
       }
 
+      // Ganho/perda de todas as marcas somado, mas calculado com seguranca: cada marca e
+      // comparada so com o proprio dia anterior (nunca com o total de outra marca), entao uma
+      // marca que aparece pela primeira vez no periodo simplesmente nao entra na soma naquele
+      // dia, em vez de contar como um "ganho" do tamanho da conta inteira dela.
+      function combinedDailyChangeAllMarcas(seriesPorMarca) {
+        const porData = new Map();
+        for (const [, pontos] of seriesPorMarca) {
+          const ordenados = [...pontos].sort((a, b) => a.date.localeCompare(b.date));
+          for (let i = 1; i < ordenados.length; i++) {
+            const delta = ordenados[i].value - ordenados[i - 1].value;
+            porData.set(ordenados[i].date, (porData.get(ordenados[i].date) || 0) + delta);
+          }
+        }
+        return [...porData.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([date, delta]) => ({
+          label: new Date(`${date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
+          delta
+        }));
+      }
+
       const CORES_MARCA = {
         "Tesoura de Ouro": "#2a78d6",
         "Magazine da Economia": "#eb6834",
@@ -1474,7 +1493,12 @@
         }));
 
         const variacaoHtml = marcaAtiva === "Todas"
-          ? `<p class="muted" style="margin:0">Selecione uma marca no filtro acima para ver a perda de seguidores dela — ganho/perda só faz sentido calculado dentro de uma mesma conta.</p>`
+          ? (() => {
+              const combinada = combinedDailyChangeAllMarcas(seriesPorMarca);
+              return combinada.length
+                ? dailyChangeBarChartHtml(combinada)
+                : `<p class="muted" style="margin:0">Sem histórico suficiente ainda para calcular a variação.</p>`;
+            })()
           : seriesSelecionada.length > 1
             ? dailyChangeBarChartHtml(dailyChangeFromSeries(seriesSelecionada))
             : `<p class="muted" style="margin:0">Sem histórico suficiente de ${escapeHtml(marcaAtiva)} nesse período.</p>`;
@@ -1491,8 +1515,8 @@
               ${multiLineChartHtml(seriesPorMarca)}
             </section>
             <section class="card">
-              <h3>Perda de seguidores${marcaAtiva !== "Todas" ? ` — ${escapeHtml(marcaAtiva)}` : ""}</h3>
-              <p class="muted" style="margin-top:-6px">Diferença do total de seguidores entre um dia e o anterior.</p>
+              <h3>Perda de seguidores${marcaAtiva !== "Todas" ? ` — ${escapeHtml(marcaAtiva)}` : " — soma das 3 marcas"}</h3>
+              <p class="muted" style="margin-top:-6px">${marcaAtiva === "Todas" ? "Soma da variação diária de cada marca (cada uma comparada só com o próprio dia anterior)." : "Diferença do total de seguidores entre um dia e o anterior."}</p>
               ${variacaoHtml}
             </section>
           </div>`;
