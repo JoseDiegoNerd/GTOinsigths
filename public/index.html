@@ -800,12 +800,12 @@
           ? Array.from(new Set(periodos.map((r) => r.marca).filter(Boolean)))
           : [state.marca];
 
-        const seguidoresRows = await fetchAllRows("stage_meta_business_analytics", "marca,seguidores_instagram,data_referencia", state.marca).catch(() => []);
+        const seguidoresRows = await fetchAllRows("stage_meta_business_analytics", "marca,seguidores_instagram,seguidores_facebook,data_referencia", state.marca).catch(() => []);
         const seguidoresPorMarca = new Map();
         for (const row of seguidoresRows) {
           const atual = seguidoresPorMarca.get(row.marca);
           if (!atual || String(row.data_referencia || "") >= String(atual.data || "")) {
-            seguidoresPorMarca.set(row.marca, { valor: num(row.seguidores_instagram), data: row.data_referencia });
+            seguidoresPorMarca.set(row.marca, { valor: num(row.seguidores_instagram), valorFacebook: num(row.seguidores_facebook), data: row.data_referencia });
           }
         }
 
@@ -817,6 +817,7 @@
             marca,
             total_periodos: rows.length,
             seguidores_instagram: seguidoresPorMarca.get(marca)?.valor || 0,
+            seguidores_facebook: seguidoresPorMarca.get(marca)?.valorFacebook || 0,
             alcance_facebook: alcance,
             engajamento_total: engajamento,
             taxa_engajamento: alcance ? (engajamento / alcance) * 100 : 0,
@@ -843,7 +844,7 @@
 
         const periodos = (await fetchAllRows(
           "stage_meta_business_analytics",
-          "id,marca,data_referencia,seguidores_instagram,alcance_facebook,engajamento_total,post_destaque_semana_url",
+          "id,marca,data_referencia,seguidores_instagram,seguidores_facebook,alcance_facebook,engajamento_total,post_destaque_semana_url",
           state.marca,
           "data_referencia"
         )).map(analyzeSocialRow);
@@ -860,6 +861,7 @@
             marca,
             total_periodos: rows.length,
             seguidores_instagram: rows.reduce((s, r) => s + num(r.seguidores_instagram), 0),
+            seguidores_facebook: rows.reduce((s, r) => s + num(r.seguidores_facebook), 0),
             alcance_facebook: alcance,
             engajamento_total: engajamento,
             taxa_engajamento: alcance ? (engajamento / alcance) * 100 : 0,
@@ -932,7 +934,7 @@
           target.tipo_conteudo ||= row.tipo_conteudo;
           target.data_publicacao ||= row.data_publicacao;
           if (rede === "Instagram") {
-            ["alcance", "engajamento", "total_visualizacoes", "compartilhamentos", "salvamentos", "salvos", "curtidas", "comentarios", "melhor_sticker_interacoes", "respostas_dm", "cliques_sticker_link", "alcance_segunda_visualizacao", "comentarios_qualificados"].forEach((field) => target[field] = num(target[field]) + num(row[field]));
+            ["alcance", "engajamento", "total_visualizacoes", "compartilhamentos", "salvamentos", "salvos", "curtidas", "comentarios", "melhor_sticker_interacoes", "respostas_dm", "cliques_sticker_link", "alcance_segunda_visualizacao", "comentarios_qualificados", "visitas_perfil", "seguidores_conquistados"].forEach((field) => target[field] = num(target[field]) + num(row[field]));
             ["tempo_medio_visualizacao", "taxa_rejeicao_inicial", "percentual_assistido_final", "alcance_seguidores_pct", "alcance_nao_seguidores_pct", "media_visualizacoes_unicas_story", "taxa_retencao_diaria", "taxa_compartilhamento_feed"].forEach((field) => target[`${field}_sum`] = num(target[`${field}_sum`]) + num(row[field]));
             target.melhor_sticker_tema ||= row.melhor_sticker_tema;
           } else {
@@ -1442,7 +1444,9 @@
           shares: rows.reduce((s, r) => s + num(r.compartilhamentos), 0),
           saves: rows.reduce((s, r) => s + num(r.salvamentos), 0),
           dms: rows.reduce((s, r) => s + num(r.respostas_dm), 0),
-          linkClicks: rows.reduce((s, r) => s + num(r.cliques_sticker_link), 0)
+          linkClicks: rows.reduce((s, r) => s + num(r.cliques_sticker_link), 0),
+          profileVisits: rows.reduce((s, r) => s + num(r.visitas_perfil), 0),
+          newFollowers: rows.reduce((s, r) => s + num(r.seguidores_conquistados), 0)
         };
       }
 
@@ -1470,6 +1474,8 @@
           ${kpi("Nao seguidores", `${t.nonFollowers.toFixed(1).replace(".", ",")}%`, "travel_explore")}
           ${kpi("Compartilhamentos", fmt.format(t.shares), "share")}
           ${kpi("Salvamentos", fmt.format(t.saves), "bookmark")}
+          ${kpi("Visitas ao perfil", fmt.format(t.profileVisits), "person_search")}
+          ${kpi("Novos seguidores", fmt.format(t.newFollowers), "person_add")}
         </div>`;
       }
 
@@ -1488,9 +1494,9 @@
 
       function instagramSectionsHtml(rows) {
         return `
-          ${socialFormatSection("Reels", "Foco: descoberta e retencao", rows.filter((r) => r.formato === "instagram_reels"), ["marca", "conta_nome", "tema", "data_publicacao", "post_url", "alcance", "engajamento", "total_visualizacoes", "tempo_medio_visualizacao", "taxa_rejeicao_inicial", "percentual_assistido_final", "alcance_nao_seguidores_pct", "compartilhamentos", "salvamentos", "insight_social"])}
+          ${socialFormatSection("Reels", "Foco: descoberta e retencao", rows.filter((r) => r.formato === "instagram_reels"), ["marca", "conta_nome", "tema", "data_publicacao", "post_url", "alcance", "engajamento", "total_visualizacoes", "tempo_medio_visualizacao", "taxa_rejeicao_inicial", "percentual_assistido_final", "alcance_nao_seguidores_pct", "compartilhamentos", "salvamentos", "visitas_perfil", "seguidores_conquistados", "insight_social"])}
           ${socialFormatSection("Stories", "Foco: relacionamento e conversao", rows.filter((r) => r.formato === "instagram_stories"), ["marca", "conta_nome", "tema", "data_publicacao", "post_url", "media_visualizacoes_unicas_story", "taxa_retencao_diaria", "melhor_sticker_interacoes", "melhor_sticker_tema", "respostas_dm", "cliques_sticker_link", "insight_social"])}
-          ${socialFormatSection("Feed: carrosseis e imagens", "Foco: autoridade e consideracao", rows.filter((r) => r.formato === "instagram_feed"), ["marca", "conta_nome", "tema", "data_publicacao", "post_url", "alcance", "engajamento", "salvamentos", "alcance_segunda_visualizacao", "comentarios_qualificados", "taxa_compartilhamento_feed", "insight_social"])}`;
+          ${socialFormatSection("Feed: carrosseis e imagens", "Foco: autoridade e consideracao", rows.filter((r) => r.formato === "instagram_feed"), ["marca", "conta_nome", "tema", "data_publicacao", "post_url", "alcance", "engajamento", "salvamentos", "alcance_segunda_visualizacao", "comentarios_qualificados", "taxa_compartilhamento_feed", "visitas_perfil", "seguidores_conquistados", "insight_social"])}`;
       }
 
       function facebookSectionsHtml(rows) {
@@ -1502,7 +1508,7 @@
 
       function socialFormatSection(title, subtitle, rows, fields) {
         const labels = {
-          marca: "Marca", conta_nome: "Conta", data_publicacao: "Publicado", post_url: "Post", alcance: "Alcance", engajamento: "Engajamento", objetivo: "Objetivo", tema: "Tema", total_visualizacoes: "Views", tempo_medio_visualizacao: "Tempo medio", taxa_rejeicao_inicial: "Skip 3s", percentual_assistido_final: "Ate o fim", alcance_nao_seguidores_pct: "Nao seguidores", compartilhamentos: "Shares", salvamentos: "Saves", media_visualizacoes_unicas_story: "Views/story", taxa_retencao_diaria: "Retencao", melhor_sticker_interacoes: "Sticker", melhor_sticker_tema: "Tema sticker", respostas_dm: "DMs", cliques_sticker_link: "Cliques link", alcance_segunda_visualizacao: "2a exibicao", comentarios_qualificados: "Comentarios", taxa_compartilhamento_feed: "Share rate", visualizacoes_unicas_midia: "Views unicas", retencao_qualificada_5s: "Retencao 5s", compartilhamentos_publicos_timeline: "Shares timeline", cliques_link: "Cliques link", cliques_ver_mais: "Ver mais", compartilhamentos_grupos: "Shares grupos", tempo_resposta_comentarios_horas: "Resposta h", visualizacoes_unicas: "Views unicas", toques_avancar: "Avancar", toques_voltar: "Voltar", insight_social: "Insight"
+          marca: "Marca", conta_nome: "Conta", data_publicacao: "Publicado", post_url: "Post", alcance: "Alcance", engajamento: "Engajamento", objetivo: "Objetivo", tema: "Tema", total_visualizacoes: "Views", tempo_medio_visualizacao: "Tempo medio", taxa_rejeicao_inicial: "Skip 3s", percentual_assistido_final: "Ate o fim", alcance_nao_seguidores_pct: "Nao seguidores", compartilhamentos: "Shares", salvamentos: "Saves", media_visualizacoes_unicas_story: "Views/story", taxa_retencao_diaria: "Retencao", melhor_sticker_interacoes: "Sticker", melhor_sticker_tema: "Tema sticker", respostas_dm: "DMs", cliques_sticker_link: "Cliques link", alcance_segunda_visualizacao: "2a exibicao", comentarios_qualificados: "Comentarios", taxa_compartilhamento_feed: "Share rate", visualizacoes_unicas_midia: "Views unicas", retencao_qualificada_5s: "Retencao 5s", compartilhamentos_publicos_timeline: "Shares timeline", cliques_link: "Cliques link", cliques_ver_mais: "Ver mais", compartilhamentos_grupos: "Shares grupos", tempo_resposta_comentarios_horas: "Resposta h", visualizacoes_unicas: "Views unicas", toques_avancar: "Avancar", toques_voltar: "Voltar", insight_social: "Insight", visitas_perfil: "Visitas perfil", seguidores_conquistados: "Novos seguidores"
         };
         return `<section class="card"><h3>${title}</h3><p class="muted">${subtitle}</p><div class="table-wrap" style="margin-top:16px"><table><thead><tr>${fields.map((field) => `<th>${labels[field] || field}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${fields.map((field) => `<td>${socialCell(row, field)}</td>`).join("")}</tr>`).join("") || `<tr><td colspan="${fields.length}">Sem dados para este formato.</td></tr>`}</tbody></table></div></section>`;
       }
@@ -1661,9 +1667,10 @@
         const totals = rows.reduce((acc, row) => ({
           total_periodos: acc.total_periodos + num(row.total_periodos),
           seguidores_instagram: acc.seguidores_instagram + num(row.seguidores_instagram),
+          seguidores_facebook: acc.seguidores_facebook + num(row.seguidores_facebook),
           alcance_facebook: acc.alcance_facebook + num(row.alcance_facebook),
           engajamento_total: acc.engajamento_total + num(row.engajamento_total)
-        }), { total_periodos: 0, seguidores_instagram: 0, alcance_facebook: 0, engajamento_total: 0 });
+        }), { total_periodos: 0, seguidores_instagram: 0, seguidores_facebook: 0, alcance_facebook: 0, engajamento_total: 0 });
         totals.taxa_engajamento = totals.alcance_facebook ? (totals.engajamento_total / totals.alcance_facebook) * 100 : 0;
         const top = ranking[0] || null;
 
@@ -1681,6 +1688,7 @@
           <div class="grid kpis">
             ${kpi("Períodos", fmt.format(totals.total_periodos), "calendar_month")}
             ${kpi("Seguidores Instagram", fmt.format(totals.seguidores_instagram), "group")}
+            ${kpi("Seguidores Facebook", fmt.format(totals.seguidores_facebook), "thumb_up")}
             ${kpi("Alcance Facebook", fmt.format(totals.alcance_facebook), "sensors")}
             ${kpi("Engajamento", fmt.format(totals.engajamento_total), "favorite")}
             ${kpi("Taxa engajamento", `${totals.taxa_engajamento.toFixed(2).replace(".", ",")}%`, "monitoring")}
@@ -1690,7 +1698,7 @@
           </div>
           <section class="card">
             <h3>Resumo por marca</h3>
-            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Períodos</th><th>Seguidores</th><th>Alcance</th><th>Engajamento</th><th>Taxa engajamento</th><th>Última referência</th></tr></thead><tbody>${rows.map((r) => `<tr><td>${r.marca}</td><td>${fmt.format(num(r.total_periodos))}</td><td>${fmt.format(num(r.seguidores_instagram))}</td><td>${fmt.format(num(r.alcance_facebook))}</td><td>${fmt.format(num(r.engajamento_total))}</td><td>${num(r.taxa_engajamento).toFixed(2).replace(".", ",")}%</td><td>${r.ultima_referencia || "-"}</td></tr>`).join("") || `<tr><td colspan="7">Sem dados de Meta Business.</td></tr>`}</tbody></table></div>
+            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Períodos</th><th>Seg. Instagram</th><th>Seg. Facebook</th><th>Alcance</th><th>Engajamento</th><th>Taxa engajamento</th><th>Última referência</th></tr></thead><tbody>${rows.map((r) => `<tr><td>${r.marca}</td><td>${fmt.format(num(r.total_periodos))}</td><td>${fmt.format(num(r.seguidores_instagram))}</td><td>${fmt.format(num(r.seguidores_facebook))}</td><td>${fmt.format(num(r.alcance_facebook))}</td><td>${fmt.format(num(r.engajamento_total))}</td><td>${num(r.taxa_engajamento).toFixed(2).replace(".", ",")}%</td><td>${r.ultima_referencia || "-"}</td></tr>`).join("") || `<tr><td colspan="8">Sem dados de Meta Business.</td></tr>`}</tbody></table></div>
           </section>
           <section class="card">
             <h3>Ranking de destaques</h3>

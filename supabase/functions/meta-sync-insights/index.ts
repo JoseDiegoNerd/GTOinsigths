@@ -141,6 +141,15 @@ async function fetchInstagramFollowers(integration: Integration, warnings: strin
   return numberValue(result?.followers_count);
 }
 
+async function fetchFacebookFollowers(integration: Integration, warnings: string[]) {
+  const result = await tryMetaGet(`/${integration.page_id}`, {
+    fields: "fan_count",
+    access_token: integration.access_token,
+  }, warnings);
+
+  return numberValue(result?.fan_count);
+}
+
 async function syncInstagram(integration: Integration, warnings: string[]) {
   if (!integration.instagram_business_account_id) {
     warnings.push(`Pagina ${integration.page_name || integration.page_id} sem Instagram Business vinculado.`);
@@ -159,12 +168,20 @@ async function syncInstagram(integration: Integration, warnings: string[]) {
 
   for (const item of media.data || []) {
     const itemWarnings: string[] = [];
+    const formato = mapInstagramFormat(item.media_type || "");
+    const isReels = formato === "instagram_reels";
     // "engagement" e "plays" nao sao mais nomes de metrica validos na Instagram Insights API
     // (erro #100); os equivalentes atuais sao total_interactions e views. "impressions" foi removida
     // da lista: nao e suportada para Reels desde a v22.0 (erro #100 em praticamente todo post),
     // o que forcava o fallback lento metrica-por-metrica pra quase tudo e estourava o timeout da
     // function. O campo nao e exibido na UI hoje, entao nao ha perda em tira-la.
-    const instagramMetrics = ["reach", "saved", "comments", "likes", "shares", "views", "total_interactions"];
+    // ig_reels_avg_watch_time e reels_skip_rate so existem para Reels - pedir para outros formatos
+    // sempre falha e derruba a chamada combinada, entao ficam de fora da lista pros demais formatos.
+    // profile_visits/follows medem quando o proprio post levou alguem a visitar o perfil ou
+    // seguir a conta - o sinal de "descoberta" que o app ja rotula nos Reels mas nunca mediu.
+    const instagramMetrics = isReels
+      ? ["reach", "saved", "comments", "likes", "shares", "views", "total_interactions", "profile_visits", "follows", "ig_reels_avg_watch_time", "reels_skip_rate"]
+      : ["reach", "saved", "comments", "likes", "shares", "views", "total_interactions", "profile_visits", "follows"];
     const combinedWarnings: string[] = [];
     const combined = await tryMetaGet(`/${item.id}/insights`, {
       metric: instagramMetrics.join(","),
@@ -196,9 +213,14 @@ async function syncInstagram(integration: Integration, warnings: string[]) {
     const visualizacoes = insightValue(insights, "views");
     const salvamentos = insightValue(insights, "saved");
     const comentarios = insightValue(insights, "comments");
-    const formato = mapInstagramFormat(item.media_type || "");
     const alcance = insightValue(insights, "reach");
     const engajamento = insightValue(insights, "total_interactions");
+    // ig_reels_avg_watch_time vem em milissegundos; convertida pra segundos pra bater com o
+    // formato ja usado na coluna (renderizada como "Xs" na UI).
+    const tempoMedioVisualizacao = isReels ? insightValue(insights, "ig_reels_avg_watch_time") / 1000 : 0;
+    const taxaRejeicaoInicial = isReels ? Math.min(100, insightValue(insights, "reels_skip_rate")) : 0;
+    const visitasPerfil = insightValue(insights, "profile_visits");
+    const seguidoresConquistados = insightValue(insights, "follows");
 
     await replaceMetricRow(
       { marca: integration.marca, rede_social: "Instagram", conta_id: integration.instagram_business_account_id, post_id: item.id },
@@ -228,6 +250,10 @@ async function syncInstagram(integration: Integration, warnings: string[]) {
         visualizacoes,
         total_visualizacoes: visualizacoes,
         comentarios_qualificados: comentarios,
+        tempo_medio_visualizacao: tempoMedioVisualizacao,
+        taxa_rejeicao_inicial: taxaRejeicaoInicial,
+        visitas_perfil: visitasPerfil,
+        seguidores_conquistados: seguidoresConquistados,
         taxa_compartilhamento_feed: alcance > 0 ? Math.min(100, (insightValue(insights, "shares") / alcance) * 100) : 0,
         payload_bruto: { media: item, insights },
         origem_arquivo: "meta_graph_api",
@@ -433,7 +459,7 @@ async function syncFacebook(integration: Integration, warnings: string[]) {
   return imported + pageSummaryImported;
 }
 
-async function refreshMetaOverview(marcas: string[], followersByMarca: Map<string, number>) {
+async function refreshMetaOverview(marcas: string[], followersByMarca: Map<string, number>, facebookFollowersByMarca: Map<string, number>) {
   const supabase = getAdminClient();
   const uniqueMarcas = [...new Set(marcas)].filter(Boolean);
   const today = new Date().toISOString().slice(0, 10);
@@ -464,6 +490,7 @@ async function refreshMetaOverview(marcas: string[], followersByMarca: Map<strin
       marca,
       data_referencia: today,
       seguidores_instagram: followersByMarca.get(marca) || 0,
+      seguidores_facebook: facebookFollowersByMarca.get(marca) || 0,
       alcance_facebook: alcanceFacebook,
       engajamento_total: engajamentoTotal,
       post_destaque_semana_url: destaque,
@@ -509,6 +536,7 @@ Deno.serve(async (req) => {
     const results: SyncResult[] = [];
     const syncedMarcas: string[] = [];
     const followersByMarca = new Map<string, number>();
+    const facebookFollowersByMarca = new Map<string, number>();
 
     for (const integration of (integrations || []) as Integration[]) {
       await logMetaEvent({
@@ -535,6 +563,9 @@ Deno.serve(async (req) => {
 
         const followers = await fetchInstagramFollowers(integration, warnings);
         followersByMarca.set(integration.marca, (followersByMarca.get(integration.marca) || 0) + followers);
+
+        const facebookFollowers = await fetchFacebookFollowers(integration, warnings);
+        facebookFollowersByMarca.set(integration.marca, (facebookFollowersByMarca.get(integration.marca) || 0) + facebookFollowers);
 
         await supabase
           .from("integracao_meta_contas")
@@ -570,7 +601,7 @@ Deno.serve(async (req) => {
       results.push(result);
     }
 
-    await refreshMetaOverview(syncedMarcas, followersByMarca);
+    await refreshMetaOverview(syncedMarcas, followersByMarca, facebookFollowersByMarca);
 
     const totalInstagram = results.reduce((sum, row) => sum + row.instagramImported, 0);
     const totalFacebook = results.reduce((sum, row) => sum + row.facebookImported, 0);
