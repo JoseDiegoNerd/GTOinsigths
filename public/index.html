@@ -1219,52 +1219,70 @@
       }
 
       function followerLineChartHtml(points, seriesLabel) {
-        if (!points.length) return `<p class="muted" style="margin:0">Sem historico de seguidores sincronizado ainda.</p>`;
+        if (!points.length) return `<p class="muted" style="margin:0">Sem histórico de seguidores sincronizado ainda.</p>`;
         const w = 560, h = 200, padL = 44, padR = 12, padT = 16, padB = 28;
         const values = points.map((p) => p.value);
         const minV = Math.min(...values), maxV = Math.max(...values);
         const span = Math.max(1, maxV - minV);
+        const padTop = 28;
         const x = (i) => padL + (i / Math.max(1, points.length - 1)) * (w - padL - padR);
-        const y = (v) => padT + (1 - (v - minV) / span) * (h - padT - padB);
+        const y = (v) => padTop + (1 - (v - minV) / (Math.max(1, maxV - minV))) * (h - padTop - padB);
         const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(p.value).toFixed(1)}`).join(" ");
         const areaPath = `${linePath} L${x(points.length - 1).toFixed(1)},${(h - padB).toFixed(1)} L${x(0).toFixed(1)},${(h - padB).toFixed(1)} Z`;
         const first = points[0], last = points[points.length - 1];
+        // Rotula todos os pontos quando ha poucos (ate 14); com mais pontos, so os relevantes
+        // (primeiro, ultimo, minimo, maximo) para nao empilhar numero em cima de numero.
+        const idxMin = values.indexOf(minV), idxMax = values.indexOf(maxV);
+        const destaque = new Set(points.length <= 14 ? points.map((_, i) => i) : [0, points.length - 1, idxMin, idxMax]);
         return `
-          <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:220px" role="img" aria-label="Evolucao de ${escapeHtml(seriesLabel)}: de ${fmt.format(first.value)} em ${first.label} para ${fmt.format(last.value)} em ${last.label}">
+          <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:220px" role="img" aria-label="Evolução de ${escapeHtml(seriesLabel)}: de ${fmt.format(first.value)} em ${first.label} para ${fmt.format(last.value)} em ${last.label}">
             <line x1="${padL}" y1="${(h - padB).toFixed(1)}" x2="${w - padR}" y2="${(h - padB).toFixed(1)}" stroke="#e2e8f0" stroke-width="1"/>
-            <text x="${padL}" y="${padT - 4}" font-size="11" fill="#64748b">${fmt.format(maxV)}</text>
-            <text x="${padL}" y="${(h - padB + 12).toFixed(1)}" font-size="11" fill="#64748b">${fmt.format(minV)}</text>
             <path d="${areaPath}" fill="#2a78d6" opacity="0.10"/>
             <path d="${linePath}" fill="none" stroke="#2a78d6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            ${points.map((p, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(p.value).toFixed(1)}" r="${i === points.length - 1 ? 4 : 2.5}" fill="#2a78d6"><title>${escapeHtml(p.label)}: ${fmt.format(p.value)}</title></circle>`).join("")}
+            ${points.map((p, i) => {
+              const cx = x(i).toFixed(1), cy = y(p.value).toFixed(1);
+              const label = destaque.has(i)
+                ? `<text x="${cx}" y="${(y(p.value) - 8).toFixed(1)}" font-size="11" fill="#1e3a8a" text-anchor="middle" font-weight="700">${fmt.format(p.value)}</text>`
+                : "";
+              return `<circle cx="${cx}" cy="${cy}" r="${i === points.length - 1 ? 4 : 2.5}" fill="#2a78d6"><title>${escapeHtml(p.label)}: ${fmt.format(p.value)}</title></circle>${label}`;
+            }).join("")}
             <text x="${padL}" y="${h - 6}" font-size="11" fill="#64748b">${escapeHtml(first.label)}</text>
             <text x="${w - padR}" y="${h - 6}" font-size="11" fill="#64748b" text-anchor="end">${escapeHtml(last.label)}</text>
           </svg>`;
       }
 
       function dailyChangeBarChartHtml(points) {
-        if (!points.length) return `<p class="muted" style="margin:0">Sem dados suficientes para calcular variacao diaria.</p>`;
-        const w = 420, h = 200, padL = 12, padR = 12, padT = 16, padB = 28;
+        if (!points.length) return `<p class="muted" style="margin:0">Sem dados suficientes para calcular variação diária.</p>`;
+        const w = 420, h = 200, padL = 12, padR = 12, padT = 24, padB = 40;
         const deltas = points.map((p) => p.delta);
         const maxAbs = Math.max(1, ...deltas.map((d) => Math.abs(d)));
         const zeroY = padT + (h - padT - padB) / 2;
         const halfH = (h - padT - padB) / 2;
         const barW = Math.max(2, ((w - padL - padR) / points.length) - 2);
         const x = (i) => padL + i * ((w - padL - padR) / points.length);
+        const showLabel = points.length <= 20;
         const bars = points.map((p, i) => {
           const barH = (Math.abs(p.delta) / maxAbs) * halfH;
           const color = p.delta >= 0 ? "#0ca30c" : "#d03b3b";
           const yTop = p.delta >= 0 ? zeroY - barH : zeroY;
-          return `<rect x="${x(i).toFixed(1)}" y="${yTop.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(0.5, barH).toFixed(1)}" rx="2" fill="${color}"><title>${escapeHtml(p.label)}: ${p.delta >= 0 ? "+" : ""}${fmt.format(p.delta)}</title></rect>`;
+          const rect = `<rect x="${x(i).toFixed(1)}" y="${yTop.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(0.5, barH).toFixed(1)}" rx="2" fill="${color}"><title>${escapeHtml(p.label)}: ${p.delta >= 0 ? "+" : ""}${fmt.format(p.delta)}</title></rect>`;
+          const labelY = p.delta >= 0 ? yTop - 6 : yTop + barH + 14;
+          const label = showLabel && p.delta !== 0
+            ? `<text x="${(x(i) + barW / 2).toFixed(1)}" y="${labelY.toFixed(1)}" font-size="10" fill="${color}" text-anchor="middle" font-weight="700">${p.delta >= 0 ? "+" : ""}${fmt.format(p.delta)}</text>`
+            : "";
+          const dateLabel = showLabel
+            ? `<text x="${(x(i) + barW / 2).toFixed(1)}" y="${(h - padB + 14).toFixed(1)}" font-size="9" fill="#64748b" text-anchor="middle">${escapeHtml(p.label)}</text>`
+            : "";
+          return rect + label + dateLabel;
         }).join("");
         return `
-          <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:220px" role="img" aria-label="Variacao diaria de seguidores, ganhos em verde e perdas em vermelho">
+          <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:220px" role="img" aria-label="Variação diária de seguidores, ganhos em verde e perdas em vermelho">
             <line x1="${padL}" y1="${zeroY.toFixed(1)}" x2="${w - padR}" y2="${zeroY.toFixed(1)}" stroke="#e2e8f0" stroke-width="1"/>
             ${bars}
           </svg>
           <div style="display:flex;gap:16px;margin-top:6px;font-size:12px;color:#64748b">
-            <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:2px;background:#0ca30c;display:inline-block"></span>Ganho liquido</span>
-            <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:2px;background:#d03b3b;display:inline-block"></span>Perda liquida</span>
+            <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:2px;background:#0ca30c;display:inline-block"></span>Ganho líquido</span>
+            <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:2px;background:#d03b3b;display:inline-block"></span>Perda líquida</span>
           </div>`;
       }
 
@@ -1302,13 +1320,13 @@
         const changePoints = dailyChangeFromSeries(seriesPoints);
         return `<div class="grid cols">
           <section class="card">
-            <h3>Evolucao de seguidores</h3>
-            <p class="muted" style="margin-top:-6px">${escapeHtml(seriesLabel)} - ultimos ${seriesPoints.length} dias com dado sincronizado.</p>
+            <h3>Evolução de seguidores</h3>
+            <p class="muted" style="margin-top:-6px">${escapeHtml(seriesLabel)} — últimos ${seriesPoints.length} dias com dado sincronizado.</p>
             ${followerLineChartHtml(seriesPoints, seriesLabel)}
           </section>
           <section class="card">
-            <h3>Variacao diaria</h3>
-            <p class="muted" style="margin-top:-6px">Diferenca do total de seguidores entre um dia e o anterior.</p>
+            <h3>Variação diária</h3>
+            <p class="muted" style="margin-top:-6px">Diferença do total de seguidores entre um dia e o anterior.</p>
             ${dailyChangeBarChartHtml(changePoints)}
           </section>
         </div>`;
@@ -1626,7 +1644,7 @@
           </div>
           ${socialTabsHtml(isInstagram ? "instagram" : "facebook")}
           ${data.fallback && rows.length ? `<div class="alert success">Dados carregados da tabela <code>stage_social_format_metrics</code>. ${hasDetailedSocialMetrics(rows, rede) ? "Métricas detalhadas disponíveis para a rede." : "Posts capturados, mas a Meta ainda não liberou métricas detalhadas para esses conteúdos."}</div>` : ""}
-          ${rows.length ? "" : `<div class="alert">Ainda nao ha metricas granulares de ${rede}. Confirme a pagina correta em <strong>Conexoes</strong> e clique em <strong>Sincronizar confirmadas</strong>.</div>`}
+          ${rows.length ? "" : `<div class="alert">Ainda não há métricas granulares de ${rede}. Confirme a página correta em <strong>Conexões</strong> e clique em <strong>Sincronizar confirmadas</strong>.</div>`}
           ${isInstagram ? instagramSummaryHtml(totals) : facebookSummaryHtml(totals)}
           ${followerEvolutionSectionHtml(followerSeries, `Seguidores ${title}`)}
           ${topBottomPostsHtml(rows, reelsFormato, "Reels")}
@@ -1752,20 +1770,20 @@
           const stories = rows.find((r) => r.formato === "instagram_stories");
           const feed = rows.find((r) => r.formato === "instagram_feed");
           return [
-            reels ? `Reels: ${num(reels.alcance_nao_seguidores_pct).toFixed(1).replace(".", ",")}% de alcance em nao seguidores.` : "Reels ainda sem dados de descoberta.",
-            stories ? `Stories: ${num(stories.taxa_retencao_diaria).toFixed(1).replace(".", ",")}% de retencao diaria.` : "Stories ainda sem dados de relacionamento.",
+            reels ? `Reels: ${num(reels.alcance_nao_seguidores_pct).toFixed(1).replace(".", ",")}% de alcance em não seguidores.` : "Reels ainda sem dados de descoberta.",
+            stories ? `Stories: ${num(stories.taxa_retencao_diaria).toFixed(1).replace(".", ",")}% de retenção diária.` : "Stories ainda sem dados de relacionamento.",
             feed ? `Feed: ${fmt.format(num(feed.salvamentos))} salvamentos como sinal de autoridade.` : "Feed ainda sem dados de saves."
           ];
         }
         return [
-          `Reels: ${fmt.format(rows.reduce((s, r) => s + num(r.visualizacoes_unicas_midia), 0))} visualizacoes unicas.`,
-          `Feed: ${fmt.format(rows.reduce((s, r) => s + num(r.cliques_link), 0))} cliques de trafego externo.`,
-          `Stories: ${fmt.format(rows.reduce((s, r) => s + num(r.visualizacoes_unicas), 0))} visualizacoes unicas.`
+          `Reels: ${fmt.format(rows.reduce((s, r) => s + num(r.visualizacoes_unicas_midia), 0))} visualizações únicas.`,
+          `Feed: ${fmt.format(rows.reduce((s, r) => s + num(r.cliques_link), 0))} cliques de tráfego externo.`,
+          `Stories: ${fmt.format(rows.reduce((s, r) => s + num(r.visualizacoes_unicas), 0))} visualizações únicas.`
         ];
       }
 
       function nextSocialActions(rows, rede) {
-        if (!rows.length) return ["Criar uma planilha padrao por formato e importar a primeira base de metricas."];
+        if (!rows.length) return ["Criar uma planilha padrão por formato e importar a primeira base de métricas."];
 
         const actions = [];
 
@@ -1777,16 +1795,16 @@
           if (reels) {
             const naoSeguidoresPct = num(reels.alcance_nao_seguidores_pct);
             if (naoSeguidoresPct >= 40) {
-              actions.push(`Repetir o formato dos Reels atuais: ${naoSeguidoresPct.toFixed(1).replace(".", ",")}% do alcance vem de nao seguidores, sinal forte de descoberta.`);
+              actions.push(`Repetir o formato dos Reels atuais: ${naoSeguidoresPct.toFixed(1).replace(".", ",")}% do alcance vem de não seguidores, sinal forte de descoberta.`);
             } else if (naoSeguidoresPct > 0 && naoSeguidoresPct < 20) {
-              actions.push(`Reels com baixa descoberta (${naoSeguidoresPct.toFixed(1).replace(".", ",")}% de nao seguidores) — testar temas e ganchos diferentes.`);
+              actions.push(`Reels com baixa descoberta (${naoSeguidoresPct.toFixed(1).replace(".", ",")}% de não seguidores) — testar temas e ganchos diferentes.`);
             }
           }
 
           if (stories) {
             const retencao = num(stories.taxa_retencao_diaria);
             if (retencao > 0 && retencao < 60) {
-              actions.push(`Encurtar sequencias de Stories: retencao diaria em ${retencao.toFixed(1).replace(".", ",")}%, abaixo de 60%.`);
+              actions.push(`Encurtar sequências de Stories: retenção diária em ${retencao.toFixed(1).replace(".", ",")}%, abaixo de 60%.`);
             }
           }
 
@@ -1799,7 +1817,7 @@
             }
           }
 
-          if (!actions.length) actions.push("Metricas de Instagram sem sinais de alerta pelas regras atuais — manter cadencia e monitorar.");
+          if (!actions.length) actions.push("Métricas de Instagram sem sinais de alerta pelas regras atuais — manter cadência e monitorar.");
           return actions;
         }
 
@@ -1807,14 +1825,14 @@
         const somaCliquesLink = rows.reduce((s, r) => s + num(r.cliques_link), 0);
         const taxaCliqueLink = somaAlcance > 0 ? (somaCliquesLink / somaAlcance) * 100 : 0;
         if (somaAlcance > 0 && taxaCliqueLink < 1) {
-          actions.push(`Reforcar CTA de link no Feed: ${fmt.format(somaCliquesLink)} cliques de trafego externo frente a ${fmt.format(somaAlcance)} de alcance.`);
+          actions.push(`Reforçar CTA de link no Feed: ${fmt.format(somaCliquesLink)} cliques de tráfego externo frente a ${fmt.format(somaAlcance)} de alcance.`);
         }
 
         const temposResposta = rows.map((r) => num(r.tempo_resposta_comentarios_horas)).filter((v) => v > 0);
         if (temposResposta.length) {
           const mediaResposta = temposResposta.reduce((s, v) => s + v, 0) / temposResposta.length;
           if (mediaResposta > 6) {
-            actions.push(`Responder comentarios mais rapido: tempo medio de resposta em ${mediaResposta.toFixed(1).replace(".", ",")}h, acima de 6h.`);
+            actions.push(`Responder comentários mais rápido: tempo médio de resposta em ${mediaResposta.toFixed(1).replace(".", ",")}h, acima de 6h.`);
           }
         }
 
@@ -1822,11 +1840,11 @@
         if (reelsFacebook.length) {
           const mediaRetencao5s = reelsFacebook.reduce((s, r) => s + num(r.retencao_qualificada_5s), 0) / reelsFacebook.length;
           if (mediaRetencao5s >= 50) {
-            actions.push(`Priorizar Reels no Facebook: retencao de 5s em ${mediaRetencao5s.toFixed(1).replace(".", ",")}%, acima da media do formato.`);
+            actions.push(`Priorizar Reels no Facebook: retenção de 5s em ${mediaRetencao5s.toFixed(1).replace(".", ",")}%, acima da média do formato.`);
           }
         }
 
-        if (!actions.length) actions.push("Metricas de Facebook sem sinais de alerta pelas regras atuais — manter cadencia e monitorar.");
+        if (!actions.length) actions.push("Métricas de Facebook sem sinais de alerta pelas regras atuais — manter cadência e monitorar.");
         return actions;
       }
 
@@ -1841,7 +1859,7 @@
           const melhor = ordenado[0];
           const pior = ordenado[ordenado.length - 1];
           if (melhor.marca !== pior.marca) {
-            insights.push(`Comparar ${melhor.marca} (${num(melhor.taxa_engajamento).toFixed(2).replace(".", ",")}% de engajamento) com ${pior.marca} (${num(pior.taxa_engajamento).toFixed(2).replace(".", ",")}%) antes de aumentar a frequencia de posts na segunda.`);
+            insights.push(`Comparar ${melhor.marca} (${num(melhor.taxa_engajamento).toFixed(2).replace(".", ",")}% de engajamento) com ${pior.marca} (${num(pior.taxa_engajamento).toFixed(2).replace(".", ",")}%) antes de aumentar a frequência de posts na segunda.`);
           }
         }
 
@@ -2018,13 +2036,13 @@
       function campaignObjectiveLabel(objetivo) {
         const labels = {
           LINK_CLICKS: "Cliques no link",
-          OUTCOME_TRAFFIC: "Trafego",
+          OUTCOME_TRAFFIC: "Tráfego",
           OUTCOME_ENGAGEMENT: "Engajamento",
-          OUTCOME_LEADS: "Geracao de leads",
+          OUTCOME_LEADS: "Geração de leads",
           OUTCOME_SALES: "Vendas",
           OUTCOME_AWARENESS: "Reconhecimento",
           POST_ENGAGEMENT: "Engajamento no post",
-          CONVERSIONS: "Conversoes",
+          CONVERSIONS: "Conversões",
           REACH: "Alcance"
         };
         return labels[objetivo] || objetivo || "-";
