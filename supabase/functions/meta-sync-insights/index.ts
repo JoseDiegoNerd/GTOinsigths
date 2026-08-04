@@ -157,7 +157,7 @@ async function syncInstagram(integration: Integration, warnings: string[]) {
   }
 
   const media = await tryMetaGet(`/${integration.instagram_business_account_id}/media`, {
-    fields: "id,permalink,media_type,timestamp,caption",
+    fields: "id,permalink,media_type,timestamp,caption,media_url,thumbnail_url",
     limit: 50,
     access_token: integration.access_token,
   }, warnings);
@@ -231,6 +231,10 @@ async function syncInstagram(integration: Integration, warnings: string[]) {
         conta_nome: integration.instagram_username || integration.page_name,
         post_id: item.id,
         post_url: item.permalink || null,
+        // thumbnail_url primeiro: para video/reels o media_url aponta pro arquivo de video, nao
+        // uma imagem exibivel; thumbnail_url sempre traz um frame estatico. Imagem/carrossel so
+        // tem media_url mesmo.
+        imagem_url: item.thumbnail_url || item.media_url || null,
         formato,
         tipo_conteudo: item.media_type || null,
         objetivo: formato === "instagram_reels" ? "Descoberta e retencao" : "Autoridade e consideracao",
@@ -273,12 +277,13 @@ async function fetchFacebookPosts(integration: Integration, warnings: string[]) 
     "created_time",
     "message",
     "story",
+    "full_picture",
     "attachments{media_type,type}",
     "reactions.limit(0).summary(true)",
     "comments.limit(0).summary(true)",
     "shares",
   ].join(",");
-  const safeFields = "id,permalink_url,created_time,message,story,attachments{media_type,type}";
+  const safeFields = "id,permalink_url,created_time,message,story,full_picture,attachments{media_type,type}";
 
   const attempts = [
     { path: `/${integration.page_id}/published_posts`, fields: baseFields },
@@ -379,6 +384,76 @@ async function syncFacebookPageSummary(integration: Integration, warnings: strin
   return 1;
 }
 
+async function syncAudienceDemographics(integration: Integration, warnings: string[]) {
+  if (!integration.instagram_business_account_id) return 0;
+
+  // follower_demographics e um metric_type=total_value com breakdown - a Meta so libera para
+  // contas com 100+ seguidores; contas menores voltam sem breakdowns (nao e erro, so sem dado).
+  const dimensoes: Array<{ tipo: string; breakdown: string }> = [
+    { tipo: "genero", breakdown: "gender" },
+    { tipo: "idade", breakdown: "age" },
+    { tipo: "pais", breakdown: "country" },
+    { tipo: "cidade", breakdown: "city" },
+  ];
+
+  const supabase = getAdminClient();
+  const today = new Date().toISOString().slice(0, 10);
+  let imported = 0;
+
+  for (const { tipo, breakdown } of dimensoes) {
+    const dimensaoWarnings: string[] = [];
+    const result = await tryMetaGet(`/${integration.instagram_business_account_id}/insights`, {
+      metric: "follower_demographics",
+      period: "lifetime",
+      metric_type: "total_value",
+      breakdown,
+      access_token: integration.access_token,
+    }, dimensaoWarnings);
+
+    for (const warning of dimensaoWarnings) {
+      await logMetaEvent({
+        integracao_id: integration.id,
+        marca: integration.marca,
+        tipo_evento: "audience_demographics",
+        status: "aviso",
+        mensagem: `${tipo}: ${warning}`,
+      });
+      warnings.push(warning);
+    }
+
+    const resultados = result?.data?.[0]?.total_value?.breakdowns?.[0]?.results;
+    if (!resultados?.length) continue;
+
+    const total = resultados.reduce((sum: number, r: any) => sum + numberValue(r.value), 0);
+    if (!total) continue;
+
+    for (const r of resultados) {
+      const categoria = String(r.dimension_values?.[0] || "Desconhecido");
+      const valor = numberValue(r.value);
+      const percentual = (valor / total) * 100;
+
+      const { error } = await supabase
+        .from("stage_meta_audience_demographics")
+        .upsert({
+          marca: integration.marca,
+          rede_social: "Instagram",
+          conta_id: integration.instagram_business_account_id,
+          dimensao: tipo,
+          categoria,
+          valor,
+          percentual,
+          data_referencia: today,
+          payload_bruto: r,
+        }, { onConflict: "marca,conta_id,dimensao,categoria,data_referencia" });
+
+      if (error) throw error;
+      imported += 1;
+    }
+  }
+
+  return imported;
+}
+
 async function syncFacebook(integration: Integration, warnings: string[]) {
   const posts = await fetchFacebookPosts(integration, warnings);
 
@@ -425,6 +500,7 @@ async function syncFacebook(integration: Integration, warnings: string[]) {
         conta_nome: integration.page_name,
         post_id: post.id,
         post_url: post.permalink_url || null,
+        imagem_url: post.full_picture || null,
         formato,
         tipo_conteudo: tipoConteudo,
         objetivo: formato === "facebook_reels" ? "Distribuicao aberta" : "Comunidade e trafego externo",
@@ -566,6 +642,8 @@ Deno.serve(async (req) => {
 
         const facebookFollowers = await fetchFacebookFollowers(integration, warnings);
         facebookFollowersByMarca.set(integration.marca, (facebookFollowersByMarca.get(integration.marca) || 0) + facebookFollowers);
+
+        await syncAudienceDemographics(integration, warnings);
 
         await supabase
           .from("integracao_meta_contas")
