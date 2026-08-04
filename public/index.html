@@ -1535,11 +1535,12 @@
       const LABELS_GENERO = { F: "Mulheres", M: "Homens", U: "Não informado" };
       const LABELS_IDADE = { "13-17": "13-17 anos", "18-24": "18-24 anos", "25-34": "25-34 anos", "35-44": "35-44 anos", "45-54": "45-54 anos", "55-64": "55-64 anos", "65+": "65+ anos" };
 
-      async function loadAudienceDemographics(marca) {
+      async function loadAudienceDemographics(marca, rede) {
         const { data, error } = await supabase
           .from("stage_meta_audience_demographics")
           .select("dimensao,categoria,valor,percentual,data_referencia")
           .eq("marca", marca)
+          .eq("rede_social", rede)
           .order("data_referencia", { ascending: false });
         if (error || !data?.length) return null;
 
@@ -1565,28 +1566,41 @@
           </div>`).join("")}</div>`;
       }
 
-      function audienceDemographicsSectionHtml(porDimensao) {
+      function audienceDemographicsSectionHtml(porDimensao, redeIconHtml, redeNome) {
+        const cabecalho = `<div class="page-head" style="align-items:center"><h2 style="display:flex;align-items:center;gap:10px;font-size:22px;margin:0">${redeIconHtml} Demografia dos seguidores — ${escapeHtml(redeNome)}</h2></div>`;
+
         if (!porDimensao) {
-          return `<section class="card">
-            <h3 style="display:flex;align-items:center;gap:8px">${instagramIcon(20)} Demografia dos seguidores</h3>
+          return `${cabecalho}<section class="card">
             <p class="muted" style="margin:0">Ainda sem dado de demografia sincronizado (a Meta só libera para contas com 100+ seguidores). Sincronize em Conexões.</p>
           </section>`;
         }
 
         const genero = Object.entries(porDimensao.genero || {}).sort((a, b) => b[1].percentual - a[1].percentual);
         const idade = Object.entries(porDimensao.idade || {}).sort((a, b) => a[0].localeCompare(b[0]));
-        const pais = Object.entries(porDimensao.pais || {}).sort((a, b) => b[1].percentual - a[1].percentual).slice(0, 8);
-        const cidade = Object.entries(porDimensao.cidade || {}).sort((a, b) => b[1].percentual - a[1].percentual).slice(0, 8);
+        const pais = Object.entries(porDimensao.pais || {}).sort((a, b) => b[1].percentual - a[1].percentual);
+        const cidade = Object.entries(porDimensao.cidade || {}).sort((a, b) => b[1].percentual - a[1].percentual);
 
-        return `<section class="card">
-          <h3 style="display:flex;align-items:center;gap:8px">${instagramIcon(20)} Demografia dos seguidores</h3>
-          <div class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-top:8px">
-            <div><h4 class="muted" style="margin:12px 0 0;text-transform:uppercase;font-size:12px">Gênero</h4>${barListHtml(genero, LABELS_GENERO)}</div>
-            <div><h4 class="muted" style="margin:12px 0 0;text-transform:uppercase;font-size:12px">Faixa etária</h4>${barListHtml(idade, LABELS_IDADE)}</div>
-            <div><h4 class="muted" style="margin:12px 0 0;text-transform:uppercase;font-size:12px">País</h4>${barListHtml(pais)}</div>
-            <div><h4 class="muted" style="margin:12px 0 0;text-transform:uppercase;font-size:12px">Cidade</h4>${barListHtml(cidade)}</div>
+        const destaque = (entradas, labelMap = {}) => entradas[0]
+          ? { label: labelMap[entradas[0][0]] || entradas[0][0], pct: entradas[0][1].percentual }
+          : { label: "-", pct: 0 };
+        const gDestaque = destaque(genero, LABELS_GENERO);
+        const iDestaque = [...idade].sort((a, b) => b[1].percentual - a[1].percentual)[0];
+        const pDestaque = destaque(pais);
+        const cDestaque = destaque(cidade);
+
+        return `${cabecalho}
+          <div class="grid kpis">
+            ${kpi("Gênero predominante", `${gDestaque.label} · ${gDestaque.pct.toFixed(1).replace(".", ",")}%`, "wc")}
+            ${kpi("Faixa etária predominante", iDestaque ? `${LABELS_IDADE[iDestaque[0]] || iDestaque[0]} · ${iDestaque[1].percentual.toFixed(1).replace(".", ",")}%` : "-", "cake")}
+            ${kpi("Principal país", `${pDestaque.label} · ${pDestaque.pct.toFixed(1).replace(".", ",")}%`, "public")}
+            ${kpi("Principal cidade", `${cDestaque.label} · ${cDestaque.pct.toFixed(1).replace(".", ",")}%`, "location_city")}
           </div>
-        </section>`;
+          <div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+            <section class="card"><h3>Gênero</h3>${barListHtml(genero, LABELS_GENERO)}</section>
+            <section class="card"><h3>Faixa etária</h3>${barListHtml(idade, LABELS_IDADE)}</section>
+            <section class="card"><h3>País</h3>${barListHtml(pais.slice(0, 8))}</section>
+            <section class="card"><h3>Cidade</h3>${barListHtml(cidade.slice(0, 8))}</section>
+          </div>`;
       }
 
       function formatDateOnly(value) {
@@ -1866,8 +1880,8 @@
         }).catch(() => new Map());
         const reelsFormato = isInstagram ? "instagram_reels" : "facebook_reels";
         const feedFormato = isInstagram ? "instagram_feed" : "facebook_feed";
-        const demografia = isInstagram && state.marca !== "Todas"
-          ? await loadAudienceDemographics(state.marca).catch(() => null)
+        const demografia = state.marca !== "Todas"
+          ? await loadAudienceDemographics(state.marca, rede).catch(() => null)
           : null;
 
         content.innerHTML = `
@@ -1884,7 +1898,6 @@
           ${rows.length ? "" : `<div class="alert">Ainda não há métricas granulares de ${rede}. Confirme a página correta em <strong>Conexões</strong> e clique em <strong>Sincronizar confirmadas</strong>.</div>`}
           ${isInstagram ? instagramSummaryHtml(totals) : facebookSummaryHtml(totals)}
           ${followerEvolutionSectionHtml(followerSeriesPorMarca, `Seguidores ${title}`)}
-          ${isInstagram ? (state.marca === "Todas" ? `<section class="card"><h3 style="display:flex;align-items:center;gap:8px">${instagramIcon(20)} Demografia dos seguidores</h3><p class="muted" style="margin:0">Selecione uma marca específica no filtro acima para ver a demografia dela.</p></section>` : audienceDemographicsSectionHtml(demografia)) : ""}
           ${topBottomPostsHtml(rows, reelsFormato, "Reels")}
           ${topBottomPostsHtml(rows, feedFormato, "Feed")}
           ${isInstagram ? instagramSectionsHtml(rows) : facebookSectionsHtml(rows)}
@@ -1894,7 +1907,10 @@
               <div class="insight-panel"><h4>O que funcionou melhor</h4>${insightCardsHtml(bestSocialSignals(rows, rede), "success", "trending_up")}</div>
               <div class="insight-panel"><h4>O que precisa ajuste</h4>${insightCardsHtml(nextSocialActions(rows, rede), "warning", "priority_high")}</div>
             </div>
-          </section>`;
+          </section>
+          ${state.marca === "Todas"
+            ? `<section class="card"><h3 style="display:flex;align-items:center;gap:8px">${isInstagram ? instagramIcon(20) : facebookIcon(20)} Demografia dos seguidores</h3><p class="muted" style="margin:0">Selecione uma marca específica no filtro acima para ver a demografia dela.</p></section>`
+            : audienceDemographicsSectionHtml(demografia, isInstagram ? instagramIcon(24) : facebookIcon(24), title)}`;
 
         wireMarcaPills(() => renderSocialFormatPage(rede));
         wirePeriodoDropdown(() => renderSocialFormatPage(rede));
@@ -2167,7 +2183,7 @@
           ${socialTabsHtml("geral")}
           ${social.fallback ? `<div class="alert ${social.usingMetaStage ? "success" : ""}">${social.usingMetaStage ? "Resumo montado com os registros sincronizados diretamente da Meta em <code>stage_social_format_metrics</code>." : "Usando base stage antiga como contingência."} ${social.fallbackReason ? `Detalhe técnico: <code>${escapeHtml(social.fallbackReason)}</code>` : ""}</div>` : ""}
           <div class="grid kpis" style="grid-template-columns:repeat(2,minmax(0,1fr))">
-            ${kpi("Períodos sincronizados", fmt.format(totals.total_periodos), "calendar_month")}
+            ${kpi("Posts sincronizados", fmt.format(totals.total_periodos), "calendar_month")}
             ${kpi("Diagnóstico do melhor post", ranking[0]?.diagnostico_conteudo || "-", "psychology")}
           </div>
           <section class="card">
@@ -2190,7 +2206,7 @@
           </section>
           <section class="card">
             <h3>Resumo por marca</h3>
-            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Períodos</th><th>Seg. Instagram</th><th>Seg. Facebook</th><th>Alcance FB</th><th>Engaj. FB</th><th>Alcance IG</th><th>Engaj. IG</th><th>Última referência</th></tr></thead><tbody>${rows.map((r) => `<tr><td>${r.marca}</td><td>${fmt.format(num(r.total_periodos))}</td><td>${fmt.format(num(r.seguidores_instagram))}</td><td>${fmt.format(num(r.seguidores_facebook))}</td><td>${fmt.format(num(r.alcance_facebook))}</td><td>${fmt.format(num(r.engajamento_facebook))}</td><td>${fmt.format(num(r.alcance_instagram))}</td><td>${fmt.format(num(r.engajamento_instagram))}</td><td>${r.ultima_referencia || "-"}</td></tr>`).join("") || `<tr><td colspan="9">Sem dados de Meta Business.</td></tr>`}</tbody></table></div>
+            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Posts</th><th>Seg. Instagram</th><th>Seg. Facebook</th><th>Alcance FB</th><th>Engaj. FB</th><th>Alcance IG</th><th>Engaj. IG</th><th>Última referência</th></tr></thead><tbody>${rows.map((r) => `<tr><td>${r.marca}</td><td>${fmt.format(num(r.total_periodos))}</td><td>${fmt.format(num(r.seguidores_instagram))}</td><td>${fmt.format(num(r.seguidores_facebook))}</td><td>${fmt.format(num(r.alcance_facebook))}</td><td>${fmt.format(num(r.engajamento_facebook))}</td><td>${fmt.format(num(r.alcance_instagram))}</td><td>${fmt.format(num(r.engajamento_instagram))}</td><td>${r.ultima_referencia || "-"}</td></tr>`).join("") || `<tr><td colspan="9">Sem dados de Meta Business.</td></tr>`}</tbody></table></div>
           </section>
           <section class="card">
             <h3>Ranking de destaques</h3>

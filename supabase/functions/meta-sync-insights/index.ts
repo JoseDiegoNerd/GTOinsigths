@@ -454,6 +454,95 @@ async function syncAudienceDemographics(integration: Integration, warnings: stri
   return imported;
 }
 
+async function upsertDemographicCounts(
+  totals: Record<string, number>,
+  params: { marca: string; redeSocial: string; contaId: string; dimensao: string; dataReferencia: string },
+) {
+  const total = Object.values(totals).reduce((sum, v) => sum + v, 0);
+  if (!total) return 0;
+
+  const supabase = getAdminClient();
+  let imported = 0;
+  for (const [categoria, valor] of Object.entries(totals)) {
+    const { error } = await supabase
+      .from("stage_meta_audience_demographics")
+      .upsert({
+        marca: params.marca,
+        rede_social: params.redeSocial,
+        conta_id: params.contaId,
+        dimensao: params.dimensao,
+        categoria,
+        valor,
+        percentual: (valor / total) * 100,
+        data_referencia: params.dataReferencia,
+      }, { onConflict: "marca,conta_id,dimensao,categoria,data_referencia" });
+    if (error) throw error;
+    imported += 1;
+  }
+  return imported;
+}
+
+async function syncFacebookAudienceDemographics(integration: Integration, warnings: string[]) {
+  // page_fans_gender_age/country/city sao metricas classicas (nao total_value/breakdown como o
+  // Instagram) - o valor vem como um unico objeto chave->contagem no ultimo item de "values".
+  // gender_age vem combinado ("F.25-34"), por isso alimenta duas dimensoes (genero e idade) de uma vez.
+  const today = new Date().toISOString().slice(0, 10);
+  let imported = 0;
+
+  const metricas: Array<{ metric: string; dimensoes: string[] }> = [
+    { metric: "page_fans_gender_age", dimensoes: ["genero", "idade"] },
+    { metric: "page_fans_country", dimensoes: ["pais"] },
+    { metric: "page_fans_city", dimensoes: ["cidade"] },
+  ];
+
+  for (const { metric, dimensoes } of metricas) {
+    const metricWarnings: string[] = [];
+    const result = await tryMetaGet(`/${integration.page_id}/insights`, {
+      metric,
+      period: "lifetime",
+      access_token: integration.access_token,
+    }, metricWarnings);
+
+    for (const warning of metricWarnings) {
+      await logMetaEvent({
+        integracao_id: integration.id,
+        marca: integration.marca,
+        tipo_evento: "audience_demographics",
+        status: "aviso",
+        mensagem: `facebook ${metric}: ${warning}`,
+      });
+      warnings.push(warning);
+    }
+
+    const valores = result?.data?.[0]?.values;
+    const ultimoValor = valores?.[valores.length - 1]?.value;
+    if (!ultimoValor || typeof ultimoValor !== "object") continue;
+
+    if (dimensoes.length === 2) {
+      // gender_age: chave "F.25-34" -> separa em contagem de genero e contagem de idade.
+      const generoTotais: Record<string, number> = {};
+      const idadeTotais: Record<string, number> = {};
+      for (const [chave, valor] of Object.entries(ultimoValor as Record<string, unknown>)) {
+        const [genero, faixa] = chave.split(".");
+        if (!genero || !faixa) continue;
+        const n = numberValue(valor);
+        generoTotais[genero] = (generoTotais[genero] || 0) + n;
+        idadeTotais[faixa] = (idadeTotais[faixa] || 0) + n;
+      }
+      imported += await upsertDemographicCounts(generoTotais, { marca: integration.marca, redeSocial: "Facebook", contaId: integration.page_id, dimensao: "genero", dataReferencia: today });
+      imported += await upsertDemographicCounts(idadeTotais, { marca: integration.marca, redeSocial: "Facebook", contaId: integration.page_id, dimensao: "idade", dataReferencia: today });
+    } else {
+      const totais: Record<string, number> = {};
+      for (const [chave, valor] of Object.entries(ultimoValor as Record<string, unknown>)) {
+        totais[chave] = numberValue(valor);
+      }
+      imported += await upsertDemographicCounts(totais, { marca: integration.marca, redeSocial: "Facebook", contaId: integration.page_id, dimensao: dimensoes[0], dataReferencia: today });
+    }
+  }
+
+  return imported;
+}
+
 async function syncFacebook(integration: Integration, warnings: string[]) {
   const posts = await fetchFacebookPosts(integration, warnings);
 
@@ -644,6 +733,7 @@ Deno.serve(async (req) => {
         facebookFollowersByMarca.set(integration.marca, (facebookFollowersByMarca.get(integration.marca) || 0) + facebookFollowers);
 
         await syncAudienceDemographics(integration, warnings);
+        await syncFacebookAudienceDemographics(integration, warnings);
 
         await supabase
           .from("integracao_meta_contas")
