@@ -1261,23 +1261,68 @@
         return changes;
       }
 
-      // Ganho/perda de todas as marcas somado, mas calculado com seguranca: cada marca e
-      // comparada so com o proprio dia anterior (nunca com o total de outra marca), entao uma
-      // marca que aparece pela primeira vez no periodo simplesmente nao entra na soma naquele
-      // dia, em vez de contar como um "ganho" do tamanho da conta inteira dela.
-      function combinedDailyChangeAllMarcas(seriesPorMarca) {
-        const porData = new Map();
-        for (const [, pontos] of seriesPorMarca) {
+      // Ganho/perda por marca, nunca somado entre marcas: cada uma e comparada so com o proprio
+      // dia anterior. Retorna um mapa marca -> lista de deltas, para desenhar uma barra por marca
+      // lado a lado em cada data (em vez de um unico total que esconde de onde veio o numero).
+      function deltasPorMarca(seriesPorMarca) {
+        const result = new Map();
+        for (const [marca, pontos] of seriesPorMarca) {
           const ordenados = [...pontos].sort((a, b) => a.date.localeCompare(b.date));
+          const deltas = [];
           for (let i = 1; i < ordenados.length; i++) {
-            const delta = ordenados[i].value - ordenados[i - 1].value;
-            porData.set(ordenados[i].date, (porData.get(ordenados[i].date) || 0) + delta);
+            deltas.push({
+              date: ordenados[i].date,
+              label: new Date(`${ordenados[i].date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
+              delta: ordenados[i].value - ordenados[i - 1].value
+            });
           }
+          if (deltas.length) result.set(marca, deltas);
         }
-        return [...porData.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([date, delta]) => ({
-          label: new Date(`${date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
-          delta
-        }));
+        return result;
+      }
+
+      function multiSeriesDailyChangeBarChartHtml(deltasMap) {
+        const marcasComDados = [...deltasMap.entries()];
+        if (!marcasComDados.length) return `<p class="muted" style="margin:0">Sem histórico suficiente ainda para calcular a variação.</p>`;
+
+        const datasSet = new Set();
+        for (const [, deltas] of marcasComDados) for (const d of deltas) datasSet.add(d.date);
+        const datas = [...datasSet].sort();
+
+        const w = 620, h = 220, padL = 12, padR = 12, padT = 24, padB = 40;
+        const maxAbs = Math.max(1, ...marcasComDados.flatMap(([, deltas]) => deltas.map((d) => Math.abs(d.delta))));
+        const zeroY = padT + (h - padT - padB) / 2;
+        const halfH = (h - padT - padB) / 2;
+        const grupoW = (w - padL - padR) / datas.length;
+        const barW = Math.max(2, (grupoW - 4) / marcasComDados.length);
+        const showLabel = datas.length <= 10;
+
+        const grupos = datas.map((data, gi) => {
+          const grupoX = padL + gi * grupoW;
+          const barras = marcasComDados.map(([marca, deltas], mi) => {
+            const ponto = deltas.find((d) => d.date === data);
+            if (!ponto) return "";
+            const cor = CORES_MARCA[marca] || "#64748b";
+            const barH = (Math.abs(ponto.delta) / maxAbs) * halfH;
+            const bx = grupoX + mi * barW;
+            const yTop = ponto.delta >= 0 ? zeroY - barH : zeroY;
+            const label = showLabel && ponto.delta !== 0
+              ? `<text x="${(bx + barW / 2).toFixed(1)}" y="${(ponto.delta >= 0 ? yTop - 4 : yTop + barH + 12).toFixed(1)}" font-size="8" fill="${cor}" text-anchor="middle" font-weight="700">${ponto.delta >= 0 ? "+" : ""}${fmt.format(ponto.delta)}</text>`
+              : "";
+            return `<rect x="${bx.toFixed(1)}" y="${yTop.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(0.5, barH).toFixed(1)}" rx="1.5" fill="${cor}"><title>${escapeHtml(marca)} — ${ponto.label}: ${ponto.delta >= 0 ? "+" : ""}${fmt.format(ponto.delta)}</title></rect>${label}`;
+          }).join("");
+          const dataLabel = `<text x="${(grupoX + grupoW / 2 - 2).toFixed(1)}" y="${(h - padB + 14).toFixed(1)}" font-size="9" fill="#64748b" text-anchor="middle">${escapeHtml(new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }))}</text>`;
+          return barras + dataLabel;
+        }).join("");
+
+        return `
+          <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:240px" role="img" aria-label="Variação diária de seguidores por marca, ganhos acima da linha e perdas abaixo">
+            <line x1="${padL}" y1="${zeroY.toFixed(1)}" x2="${w - padR}" y2="${zeroY.toFixed(1)}" stroke="#e2e8f0" stroke-width="1"/>
+            ${grupos}
+          </svg>
+          <div style="display:flex;gap:16px;margin-top:6px;font-size:12px;color:#64748b;flex-wrap:wrap">
+            ${marcasComDados.map(([marca]) => `<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:2px;background:${CORES_MARCA[marca] || "#64748b"};display:inline-block"></span>${escapeHtml(marca)}</span>`).join("")}
+          </div>`;
       }
 
       const CORES_MARCA = {
@@ -1301,9 +1346,15 @@
 
         const porMarca = new Map();
         for (const row of data) {
+          const valor = num(row[field]);
+          // 0 aqui nunca e uma contagem real de seguidores (nenhuma das marcas comecou do zero) -
+          // e sim um resto de quando esse campo ainda nao existia/nao era sincronizado. Tratar como
+          // "sem dado" em vez de "0 seguidores" evita que o primeiro sync real pareca um salto
+          // gigantesco de seguidores ganhos.
+          if (valor === 0) continue;
           if (!porMarca.has(row.marca)) porMarca.set(row.marca, new Map());
           const mapa = porMarca.get(row.marca);
-          mapa.set(row.data_referencia, (mapa.get(row.data_referencia) || 0) + num(row[field]));
+          mapa.set(row.data_referencia, (mapa.get(row.data_referencia) || 0) + valor);
         }
 
         // Sem intervalo customizado, mantem so os ultimos 30 registros por marca para nao
@@ -1493,12 +1544,7 @@
         }));
 
         const variacaoHtml = marcaAtiva === "Todas"
-          ? (() => {
-              const combinada = combinedDailyChangeAllMarcas(seriesPorMarca);
-              return combinada.length
-                ? dailyChangeBarChartHtml(combinada)
-                : `<p class="muted" style="margin:0">Sem histórico suficiente ainda para calcular a variação.</p>`;
-            })()
+          ? multiSeriesDailyChangeBarChartHtml(deltasPorMarca(seriesPorMarca))
           : seriesSelecionada.length > 1
             ? dailyChangeBarChartHtml(dailyChangeFromSeries(seriesSelecionada))
             : `<p class="muted" style="margin:0">Sem histórico suficiente de ${escapeHtml(marcaAtiva)} nesse período.</p>`;
@@ -1508,15 +1554,15 @@
             ${followerMarcaDropdownHtml()}
             ${followerPeriodoDropdownHtml()}
           </div>
-          <div class="grid cols">
+          <div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
             <section class="card">
               <h3>Evolução de seguidores</h3>
               <p class="muted" style="margin-top:-6px">${escapeHtml(redeLabel)}${marcaAtiva === "Todas" ? " das 3 marcas" : ` — ${escapeHtml(marcaAtiva)}`}, no período selecionado.</p>
               ${multiLineChartHtml(seriesPorMarca)}
             </section>
             <section class="card">
-              <h3>Perda de seguidores${marcaAtiva !== "Todas" ? ` — ${escapeHtml(marcaAtiva)}` : " — soma das 3 marcas"}</h3>
-              <p class="muted" style="margin-top:-6px">${marcaAtiva === "Todas" ? "Soma da variação diária de cada marca (cada uma comparada só com o próprio dia anterior)." : "Diferença do total de seguidores entre um dia e o anterior."}</p>
+              <h3>Perda de seguidores${marcaAtiva !== "Todas" ? ` — ${escapeHtml(marcaAtiva)}` : " — por marca"}</h3>
+              <p class="muted" style="margin-top:-6px">${marcaAtiva === "Todas" ? "Variação diária de cada marca, sempre comparada só com o próprio dia anterior (nunca somada entre marcas)." : "Diferença do total de seguidores entre um dia e o anterior."}</p>
               ${variacaoHtml}
             </section>
           </div>`;
