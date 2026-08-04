@@ -165,7 +165,7 @@
         social_format_metrics: "stage_social_format_metrics"
       };
 
-      let state = { session: null, perfil: null, page: "dashboard", marca: "Todas", periodo: "30d", periodoDe: "", periodoAte: "", periodoMenuOpen: false, rows: [], rd: [], meta: [], google: null, propostas: [], bi: null, channels: null, email: null, emailSelectedId: null, social: null, socialFormat: null, socialTab: "geral", connections: [], followerMarca: "Todas", followerPeriodo: "30d", followerPeriodoDe: "", followerPeriodoAte: "", followerMarcaMenuOpen: false, followerPeriodoMenuOpen: false };
+      let state = { session: null, perfil: null, page: "dashboard", marca: "Todas", periodo: "30d", periodoDe: "", periodoAte: "", periodoMenuOpen: false, rows: [], rd: [], meta: [], google: null, propostas: [], bi: null, channels: null, email: null, emailSelectedId: null, social: null, socialFormat: null, socialTab: "geral", connections: [] };
 
       const fmt = new Intl.NumberFormat("pt-BR");
       const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
@@ -1368,110 +1368,6 @@
         return result;
       }
 
-      function followerFromDate() {
-        if (state.followerPeriodo === "all") return null;
-        if (state.followerPeriodo === "custom") return state.followerPeriodoDe || null;
-        const d = new Date();
-        if (state.followerPeriodo === "7d") d.setDate(d.getDate() - 7);
-        if (state.followerPeriodo === "15d") d.setDate(d.getDate() - 15);
-        if (state.followerPeriodo === "30d") d.setDate(d.getDate() - 30);
-        if (state.followerPeriodo === "6m") d.setMonth(d.getMonth() - 6);
-        if (state.followerPeriodo === "1y") d.setFullYear(d.getFullYear() - 1);
-        return d.toISOString().slice(0, 10);
-      }
-
-      function followerToDate() {
-        if (state.followerPeriodo === "custom") return state.followerPeriodoAte || null;
-        return new Date().toISOString().slice(0, 10);
-      }
-
-      function followerMarcaDropdownHtml() {
-        return `
-          <div class="dropdown" id="followerMarcaDropdown">
-            <button type="button" class="pill ${state.followerMarcaMenuOpen ? "active" : ""}" id="followerMarcaToggle" style="display:inline-flex;align-items:center;gap:4px">Marca: ${escapeHtml(state.followerMarca)} <span class="material-symbols-outlined" style="font-size:18px">expand_more</span></button>
-            ${state.followerMarcaMenuOpen ? `
-              <div class="dropdown-menu">
-                ${marcas.map((m) => `<button type="button" class="dropdown-item follower-marca-opt ${state.followerMarca === m ? "active" : ""}" data-marca="${escapeHtml(m)}">${escapeHtml(m)}</button>`).join("")}
-              </div>
-            ` : ""}
-          </div>`;
-      }
-
-      function followerPeriodoDropdownHtml() {
-        const hoje = new Date().toISOString().slice(0, 10);
-        return `
-          <div class="dropdown" id="followerPeriodoDropdown">
-            <button type="button" class="pill ${state.followerPeriodoMenuOpen ? "active" : ""}" id="followerPeriodoToggle" style="display:inline-flex;align-items:center;gap:4px">Data <span class="material-symbols-outlined" style="font-size:18px">expand_more</span></button>
-            ${state.followerPeriodoMenuOpen ? `
-              <div class="dropdown-menu">
-                ${periodoOpcoes.map(([value, label]) => `<button type="button" class="dropdown-item follower-periodo-opt ${state.followerPeriodo === value ? "active" : ""}" data-periodo="${value}">${label}</button>`).join("")}
-                ${state.followerPeriodo === "custom" ? `
-                  <div class="dropdown-dates">
-                    <label>Data inicial<input type="date" id="followerPeriodoDe" value="${state.followerPeriodoDe}" max="${hoje}"></label>
-                    <label>Data final<input type="date" id="followerPeriodoAte" value="${state.followerPeriodoAte}" max="${hoje}"></label>
-                  </div>
-                ` : ""}
-              </div>
-            ` : ""}
-          </div>`;
-      }
-
-      let followerMarcaOutsideClickBound = false;
-      let followerPeriodoOutsideClickBound = false;
-
-      function wireFollowerFilters(onSelect) {
-        document.querySelector("#followerMarcaToggle")?.addEventListener("click", (event) => {
-          event.stopPropagation();
-          state.followerMarcaMenuOpen = !state.followerMarcaMenuOpen;
-          onSelect();
-        });
-        document.querySelectorAll(".follower-marca-opt").forEach((button) => {
-          button.onclick = (event) => {
-            event.stopPropagation();
-            state.followerMarca = button.dataset.marca;
-            state.followerMarcaMenuOpen = false;
-            onSelect();
-          };
-        });
-        if (!followerMarcaOutsideClickBound) {
-          followerMarcaOutsideClickBound = true;
-          document.addEventListener("click", (event) => {
-            if (!state.followerMarcaMenuOpen) return;
-            const dropdown = document.querySelector("#followerMarcaDropdown");
-            if (dropdown && !dropdown.contains(event.target)) { state.followerMarcaMenuOpen = false; onSelect(); }
-          });
-        }
-
-        document.querySelector("#followerPeriodoToggle")?.addEventListener("click", (event) => {
-          event.stopPropagation();
-          state.followerPeriodoMenuOpen = !state.followerPeriodoMenuOpen;
-          onSelect();
-        });
-        document.querySelectorAll(".follower-periodo-opt").forEach((button) => {
-          button.onclick = (event) => {
-            event.stopPropagation();
-            state.followerPeriodo = button.dataset.periodo;
-            if (state.followerPeriodo !== "custom") state.followerPeriodoMenuOpen = false;
-            onSelect();
-          };
-        });
-        document.querySelector("#followerPeriodoDe")?.addEventListener("change", (event) => {
-          state.followerPeriodoDe = event.currentTarget.value;
-          onSelect();
-        });
-        document.querySelector("#followerPeriodoAte")?.addEventListener("change", (event) => {
-          state.followerPeriodoAte = event.currentTarget.value;
-          onSelect();
-        });
-        if (!followerPeriodoOutsideClickBound) {
-          followerPeriodoOutsideClickBound = true;
-          document.addEventListener("click", (event) => {
-            if (!state.followerPeriodoMenuOpen) return;
-            const dropdown = document.querySelector("#followerPeriodoDropdown");
-            if (dropdown && !dropdown.contains(event.target)) { state.followerPeriodoMenuOpen = false; onSelect(); }
-          });
-        }
-      }
 
       // Linha por marca (nunca somadas): cada marca so tem registro nos dias em que foi
       // sincronizada, entao somar contas diferentes faria o total "saltar" quando uma marca
@@ -1537,7 +1433,7 @@
       }
 
       function followerEvolutionSectionHtml(seriesPorMarca, redeLabel) {
-        const marcaAtiva = state.followerMarca;
+        const marcaAtiva = state.marca;
         const seriesSelecionada = marcaAtiva === "Todas" ? [] : (seriesPorMarca.get(marcaAtiva) || []).map((p) => ({
           label: new Date(`${p.date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
           value: p.value
@@ -1554,10 +1450,6 @@
           : null;
 
         return `
-          <div class="filters" style="margin:-8px 0 -4px">
-            ${followerMarcaDropdownHtml()}
-            ${followerPeriodoDropdownHtml()}
-          </div>
           <div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
             <section class="card">
               <h3>Evolução de seguidores</h3>
@@ -1968,9 +1860,9 @@
 
         const followerField = isInstagram ? "seguidores_instagram" : "seguidores_facebook";
         const followerSeriesPorMarca = await loadFollowerHistoryPorMarca(followerField, {
-          marcaFiltro: state.followerMarca,
-          from: followerFromDate(),
-          to: followerToDate()
+          marcaFiltro: state.marca,
+          from: fromDate(),
+          to: toDate()
         }).catch(() => new Map());
         const reelsFormato = isInstagram ? "instagram_reels" : "facebook_reels";
         const feedFormato = isInstagram ? "instagram_feed" : "facebook_feed";
@@ -2006,7 +1898,6 @@
 
         wireMarcaPills(() => renderSocialFormatPage(rede));
         wirePeriodoDropdown(() => renderSocialFormatPage(rede));
-        wireFollowerFilters(() => renderSocialFormatPage(rede));
         wireSocialTabs();
         document.querySelector("#refresh").onclick = () => renderSocialFormatPage(rede);
       }
