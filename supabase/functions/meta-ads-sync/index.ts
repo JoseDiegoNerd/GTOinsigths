@@ -1,6 +1,7 @@
 import {
   assertAdminOrGestor,
   corsHeaders,
+  errorMessage,
   getAdminClient,
   getAuthenticatedUser,
   jsonResponse,
@@ -61,24 +62,46 @@ async function fetchCampaignStatuses(integration: AdAccountIntegration, warnings
   return statusByCampaignId;
 }
 
-async function syncAdAccount(integration: AdAccountIntegration, warnings: string[]) {
-  const statusByCampaignId = await fetchCampaignStatuses(integration, warnings);
-
-  const insights = await tryMetaGet(`/${integration.ad_account_id}/insights`, {
+async function fetchDailyInsights(integration: AdAccountIntegration, warnings: string[]) {
+  const rows: Record<string, unknown>[] = [];
+  const baseParams = {
     level: "campaign",
-    fields: "campaign_id,campaign_name,objective,impressions,reach,clicks,inline_link_clicks,spend,cpm,cpc,ctr,frequency",
-    date_preset: "last_30d",
+    fields: "campaign_id,campaign_name,objective,impressions,reach,clicks,inline_link_clicks,spend,cpm,cpc,ctr,frequency,date_start,date_stop",
+    time_increment: 1,
+    since: daysAgoDate(30),
+    until: new Date().toISOString().slice(0, 10),
     limit: 200,
     access_token: integration.access_token,
-  }, warnings);
+  };
 
-  if (!insights?.data?.length) return 0;
+  let after: string | undefined;
+  for (let page = 0; page < 20; page += 1) {
+    const result = await tryMetaGet(`/${integration.ad_account_id}/insights`, {
+      ...baseParams,
+      after,
+    }, warnings);
+
+    if (!result?.data?.length) break;
+    rows.push(...result.data);
+
+    after = result?.paging?.cursors?.after;
+    if (!after) break;
+  }
+
+  return rows;
+}
+
+async function syncAdAccount(integration: AdAccountIntegration, warnings: string[]) {
+  const statusByCampaignId = await fetchCampaignStatuses(integration, warnings);
+  const insightRows = await fetchDailyInsights(integration, warnings);
+
+  if (!insightRows.length) return 0;
 
   const supabase = getAdminClient();
-  const today = new Date().toISOString().slice(0, 10);
   let imported = 0;
 
-  for (const row of insights.data) {
+  for (const row of insightRows) {
+    const dataReferencia = String(row.date_start || new Date().toISOString().slice(0, 10));
     const { error } = await supabase
       .from("stage_meta_ads_metrics")
       .upsert({
@@ -87,10 +110,10 @@ async function syncAdAccount(integration: AdAccountIntegration, warnings: string
         campaign_id: row.campaign_id,
         campaign_name: row.campaign_name || null,
         objetivo: row.objective || null,
-        status: statusByCampaignId.get(row.campaign_id) || null,
-        data_referencia: today,
-        periodo_inicio: daysAgoDate(30),
-        periodo_fim: today,
+        status: statusByCampaignId.get(String(row.campaign_id)) || null,
+        data_referencia: dataReferencia,
+        periodo_inicio: dataReferencia,
+        periodo_fim: dataReferencia,
         investimento: numberValue(row.spend),
         impressoes: numberValue(row.impressions),
         alcance: numberValue(row.reach),
@@ -102,7 +125,7 @@ async function syncAdAccount(integration: AdAccountIntegration, warnings: string
         frequencia: numberValue(row.frequency),
         payload_bruto: { insights: row },
         origem_arquivo: "meta_marketing_api",
-      }, { onConflict: "marca,ad_account_id,campaign_id" });
+      }, { onConflict: "marca,ad_account_id,campaign_id,data_referencia" });
 
     if (error) throw error;
     imported += 1;
@@ -181,7 +204,7 @@ Deno.serve(async (req) => {
           payload_resumo: { campaignsImported: result.campaignsImported, warnings: warnings.slice(0, 5) },
         });
       } catch (syncError) {
-        result.error = syncError instanceof Error ? syncError.message : String(syncError);
+        result.error = errorMessage(syncError);
         await logMetaEvent({
           integracao_id: integration.id,
           marca: integration.marca,

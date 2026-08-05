@@ -110,6 +110,26 @@ export async function verifyState(state: string) {
   return payload as JsonRecord;
 }
 
+export function errorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === "object") {
+    const withDetails = error as { message?: unknown; code?: unknown; details?: unknown; hint?: unknown };
+    if (typeof withDetails.message === "string" && withDetails.message) {
+      const parts = [withDetails.message];
+      if (withDetails.code) parts.push(`(code: ${withDetails.code})`);
+      if (withDetails.details) parts.push(`- ${withDetails.details}`);
+      if (withDetails.hint) parts.push(`Hint: ${withDetails.hint}`);
+      return parts.join(" ");
+    }
+    try {
+      return JSON.stringify(error);
+    } catch {
+      // fall through to String(error) below
+    }
+  }
+  return String(error);
+}
+
 export async function metaGet(path: string, params: Record<string, string | number | boolean | undefined | null>) {
   const url = new URL(`https://graph.facebook.com/${getGraphVersion()}${path}`);
   Object.entries(params).forEach(([key, value]) => {

@@ -58,6 +58,24 @@
       table { width: 100%; border-collapse: collapse; font-size: 14px; }
       th, td { border-bottom: 1px solid #e2e8f0; padding: 12px; text-align: left; white-space: nowrap; }
       th { background: #f1f5f9; color: #64748b; font-size: 12px; text-transform: uppercase; }
+      th.sortable-th { cursor: pointer; user-select: none; white-space: nowrap; }
+      th.sortable-th:hover { color: var(--accent); }
+      th.sortable-th.active { color: var(--accent); }
+      th.sortable-th .sort-indicator { font-size: 9px; margin-left: 2px; }
+      .podium { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; gap: 24px; margin: 4px 0 20px; }
+      .podium-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px 18px; text-align: center; box-shadow: 0 1px 2px rgba(15,23,42,.05); }
+      .podium-card.rank-1 { order: 2; border-color: #f2c94c; background: linear-gradient(180deg,#fffbea,#fff); }
+      .podium-card.rank-2 { order: 1; border-color: #c3cad6; background: linear-gradient(180deg,#f8fafc,#fff); }
+      .podium-card.rank-3 { order: 3; border-color: #e0b088; background: linear-gradient(180deg,#fdf3ec,#fff); }
+      .podium-thumb-wrap { position: relative; display: inline-block; margin-bottom: 12px; }
+      .podium-thumb { border-radius: 14px; object-fit: cover; display: block; background: #e2e8f0; margin: 0 auto; }
+      .podium-badge { position: absolute; top: -8px; left: -8px; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; background: #fff; box-shadow: 0 2px 6px rgba(15,23,42,.25); }
+      .podium-title { font-size: 14px; font-weight: 600; color: #1f2937; margin: 0 0 14px; line-height: 1.4; min-height: 40px; }
+      .podium-title a { color: inherit; text-decoration: none; }
+      .podium-title a:hover { text-decoration: underline; }
+      .podium-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; font-size: 11px; color: #64748b; text-align: center; }
+      .podium-metrics strong { display: block; color: #1f2937; font-size: 14px; margin-top: 3px; font-variant-numeric: tabular-nums; }
+      @media (max-width: 700px) { .podium { grid-template-columns: 1fr; } .podium-card.rank-1 { order: 1; } .podium-card.rank-2 { order: 2; } .podium-card.rank-3 { order: 3; } }
       .table-wrap { overflow-x: auto; }
       .bars { display: grid; gap: 16px; }
       .bar-row { display: grid; grid-template-columns: 220px 1fr 80px; gap: 16px; align-items: center; }
@@ -114,6 +132,22 @@
       .dropdown-item.active { background: var(--accent); color: white; }
       .dropdown-dates { border-top: 1px solid #e2e8f0; margin-top: 6px; padding-top: 8px; display: grid; gap: 8px; }
       .dropdown-dates label { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; display: grid; gap: 4px; }
+      .chart-point { cursor: pointer; }
+      .chart-tooltip { position: fixed; z-index: 50; background: #1e293b; color: #fff; padding: 8px 11px; border-radius: 8px; font-size: 12px; line-height: 1.5; pointer-events: none; box-shadow: 0 10px 24px rgba(15,23,42,.28); display: none; max-width: 220px; }
+      .chart-tooltip strong { display: block; margin-bottom: 2px; }
+      .diag-trigger { padding: 6px 10px; font-size: 12px; font-weight: 800; }
+      .diag-trigger:hover { filter: brightness(0.96); }
+      .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,.55); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+      .modal-overlay[hidden] { display: none; }
+      .modal-panel { background: #fff; border-radius: 16px; max-width: 560px; width: 100%; max-height: 88vh; overflow-y: auto; box-shadow: 0 24px 64px rgba(15,23,42,.35); }
+      .modal-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 20px 22px 14px; border-bottom: 1px solid #e2e8f0; }
+      .modal-close { background: transparent; color: #64748b; padding: 4px; border-radius: 8px; line-height: 0; }
+      .modal-close:hover { background: #f1f5f9; }
+      .modal-body { padding: 18px 22px 22px; display: grid; gap: 14px; }
+      .modal-block { border-radius: 12px; padding: 14px 16px; }
+      .modal-block.positive { background: #f0fdf4; border: 1px solid #bbf7d0; }
+      .modal-block.negative { background: #fef2f2; border: 1px solid #fecaca; }
+      .modal-block.neutral { background: #eff6ff; border: 1px solid #bfdbfe; }
       .login-split { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
       .login-hero { background: linear-gradient(160deg, #0f172a, #1e3a8a); color: white; padding: 48px; display: flex; flex-direction: column; justify-content: space-between; }
       .login-hero h1 { font-size: 34px; line-height: 1.2; margin: 0 0 16px; }
@@ -165,7 +199,7 @@
         social_format_metrics: "stage_social_format_metrics"
       };
 
-      let state = { session: null, perfil: null, page: "dashboard", marca: "Todas", periodo: "30d", periodoDe: "", periodoAte: "", periodoMenuOpen: false, rows: [], rd: [], meta: [], google: null, propostas: [], bi: null, channels: null, email: null, emailSelectedId: null, social: null, socialFormat: null, socialTab: "geral", connections: [] };
+      let state = { session: null, perfil: null, page: "dashboard", marca: "Todas", periodo: "30d", periodoDe: "", periodoAte: "", periodoMenuOpen: false, rows: [], rd: [], meta: [], google: null, propostas: [], bi: null, channels: null, email: null, emailSelectedId: null, social: null, socialFormat: null, socialTab: "geral", connections: [], bestTimes: null, socialCompareMetric: "alcance", compareA: { de: "", ate: "" }, compareB: { de: "", ate: "" } };
 
       const fmt = new Intl.NumberFormat("pt-BR");
       const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
@@ -786,7 +820,8 @@
             engajamento_total: engajamento,
             taxa_engajamento: alcance ? (engajamento / alcance) * 100 : 0,
             post_destaque_semana_url: row.post_url,
-            tema: row.tema || row.tipo_conteudo || "Conteúdo Meta"
+            tema: row.tema || row.tipo_conteudo || "Conteúdo Meta",
+            formato: row.formato || null
           };
         });
 
@@ -1086,7 +1121,9 @@
           <main>
             <header><div><strong>${pageTitle()}</strong><br><span class="muted">Supabase com RLS por marca</span></div><span class="alert success">Authenticated</span></header>
             <div class="content" id="content"></div>
-          </main>`;
+          </main>
+          <div class="chart-tooltip" id="chartTooltip"></div>
+          <div class="modal-overlay" id="diagnosticoModal" hidden></div>`;
         document.querySelector("#logout").onclick = signOut;
         document.querySelector("#navDash").onclick = () => { state.page = "dashboard"; render(); };
         document.querySelector("#navCred").onclick = () => { state.page = "credsystem"; render(); };
@@ -1102,6 +1139,8 @@
         if (state.page === "social") {
           if (state.socialTab === "instagram") await renderSocialFormatPage("Instagram");
           else if (state.socialTab === "facebook") await renderSocialFormatPage("Facebook");
+          else if (state.socialTab === "horarios") await renderBestTimesPage();
+          else if (state.socialTab === "comparativo") await renderComparativo();
           else await renderSocialBI();
         }
         if (state.page === "ads") await renderMetaAds();
@@ -1218,111 +1257,146 @@
           : `${facebookIcon(size)} <span>Facebook</span>`;
       }
 
-      function dailyChangeBarChartHtml(points) {
-        if (!points.length) return `<p class="muted" style="margin:0">Sem dados suficientes para calcular variação diária.</p>`;
-        const w = 420, h = 200, padL = 12, padR = 12, padT = 24, padB = 40;
-        const deltas = points.map((p) => p.delta);
-        const maxAbs = Math.max(1, ...deltas.map((d) => Math.abs(d)));
-        const zeroY = padT + (h - padT - padB) / 2;
-        const halfH = (h - padT - padB) / 2;
-        const barW = Math.max(2, ((w - padL - padR) / points.length) - 2);
-        const x = (i) => padL + i * ((w - padL - padR) / points.length);
-        const showLabel = points.length <= 20;
-        const bars = points.map((p, i) => {
-          const barH = (Math.abs(p.delta) / maxAbs) * halfH;
-          const color = p.delta >= 0 ? "#0ca30c" : "#d03b3b";
-          const yTop = p.delta >= 0 ? zeroY - barH : zeroY;
-          const rect = `<rect x="${x(i).toFixed(1)}" y="${yTop.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(0.5, barH).toFixed(1)}" rx="2" fill="${color}"><title>${escapeHtml(p.label)}: ${p.delta >= 0 ? "+" : ""}${fmt.format(p.delta)}</title></rect>`;
-          const labelY = p.delta >= 0 ? yTop - 6 : yTop + barH + 14;
-          const label = showLabel && p.delta !== 0
-            ? `<text x="${(x(i) + barW / 2).toFixed(1)}" y="${labelY.toFixed(1)}" font-size="10" fill="${color}" text-anchor="middle" font-weight="700">${p.delta >= 0 ? "+" : ""}${fmt.format(p.delta)}</text>`
-            : "";
-          const dateLabel = showLabel
-            ? `<text x="${(x(i) + barW / 2).toFixed(1)}" y="${(h - padB + 14).toFixed(1)}" font-size="9" fill="#64748b" text-anchor="middle">${escapeHtml(p.label)}</text>`
-            : "";
-          return rect + label + dateLabel;
-        }).join("");
-        return `
-          <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:220px" role="img" aria-label="Variação diária de seguidores, ganhos em verde e perdas em vermelho">
-            <line x1="${padL}" y1="${zeroY.toFixed(1)}" x2="${w - padR}" y2="${zeroY.toFixed(1)}" stroke="#e2e8f0" stroke-width="1"/>
-            ${bars}
-          </svg>
-          <div style="display:flex;gap:16px;margin-top:6px;font-size:12px;color:#64748b">
-            <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:2px;background:#0ca30c;display:inline-block"></span>Ganho líquido</span>
-            <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:2px;background:#d03b3b;display:inline-block"></span>Perda líquida</span>
-          </div>`;
-      }
-
-      function dailyChangeFromSeries(points) {
-        const changes = [];
-        for (let i = 1; i < points.length; i++) {
-          changes.push({ label: points[i].label, delta: points[i].value - points[i - 1].value });
-        }
-        return changes;
-      }
-
-      // Ganho/perda por marca, nunca somado entre marcas: cada uma e comparada so com o proprio
-      // dia anterior. Retorna um mapa marca -> lista de deltas, para desenhar uma barra por marca
-      // lado a lado em cada data (em vez de um unico total que esconde de onde veio o numero).
-      function deltasPorMarca(seriesPorMarca) {
-        const result = new Map();
-        for (const [marca, pontos] of seriesPorMarca) {
+      // Soma de entradas/saidas diarias (delta positivo = entrada, negativo = saida), somando cada
+      // marca so com o proprio dia anterior antes de somar entre marcas - o inverso disso (comparar
+      // totais consolidados de dias diferentes) inventaria ganhos/perdas por marcas entrando/saindo
+      // do periodo sincronizado.
+      function totalEntradasSaidas(seriesPorMarca) {
+        let entradas = 0, saidas = 0;
+        for (const [, pontos] of seriesPorMarca) {
           const ordenados = [...pontos].sort((a, b) => a.date.localeCompare(b.date));
-          const deltas = [];
           for (let i = 1; i < ordenados.length; i++) {
-            deltas.push({
-              date: ordenados[i].date,
-              label: new Date(`${ordenados[i].date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
-              delta: ordenados[i].value - ordenados[i - 1].value
-            });
+            const delta = ordenados[i].value - ordenados[i - 1].value;
+            if (delta > 0) entradas += delta; else saidas += -delta;
           }
-          if (deltas.length) result.set(marca, deltas);
         }
-        return result;
+        return { entradas, saidas };
       }
 
-      function multiSeriesDailyChangeBarChartHtml(deltasMap) {
-        const marcasComDados = [...deltasMap.entries()];
-        if (!marcasComDados.length) return `<p class="muted" style="margin:0">Sem histórico suficiente ainda para calcular a variação.</p>`;
+      function entradasSaidasKpisHtml(seriesPorMarca) {
+        const { entradas, saidas } = totalEntradasSaidas(seriesPorMarca);
+        return `<div class="grid kpis" style="grid-template-columns:repeat(2,minmax(0,1fr));margin:10px 0">
+          <article class="card kpi" style="border-left:3px solid #16a34a"><div class="kpi-top"><span>Entradas no período</span><span class="material-symbols-outlined" style="color:#16a34a">person_add</span></div><strong style="color:#16a34a">+${fmt.format(entradas)}</strong></article>
+          <article class="card kpi" style="border-left:3px solid #dc2626"><div class="kpi-top"><span>Saídas no período</span><span class="material-symbols-outlined" style="color:#dc2626">person_remove</span></div><strong style="color:#dc2626">-${fmt.format(saidas)}</strong></article>
+        </div>`;
+      }
 
-        const datasSet = new Set();
-        for (const [, deltas] of marcasComDados) for (const d of deltas) datasSet.add(d.date);
-        const datas = [...datasSet].sort();
+      const CORES_FORMATO = { "Reels": "#2563eb", "Feed/Carrossel": "#7c3aed", "Stories": "#16a34a" };
 
-        const w = 620, h = 220, padL = 12, padR = 12, padT = 24, padB = 40;
-        const maxAbs = Math.max(1, ...marcasComDados.flatMap(([, deltas]) => deltas.map((d) => Math.abs(d.delta))));
-        const zeroY = padT + (h - padT - padB) / 2;
-        const halfH = (h - padT - padB) / 2;
-        const grupoW = (w - padL - padR) / datas.length;
-        const barW = Math.max(2, (grupoW - 4) / marcasComDados.length);
-        const showLabel = datas.length <= 10;
+      // Soma o alcance por formato (reels/feed/stories) a partir das linhas de posts ja carregadas
+      // para a rede atual - nao precisa de nova consulta, so agrupa o que ja esta em memoria.
+      function alcanceFormatoDistribution(rows, redePrefix) {
+        const formatoParaBucket = {
+          [`${redePrefix}_reels`]: "Reels",
+          [`${redePrefix}_feed`]: "Feed/Carrossel",
+          [`${redePrefix}_stories`]: "Stories"
+        };
+        const buckets = { "Reels": 0, "Feed/Carrossel": 0, "Stories": 0 };
+        rows.forEach((r) => {
+          if (String(r.post_id || "").startsWith("page-summary:")) return;
+          const bucket = formatoParaBucket[r.formato];
+          if (bucket) buckets[bucket] += num(r.alcance);
+        });
+        return buckets;
+      }
 
-        const grupos = datas.map((data, gi) => {
-          const grupoX = padL + gi * grupoW;
-          const barras = marcasComDados.map(([marca, deltas], mi) => {
-            const ponto = deltas.find((d) => d.date === data);
-            if (!ponto) return "";
-            const cor = CORES_MARCA[marca] || "#64748b";
-            const barH = (Math.abs(ponto.delta) / maxAbs) * halfH;
-            const bx = grupoX + mi * barW;
-            const yTop = ponto.delta >= 0 ? zeroY - barH : zeroY;
-            const label = showLabel && ponto.delta !== 0
-              ? `<text x="${(bx + barW / 2).toFixed(1)}" y="${(ponto.delta >= 0 ? yTop - 4 : yTop + barH + 12).toFixed(1)}" font-size="8" fill="${cor}" text-anchor="middle" font-weight="700">${ponto.delta >= 0 ? "+" : ""}${fmt.format(ponto.delta)}</text>`
-              : "";
-            return `<rect x="${bx.toFixed(1)}" y="${yTop.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(0.5, barH).toFixed(1)}" rx="1.5" fill="${cor}"><title>${escapeHtml(marca)} — ${ponto.label}: ${ponto.delta >= 0 ? "+" : ""}${fmt.format(ponto.delta)}</title></rect>${label}`;
-          }).join("");
-          const dataLabel = `<text x="${(grupoX + grupoW / 2 - 2).toFixed(1)}" y="${(h - padB + 14).toFixed(1)}" font-size="9" fill="#64748b" text-anchor="middle">${escapeHtml(new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }))}</text>`;
-          return barras + dataLabel;
+      function formatoDonutChartHtml(buckets) {
+        const entradas = Object.entries(buckets).filter(([, v]) => v > 0);
+        const total = entradas.reduce((s, [, v]) => s + v, 0);
+        if (!total) return `<p class="muted" style="margin:0">Sem alcance suficiente por formato nesse período.</p>`;
+
+        const size = 190, r = 66, cx = size / 2, cy = size / 2, strokeW = 30;
+        const circunferencia = 2 * Math.PI * r;
+        let acumulado = 0;
+        const segmentos = entradas.map(([label, valor]) => {
+          const fracao = valor / total;
+          const comprimento = fracao * circunferencia;
+          const dasharray = `${comprimento.toFixed(2)} ${(circunferencia - comprimento).toFixed(2)}`;
+          const dashoffset = (-acumulado * circunferencia).toFixed(2);
+          acumulado += fracao;
+          const cor = CORES_FORMATO[label] || "#64748b";
+          const pct = (fracao * 100).toFixed(1).replace(".", ",");
+          const tooltip = `<strong>${escapeHtml(label)}</strong><br>${pct}% do alcance<br>Alcance: ${fmt.format(valor)}`.replaceAll("\"", "&quot;");
+          return `<circle class="chart-point" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${cor}" stroke-width="${strokeW}" stroke-dasharray="${dasharray}" stroke-dashoffset="${dashoffset}" transform="rotate(-90 ${cx} ${cy})" data-tooltip="${tooltip}"></circle>`;
         }).join("");
 
         return `
-          <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:240px" role="img" aria-label="Variação diária de seguidores por marca, ganhos acima da linha e perdas abaixo">
-            <line x1="${padL}" y1="${zeroY.toFixed(1)}" x2="${w - padR}" y2="${zeroY.toFixed(1)}" stroke="#e2e8f0" stroke-width="1"/>
-            ${grupos}
-          </svg>
-          <div style="display:flex;gap:16px;margin-top:6px;font-size:12px;color:#64748b;flex-wrap:wrap">
-            ${marcasComDados.map(([marca]) => `<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:2px;background:${CORES_MARCA[marca] || "#64748b"};display:inline-block"></span>${escapeHtml(marca)}</span>`).join("")}
+          <div style="display:flex;align-items:center;gap:22px;flex-wrap:wrap">
+            <svg viewBox="0 0 ${size} ${size}" style="width:170px;height:170px;flex:none" role="img" aria-label="Distribuição de alcance por formato">
+              ${segmentos}
+              <text x="${cx}" y="${cy - 4}" text-anchor="middle" font-size="12" fill="#64748b">Alcance total</text>
+              <text x="${cx}" y="${cy + 16}" text-anchor="middle" font-size="16" font-weight="700" fill="#1f2937">${fmt.format(total)}</text>
+            </svg>
+            <div style="display:grid;gap:8px;flex:1;min-width:150px">
+              ${entradas.map(([label, valor]) => {
+                const cor = CORES_FORMATO[label] || "#64748b";
+                const pct = ((valor / total) * 100).toFixed(1).replace(".", ",");
+                return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px">
+                  <span style="display:inline-flex;align-items:center;gap:8px;color:#334155;font-weight:600"><span style="width:10px;height:10px;border-radius:3px;background:${cor};display:inline-block"></span>${escapeHtml(label)}</span>
+                  <span style="color:#64748b">${pct}% · ${fmt.format(valor)}</span>
+                </div>`;
+              }).join("")}
+            </div>
           </div>`;
+      }
+
+      function formatoCampeaoHtml(buckets) {
+        const entradas = Object.entries(buckets).filter(([, v]) => v > 0);
+        const total = entradas.reduce((s, [, v]) => s + v, 0);
+        if (!total) return "";
+        const [label, valor] = [...entradas].sort((a, b) => b[1] - a[1])[0];
+        const pct = ((valor / total) * 100).toFixed(0);
+        return `<div class="alert success" style="margin-top:14px;display:flex;align-items:center;gap:10px">
+          <span style="font-size:18px">🏆</span>
+          <span><strong>${escapeHtml(label)}</strong> é o formato principal, representando <strong>${pct}%</strong> do alcance no período.</span>
+        </div>`;
+      }
+
+      // Dentro do formato "feed", separa por tipo_conteudo (media_type vindo da Meta): CAROUSEL_ALBUM
+      // no Instagram e "album" nos anexos do Facebook indicam carrossel; qualquer outra coisa e post
+      // unico (imagem ou video isolado).
+      function feedSubBreakdown(rows, redePrefix) {
+        const feedFormato = `${redePrefix}_feed`;
+        const buckets = { "Post Único": 0, "Carrossel": 0 };
+        rows.forEach((r) => {
+          if (r.formato !== feedFormato || String(r.post_id || "").startsWith("page-summary:")) return;
+          const carrossel = /carousel|album/i.test(String(r.tipo_conteudo || ""));
+          buckets[carrossel ? "Carrossel" : "Post Único"] += num(r.alcance);
+        });
+        return buckets;
+      }
+
+      function feedSubBreakdownHtml(buckets) {
+        const unico = buckets["Post Único"], carrossel = buckets["Carrossel"];
+        const total = unico + carrossel;
+        if (!total) return "";
+        const pctUnico = (unico / total) * 100;
+        const pctCarrossel = 100 - pctUnico;
+        const corUnico = "#7c3aed", corCarrossel = "#c4b5fd";
+        return `
+          <div style="margin-top:14px;padding-top:12px;border-top:1px solid #e2e8f0">
+            <p style="margin:0 0 8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:#64748b">Detalhamento do Feed: Post Único vs. Carrossel</p>
+            <div style="display:flex;height:8px;border-radius:999px;overflow:hidden;background:#f1f5f9">
+              ${unico > 0 ? `<div style="width:${pctUnico.toFixed(2)}%;background:${corUnico}"></div>` : ""}
+              ${carrossel > 0 ? `<div style="width:${pctCarrossel.toFixed(2)}%;background:${corCarrossel}"></div>` : ""}
+            </div>
+            <div style="display:flex;justify-content:space-between;gap:12px;margin-top:8px;font-size:12px;flex-wrap:wrap">
+              <span style="display:inline-flex;align-items:center;gap:6px;color:#334155"><span style="width:8px;height:8px;border-radius:2px;background:${corUnico};display:inline-block"></span>Post Único — ${pctUnico.toFixed(1).replace(".", ",")}% · ${fmt.format(unico)}</span>
+              <span style="display:inline-flex;align-items:center;gap:6px;color:#334155"><span style="width:8px;height:8px;border-radius:2px;background:${corCarrossel};display:inline-block"></span>Carrossel — ${pctCarrossel.toFixed(1).replace(".", ",")}% · ${fmt.format(carrossel)}</span>
+            </div>
+          </div>`;
+      }
+
+      function alcanceFormatoSectionHtml(rows, rede) {
+        const redePrefix = rede.toLowerCase();
+        const buckets = alcanceFormatoDistribution(rows, redePrefix);
+        return `<section class="card">
+          <h3>Distribuição de Alcance por Formato</h3>
+          <p class="muted" style="margin-top:-6px">Participação de Reels, Feed/Carrossel e Stories no alcance total do período.</p>
+          ${formatoDonutChartHtml(buckets)}
+          ${formatoCampeaoHtml(buckets)}
+          ${feedSubBreakdownHtml(feedSubBreakdown(rows, redePrefix))}
+        </section>`;
       }
 
       const CORES_MARCA = {
@@ -1330,6 +1404,291 @@
         "Magazine da Economia": "#eb6834",
         "Free Center Calçados": "#1baf7a"
       };
+
+      const SOCIAL_COMPARE_METRICS = [
+        ["alcance", "Alcance Total"],
+        ["engajamento", "Taxa de Engajamento (%)"],
+        ["comunidade", "Comunidade / Seguidores"]
+      ];
+
+      function socialCompareValor(row, metric) {
+        const alcanceTotal = num(row?.alcance_facebook) + num(row?.alcance_instagram);
+        const engajamentoTotal = num(row?.engajamento_facebook) + num(row?.engajamento_instagram);
+        if (metric === "engajamento") return alcanceTotal ? (engajamentoTotal / alcanceTotal) * 100 : 0;
+        if (metric === "comunidade") return num(row?.seguidores_instagram) + num(row?.seguidores_facebook);
+        return alcanceTotal;
+      }
+
+      function socialCompareBarChartHtml(rows, metric) {
+        const marcasFixas = Object.keys(CORES_MARCA);
+        const valores = marcasFixas.map((marca) => ({ marca, valor: socialCompareValor(rows.find((r) => r.marca === marca), metric) }));
+        const maxV = Math.max(1, ...valores.map((v) => v.valor));
+        const isPct = metric === "engajamento";
+        const formatValor = (v) => isPct ? `${v.toFixed(2).replace(".", ",")}%` : fmt.format(Math.round(v));
+
+        const w = 640, h = 260, padL = 20, padR = 20, padT = 28, padB = 46;
+        const groupW = (w - padL - padR) / valores.length;
+        const barW = Math.min(96, groupW * 0.5);
+
+        const bars = valores.map((v, i) => {
+          const barH = maxV ? (v.valor / maxV) * (h - padT - padB) : 0;
+          const x = padL + i * groupW + (groupW - barW) / 2;
+          const y = h - padB - barH;
+          const cor = CORES_MARCA[v.marca] || "#64748b";
+          const tooltip = `<strong>${escapeHtml(v.marca)}</strong><br>${escapeHtml(formatValor(v.valor))}`.replaceAll("\"", "&quot;");
+          return `<rect class="chart-point" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(0.5, barH).toFixed(1)}" rx="6" fill="${cor}" data-tooltip="${tooltip}"></rect>
+            <text x="${(x + barW / 2).toFixed(1)}" y="${(y - 8).toFixed(1)}" font-size="12" font-weight="700" fill="${cor}" text-anchor="middle">${escapeHtml(formatValor(v.valor))}</text>
+            <text x="${(x + barW / 2).toFixed(1)}" y="${(h - padB + 20).toFixed(1)}" font-size="11" fill="#64748b" text-anchor="middle">${escapeHtml(v.marca)}</text>`;
+        }).join("");
+
+        return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:280px" role="img" aria-label="Comparativo de ${escapeHtml(metric)} por marca">
+          <line x1="${padL}" y1="${h - padB}" x2="${w - padR}" y2="${h - padB}" stroke="#e2e8f0" stroke-width="1"/>
+          ${bars}
+        </svg>`;
+      }
+
+      function socialCompareSectionHtml(rows) {
+        const metric = state.socialCompareMetric || "alcance";
+        return `<section class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <h3 style="margin:0">Comparativo de Desempenho por Marca</h3>
+            <div class="segmented">${SOCIAL_COMPARE_METRICS.map(([key, label]) => `<button type="button" class="compare-metric-btn ${metric === key ? "active" : ""}" data-metric="${key}">${label}</button>`).join("")}</div>
+          </div>
+          <p class="muted" style="margin:6px 0 0">Tesoura de Ouro, Magazine da Economia e Free Center Calçados lado a lado, na métrica selecionada.</p>
+          ${socialCompareBarChartHtml(rows, metric)}
+        </section>`;
+      }
+
+      // Periodo imediatamente anterior a [fromStr, toStr], com a mesma duracao em dias - usado tanto
+      // para comparar o periodo atual quanto (encadeado de novo) para comparar o periodo anterior
+      // com o que veio antes dele, e assim dar a variacao do proprio Score.
+      function rangeBefore(fromStr, toStr) {
+        if (!fromStr) return null;
+        const fromD = new Date(`${fromStr}T00:00:00`);
+        const toD = new Date(`${toStr || new Date().toISOString().slice(0, 10)}T00:00:00`);
+        const spanDays = Math.max(1, Math.round((toD - fromD) / 86400000));
+        const prevTo = new Date(fromD);
+        prevTo.setDate(prevTo.getDate() - 1);
+        const prevFrom = new Date(prevTo);
+        prevFrom.setDate(prevFrom.getDate() - spanDays);
+        return { from: prevFrom.toISOString().slice(0, 10), to: prevTo.toISOString().slice(0, 10) };
+      }
+
+      // Sem filtro de data (periodo "all") nao ha "anterior" com o que comparar, entao retorna null
+      // e as telas mostram os KPIs sem variacao em vez de um numero inventado.
+      function previousPeriodRange() {
+        return rangeBefore(fromDate(), toDate());
+      }
+
+      async function loadPeriodTotals(from, to, marca) {
+        let query = supabase
+          .from("stage_social_format_metrics")
+          .select("marca,alcance,engajamento,curtidas,comentarios,compartilhamentos,salvos,post_id,data_publicacao")
+          .limit(5000);
+        if (marca !== "Todas") query = query.eq("marca", marca);
+        if (from) query = query.gte("data_publicacao", from);
+        if (to) query = query.lte("data_publicacao", `${to}T23:59:59`);
+        const { data, error } = await query;
+        if (error) throw error;
+        const rows = (data || []).filter((r) => !String(r.post_id || "").startsWith("page-summary:"));
+        const alcance = rows.reduce((s, r) => s + num(r.alcance), 0);
+        const engajamento = rows.reduce((s, r) => s + (num(r.engajamento) || num(r.curtidas) + num(r.comentarios) + num(r.compartilhamentos) + num(r.salvos)), 0);
+        return { alcance, engajamento, posts: rows.length, taxa: alcance ? (engajamento / alcance) * 100 : 0 };
+      }
+
+      async function loadCommunityDelta(marcaFiltro, from, to) {
+        const [ig, fb] = await Promise.all([
+          loadFollowerHistoryPorMarca("seguidores_instagram", { marcaFiltro, from, to }),
+          loadFollowerHistoryPorMarca("seguidores_facebook", { marcaFiltro, from, to })
+        ]);
+        const somaExtremos = (mapa) => {
+          let primeiro = 0, ultimo = 0;
+          for (const [, pontos] of mapa) {
+            if (!pontos.length) continue;
+            const ordenados = [...pontos].sort((a, b) => a.date.localeCompare(b.date));
+            primeiro += ordenados[0].value;
+            ultimo += ordenados[ordenados.length - 1].value;
+          }
+          return { primeiro, ultimo };
+        };
+        const igExt = somaExtremos(ig), fbExt = somaExtremos(fb);
+        return { atual: igExt.ultimo + fbExt.ultimo, delta: (igExt.ultimo - igExt.primeiro) + (fbExt.ultimo - fbExt.primeiro) };
+      }
+
+      function clampScore(v) {
+        return Math.max(0, Math.min(100, v));
+      }
+
+      // Score executivo 0-100: nao existe um "certo" universal para isso, entao a formula fica
+      // documentada aqui (e no tooltip do card) em vez de ser uma caixa-preta - metade do peso vem
+      // da taxa de engajamento absoluta, o resto de quanto alcance/seguidores cresceram no periodo.
+      function computeExecutiveScore({ taxaEngajamento, alcanceDeltaPct, seguidoresDeltaPct }) {
+        const engajamentoScore = clampScore((taxaEngajamento / 6) * 100);
+        const alcanceScore = clampScore(50 + alcanceDeltaPct);
+        const seguidoresScore = clampScore(50 + seguidoresDeltaPct * 5);
+        return Math.round(engajamentoScore * 0.5 + alcanceScore * 0.3 + seguidoresScore * 0.2);
+      }
+
+      function deltaLineHtml(deltaPct, { invert = false, suffix = "vs. período anterior" } = {}) {
+        if (deltaPct === null || !Number.isFinite(deltaPct)) return `<small class="muted" style="display:block;margin-top:4px">Sem período anterior para comparar</small>`;
+        const positivo = invert ? deltaPct <= 0 : deltaPct >= 0;
+        const cor = positivo ? "#16a34a" : "#dc2626";
+        const seta = deltaPct >= 0 ? "↑" : "↓";
+        return `<small style="display:block;margin-top:4px;font-weight:700;color:${cor}">${seta} ${Math.abs(deltaPct).toFixed(1).replace(".", ",")}% ${suffix}</small>`;
+      }
+
+      function deltaLineAbsHtml(deltaAbs, { suffix = "no período" } = {}) {
+        if (deltaAbs === null || !Number.isFinite(deltaAbs)) return `<small class="muted" style="display:block;margin-top:4px">Sem período anterior para comparar</small>`;
+        const cor = deltaAbs >= 0 ? "#16a34a" : "#dc2626";
+        const sinal = deltaAbs >= 0 ? "+" : "";
+        return `<small style="display:block;margin-top:4px;font-weight:700;color:${cor}">${sinal}${fmt.format(deltaAbs)} ${suffix}</small>`;
+      }
+
+      function kpiWithDelta(label, value, icon, deltaHtml) {
+        return `<article class="card kpi"><div class="kpi-top"><span>${label}</span><span class="material-symbols-outlined">${icon}</span></div><strong>${value}</strong>${deltaHtml || ""}</article>`;
+      }
+
+      function shareOfPerformanceHtml(rows) {
+        const marcas = Object.keys(CORES_MARCA);
+        const dados = marcas.map((marca) => {
+          const r = rows.find((row) => row.marca === marca);
+          return {
+            marca,
+            alcance: num(r?.alcance_facebook) + num(r?.alcance_instagram),
+            engajamento: num(r?.engajamento_facebook) + num(r?.engajamento_instagram)
+          };
+        });
+        const totalAlcance = dados.reduce((s, d) => s + d.alcance, 0);
+        const totalEngajamento = dados.reduce((s, d) => s + d.engajamento, 0);
+        if (!totalAlcance && !totalEngajamento) return `<p class="muted" style="margin:0">Sem dados suficientes para calcular participação por marca.</p>`;
+
+        const size = 150, r = 54, cx = size / 2, cy = size / 2, strokeW = 26;
+        const circunferencia = 2 * Math.PI * r;
+        let acumulado = 0;
+        const segmentos = dados.filter((d) => d.alcance > 0).map((d) => {
+          const fracao = totalAlcance ? d.alcance / totalAlcance : 0;
+          const comprimento = fracao * circunferencia;
+          const dasharray = `${comprimento.toFixed(2)} ${(circunferencia - comprimento).toFixed(2)}`;
+          const dashoffset = (-acumulado * circunferencia).toFixed(2);
+          acumulado += fracao;
+          const cor = CORES_MARCA[d.marca];
+          const pct = (fracao * 100).toFixed(1).replace(".", ",");
+          const tooltip = `<strong>${escapeHtml(d.marca)}</strong><br>${pct}% do alcance<br>Alcance: ${fmt.format(d.alcance)}`.replaceAll("\"", "&quot;");
+          return `<circle class="chart-point" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${cor}" stroke-width="${strokeW}" stroke-dasharray="${dasharray}" stroke-dashoffset="${dashoffset}" transform="rotate(-90 ${cx} ${cy})" data-tooltip="${tooltip}"></circle>`;
+        }).join("");
+
+        const linhas = dados.map((d) => {
+          const pctAlcance = totalAlcance ? (d.alcance / totalAlcance) * 100 : 0;
+          const pctEngajamento = totalEngajamento ? (d.engajamento / totalEngajamento) * 100 : 0;
+          const cor = CORES_MARCA[d.marca];
+          return `<div style="display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:10px;font-size:12px">
+            <span style="width:9px;height:9px;border-radius:3px;background:${cor};display:inline-block"></span>
+            <span style="color:#334155;font-weight:600">${escapeHtml(d.marca)}</span>
+            <span style="color:#64748b">Alcance ${pctAlcance.toFixed(1).replace(".", ",")}%</span>
+            <span style="color:#64748b">Engaj. ${pctEngajamento.toFixed(1).replace(".", ",")}%</span>
+          </div>`;
+        }).join("");
+
+        return `<div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+          <svg viewBox="0 0 ${size} ${size}" style="width:140px;height:140px;flex:none" role="img" aria-label="Participação no alcance por marca">
+            ${segmentos}
+            <text x="${cx}" y="${cy}" text-anchor="middle" font-size="11" fill="#64748b">Alcance</text>
+          </svg>
+          <div style="display:grid;gap:9px;flex:1;min-width:220px">${linhas}</div>
+        </div>`;
+      }
+
+      function brandPodiumHtml(rows, deltaAlcancePorMarca) {
+        const dados = Object.keys(CORES_MARCA).map((marca) => {
+          const r = rows.find((row) => row.marca === marca);
+          const alcance = num(r?.alcance_facebook) + num(r?.alcance_instagram);
+          const engajamento = num(r?.engajamento_facebook) + num(r?.engajamento_instagram);
+          return { marca, alcance, engajamento, taxa: alcance ? (engajamento / alcance) * 100 : 0, delta: deltaAlcancePorMarca?.[marca] ?? null };
+        }).sort((a, b) => b.taxa - a.taxa || b.alcance - a.alcance);
+
+        if (!dados.some((d) => d.alcance > 0 || d.engajamento > 0)) return `<p class="muted" style="margin:0">Sem dados suficientes para o ranking.</p>`;
+
+        const cards = dados.slice(0, 3).map((d, i) => {
+          const rank = i + 1;
+          const size = PODIUM_SIZES[i];
+          const cor = CORES_MARCA[d.marca];
+          const iniciais = escapeHtml(d.marca.split(" ").filter((w) => w.length > 2).slice(0, 2).map((w) => w[0]).join("").toUpperCase());
+          return `<div class="podium-card rank-${rank}">
+            <div class="podium-thumb-wrap">
+              <span class="podium-thumb" style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;background:${cor}22;color:${cor};font-weight:800;font-size:${Math.round(size * 0.32)}px">${iniciais}</span>
+              <span class="podium-badge">${PODIUM_MEDALS[i]}</span>
+            </div>
+            <p class="podium-title">${escapeHtml(d.marca)}</p>
+            ${deltaLineHtml(d.delta, { suffix: "de alcance vs. período anterior" })}
+            <div class="podium-metrics" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-top:10px">
+              <span>Taxa engaj.<br><strong>${d.taxa.toFixed(2).replace(".", ",")}%</strong></span>
+              <span>Alcance<br><strong>${fmt.format(d.alcance)}</strong></span>
+            </div>
+          </div>`;
+        }).join("");
+        return `<div class="podium">${cards}</div>`;
+      }
+
+      // "Insights IA": nao e um modelo de IA de fato, e um conjunto de heuristicas sobre os dados ja
+      // carregados na Visao Geral (mesmo post-level "periodos" que alimenta o ranking/diagnostico) -
+      // melhor formato, melhor horario de publicacao, marcas paradas ha muitos dias e contagem de
+      // posts com diagnostico "Atencao".
+      function generateAIInsights(rows, periodos, ranking) {
+        const insights = [];
+
+        const porFormato = {};
+        periodos.forEach((p) => {
+          if (!p.formato) return;
+          const bucket = /reels/i.test(p.formato) ? "Reels" : /stories/i.test(p.formato) ? "Stories" : "Feed";
+          porFormato[bucket] ??= { soma: 0, n: 0 };
+          porFormato[bucket].soma += num(p.taxa_engajamento);
+          porFormato[bucket].n += 1;
+        });
+        const formatoEntries = Object.entries(porFormato).filter(([, v]) => v.n >= 2).map(([k, v]) => [k, v.soma / v.n]);
+        if (formatoEntries.length) {
+          const [melhorFormato, taxaMedia] = [...formatoEntries].sort((a, b) => b[1] - a[1])[0];
+          insights.push({ type: "success", text: `${melhorFormato} é o formato mais eficiente do período, com taxa média de engajamento de ${taxaMedia.toFixed(2).replace(".", ",")}%.` });
+        }
+
+        const porHora = {};
+        periodos.forEach((p) => {
+          if (!p.data_referencia) return;
+          const data = new Date(p.data_referencia);
+          if (Number.isNaN(data.getTime())) return;
+          const hora = data.getHours();
+          porHora[hora] ??= { soma: 0, n: 0 };
+          porHora[hora].soma += num(p.taxa_engajamento);
+          porHora[hora].n += 1;
+        });
+        const horaEntries = Object.entries(porHora).filter(([, v]) => v.n >= 2).map(([h, v]) => [Number(h), v.soma / v.n]);
+        if (horaEntries.length) {
+          const [melhorHora] = [...horaEntries].sort((a, b) => b[1] - a[1])[0];
+          insights.push({ type: "success", text: `Posts publicados por volta das ${String(melhorHora).padStart(2, "0")}:00 têm o melhor engajamento médio no período.` });
+        }
+
+        const hoje = new Date();
+        Object.keys(CORES_MARCA).forEach((marca) => {
+          const r = rows.find((row) => row.marca === marca);
+          if (!r?.ultima_referencia) { insights.push({ type: "warning", text: `${marca} sem publicações registradas no período selecionado.` }); return; }
+          const dias = Math.floor((hoje - new Date(r.ultima_referencia)) / 86400000);
+          if (dias >= 5) insights.push({ type: "warning", text: `${marca} está há ${dias} dias sem novo post — risco de queda de alcance orgânico.` });
+        });
+
+        const atencaoCount = ranking.filter((r) => r.diagnostico_conteudo === "Atenção").length;
+        if (atencaoCount) insights.push({ type: "warning", text: `${atencaoCount} post${atencaoCount > 1 ? "s" : ""} no ranking com diagnóstico "Atenção" — engajamento abaixo da média da própria marca.` });
+
+        if (!insights.length) insights.push({ type: "success", text: "Sem alertas — desempenho dentro do esperado para todas as marcas no período." });
+        return insights;
+      }
+
+      function aiInsightsListHtml(insights) {
+        return `<ul style="list-style:none;margin:0;padding:0;display:grid;gap:12px">
+          ${insights.map((i) => `<li style="display:flex;align-items:flex-start;gap:10px;font-size:13.5px;color:#1f2937;line-height:1.4">
+            <span class="material-symbols-outlined" style="font-size:19px;color:${i.type === "success" ? "#16a34a" : "#d97706"};flex:none">${i.type === "success" ? "check_circle" : "warning"}</span>
+            <span>${escapeHtml(i.text)}</span>
+          </li>`).join("")}
+        </ul>`;
+      }
 
       async function loadFollowerHistoryPorMarca(field, options = {}) {
         const { marcaFiltro = "Todas", from = null, to = null } = options;
@@ -1413,7 +1772,20 @@
           const indicesComDado = serie.map((v, i) => (v === null ? -1 : i)).filter((i) => i >= 0);
           const ultimoIdx = indicesComDado[indicesComDado.length - 1];
           const ultimoValor = ultimoIdx !== undefined ? serie[ultimoIdx] : null;
-          const pontos = indicesComDado.map((i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(serie[i]).toFixed(1)}" r="${i === ultimoIdx ? 4 : 2}" fill="${cor}"><title>${escapeHtml(marca)} — ${formatDateOnly(datas[i])}: ${fmt.format(serie[i])}</title></circle>`).join("");
+          let valorAnterior = null;
+          const pontos = indicesComDado.map((i) => {
+            const valor = serie[i];
+            const delta = valorAnterior === null ? 0 : valor - valorAnterior;
+            valorAnterior = valor;
+            const ganho = delta > 0 ? delta : 0;
+            const perda = delta < 0 ? -delta : 0;
+            const tooltip = escapeHtml(`${marca} — ${formatDateOnly(datas[i])}`) +
+              `<br>Seguidores: ${fmt.format(valor)}` +
+              `<br>Ganhos do dia: <span style="color:#4ade80">+${fmt.format(ganho)}</span>` +
+              `<br>Perdas do dia: <span style="color:#f87171">-${fmt.format(perda)}</span>`;
+            return `<circle class="chart-point" cx="${x(i).toFixed(1)}" cy="${y(valor).toFixed(1)}" r="${i === ultimoIdx ? 4 : 2}" fill="${cor}"></circle>` +
+              `<circle class="chart-point" cx="${x(i).toFixed(1)}" cy="${y(valor).toFixed(1)}" r="9" fill="transparent" data-tooltip="${tooltip.replaceAll("\"", "&quot;")}"></circle>`;
+          }).join("");
           const rotulo = ultimoValor !== null ? `<text x="${(x(ultimoIdx) + 6).toFixed(1)}" y="${(y(ultimoValor) + 4).toFixed(1)}" font-size="11" fill="${cor}" font-weight="700">${fmt.format(ultimoValor)}</text>` : "";
           return { marca, cor, svg: `<path d="${path.trim()}" fill="none" stroke="${cor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>${pontos}${rotulo}` };
         });
@@ -1432,18 +1804,12 @@
           </div>`;
       }
 
-      function followerEvolutionSectionHtml(seriesPorMarca, redeLabel) {
+      function followerEvolutionSectionHtml(seriesPorMarca, redeLabel, rows, rede) {
         const marcaAtiva = state.marca;
         const seriesSelecionada = marcaAtiva === "Todas" ? [] : (seriesPorMarca.get(marcaAtiva) || []).map((p) => ({
           label: new Date(`${p.date}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
           value: p.value
         }));
-
-        const variacaoHtml = marcaAtiva === "Todas"
-          ? multiSeriesDailyChangeBarChartHtml(deltasPorMarca(seriesPorMarca))
-          : seriesSelecionada.length > 1
-            ? dailyChangeBarChartHtml(dailyChangeFromSeries(seriesSelecionada))
-            : `<p class="muted" style="margin:0">Sem histórico suficiente de ${escapeHtml(marcaAtiva)} nesse período.</p>`;
 
         const taxaCrescimento = marcaAtiva !== "Todas" && seriesSelecionada.length > 1
           ? ((seriesSelecionada[seriesSelecionada.length - 1].value - seriesSelecionada[0].value) / seriesSelecionada[0].value) * 100
@@ -1455,49 +1821,174 @@
               <h3>Evolução de seguidores</h3>
               <p class="muted" style="margin-top:-6px">${escapeHtml(redeLabel)}${marcaAtiva === "Todas" ? " das 3 marcas" : ` — ${escapeHtml(marcaAtiva)}`}, no período selecionado.</p>
               ${taxaCrescimento !== null ? `<p style="margin:6px 0 0;font-weight:700;color:${taxaCrescimento >= 0 ? "#0ca30c" : "#d03b3b"}">${taxaCrescimento >= 0 ? "↑" : "↓"} ${Math.abs(taxaCrescimento).toFixed(2).replace(".", ",")}% de taxa de crescimento no período</p>` : ""}
+              ${entradasSaidasKpisHtml(seriesPorMarca)}
               ${multiLineChartHtml(seriesPorMarca)}
             </section>
-            <section class="card">
-              <h3>Perda de seguidores${marcaAtiva !== "Todas" ? ` — ${escapeHtml(marcaAtiva)}` : " — por marca"}</h3>
-              <p class="muted" style="margin-top:-6px">${marcaAtiva === "Todas" ? "Variação diária de cada marca, sempre comparada só com o próprio dia anterior (nunca somada entre marcas)." : "Diferença do total de seguidores entre um dia e o anterior."}</p>
-              ${variacaoHtml}
-            </section>
+            ${alcanceFormatoSectionHtml(rows, rede)}
           </div>`;
       }
+
+      const POST_PLACEHOLDER_IMG = `<span class="material-symbols-outlined" style="width:44px;height:44px;border-radius:6px;background:#f1f5f9;color:#94a3b8;display:flex;align-items:center;justify-content:center;flex:none">image</span>`;
+      // O CDN da Meta as vezes recusa carregar a imagem fora do dominio deles (hotlink); o
+      // onerror troca pelo placeholder em vez de deixar o icone de imagem quebrada do navegador.
+      function postThumbHtml(r) {
+        return r.imagem_url
+          ? `<img src="${escapeHtml(r.imagem_url)}" alt="" loading="lazy" referrerpolicy="no-referrer" style="width:44px;height:44px;border-radius:6px;object-fit:cover;flex:none;background:#e2e8f0" onerror="this.outerHTML='${POST_PLACEHOLDER_IMG.replaceAll("'", "\\'")}'">`
+          : POST_PLACEHOLDER_IMG;
+      }
+
+      const POST_SORT_COLUMNS = [
+        { key: "alcance", label: "Alcance", getValue: (r) => num(r.alcance) },
+        { key: "engajamento", label: "Engajamento", getValue: (r) => num(r.engajamento) },
+        { key: "visualizacoes", label: "Views", getValue: (r) => num(r.total_visualizacoes ?? r.visualizacoes) },
+        { key: "salvamentos", label: "Saves", getValue: (r) => num(r.salvamentos ?? r.salvos) }
+      ];
+
+      function postRowsHtml(list, emptyMsg) {
+        return list.length
+          ? list.map((r) => `<tr>
+              <td style="width:42%"><div style="display:flex;align-items:center;gap:10px">${postThumbHtml(r)}${r.post_url ? `<a href="${escapeHtml(r.post_url)}" target="_blank" rel="noreferrer">${escapeHtml(textSnippet(r.tema || "Conteudo", 130))}</a>` : `<span>${escapeHtml(textSnippet(r.tema || "Conteudo", 130))}</span>`}</div></td>
+              <td>${escapeHtml(formatDateOnly(r.data_publicacao))}</td>
+              <td>${fmt.format(num(r.alcance))}</td>
+              <td>${fmt.format(num(r.engajamento))}</td>
+              <td>${fmt.format(num(r.total_visualizacoes ?? r.visualizacoes))}</td>
+              <td>${fmt.format(num(r.salvamentos ?? r.salvos))}</td>
+            </tr>`).join("")
+          : `<tr><td colspan="6">${emptyMsg}</td></tr>`;
+      }
+
+      function sortPosts(list, column, direction) {
+        const col = POST_SORT_COLUMNS.find((c) => c.key === column);
+        if (!col) return list;
+        const sorted = [...list].sort((a, b) => col.getValue(a) - col.getValue(b));
+        return direction === "asc" ? sorted : sorted.reverse();
+      }
+
+      // Estado de ordenacao por tabela sobrevive a re-renders (fica fora de qualquer funcao de
+      // render), assim escolher "ordenar por Views" continua valendo se o usuario trocar de marca.
+      const tableSortState = {};
+      const postTableCache = new Map();
+
+      function postsTableHtml(tableId, list, emptyMsg) {
+        const sort = tableSortState[tableId];
+        const thSort = (col) => {
+          const active = sort?.column === col.key;
+          const arrow = active ? (sort.direction === "asc" ? "▲" : "▼") : "";
+          return `<th class="sortable-th${active ? " active" : ""}" data-sort="${col.key}" data-table="${tableId}">${col.label} <span class="sort-indicator">${arrow}</span></th>`;
+        };
+        return `<div class="table-wrap" style="margin-top:12px">
+          <table id="${tableId}">
+            <thead><tr><th>Post</th><th>Publicado</th>${POST_SORT_COLUMNS.map(thSort).join("")}</tr></thead>
+            <tbody>${postRowsHtml(list, emptyMsg)}</tbody>
+          </table>
+        </div>`;
+      }
+
+      const PODIUM_MEDALS = ["🥇", "🥈", "🥉"];
+      const PODIUM_SIZES = [136, 112, 112];
+
+      function podiumThumbHtml(r, size) {
+        return r.imagem_url
+          ? `<img class="podium-thumb" src="${escapeHtml(r.imagem_url)}" alt="" loading="lazy" referrerpolicy="no-referrer" style="width:${size}px;height:${size}px" onerror="this.style.display='none'">`
+          : `<span class="podium-thumb material-symbols-outlined" style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;background:#f1f5f9;color:#94a3b8;font-size:${Math.round(size * 0.4)}px">image</span>`;
+      }
+
+      // Top 3 em destaque tipo podio; o restante (posicoes 4-10) segue como tabela compacta logo
+      // abaixo, que e onde ficam os cabecalhos clicaveis de ordenacao (por isso o podio nao tem
+      // cabecalho proprio - ordenar reordena tanto o podio quanto a lista juntos).
+      function podiumHtml(top3) {
+        if (!top3.length) return "";
+        const cards = top3.map((r, i) => {
+          const rank = i + 1;
+          const size = PODIUM_SIZES[i];
+          const titulo = escapeHtml(textSnippet(r.tema || "Conteudo", 60));
+          return `<div class="podium-card rank-${rank}">
+            <div class="podium-thumb-wrap">
+              ${podiumThumbHtml(r, size)}
+              <span class="podium-badge">${PODIUM_MEDALS[i]}</span>
+            </div>
+            <p class="podium-title">${r.post_url ? `<a href="${escapeHtml(r.post_url)}" target="_blank" rel="noreferrer">${titulo}</a>` : titulo}</p>
+            <div class="podium-metrics">
+              <span>Alcance<br><strong>${fmt.format(num(r.alcance))}</strong></span>
+              <span>Engajamento<br><strong>${fmt.format(num(r.engajamento))}</strong></span>
+              <span>Views<br><strong>${fmt.format(num(r.total_visualizacoes ?? r.visualizacoes))}</strong></span>
+              <span>Saves<br><strong>${fmt.format(num(r.salvamentos ?? r.salvos))}</strong></span>
+            </div>
+          </div>`;
+        }).join("");
+        return `<div class="podium">${cards}</div>`;
+      }
+
+      function rankingSectionHtml(tableId, sortedList, emptyMsg) {
+        if (!sortedList.length) return `<div id="${tableId}-ranking">${postsTableHtml(tableId, [], emptyMsg)}</div>`;
+        const podio = sortedList.slice(0, 3);
+        const resto = sortedList.slice(3);
+        return `<div id="${tableId}-ranking">
+          ${podiumHtml(podio)}
+          ${resto.length ? `<p class="muted" style="margin:0 0 6px;font-size:12px">Posições 4-10</p>${postsTableHtml(tableId, resto, emptyMsg)}` : ""}
+        </div>`;
+      }
+
+      let sortableTablesBound = false;
+      function bindSortableTables() {
+        if (sortableTablesBound) return;
+        sortableTablesBound = true;
+        document.addEventListener("click", (event) => {
+          const th = event.target.closest("th[data-sort]");
+          if (!th) return;
+          const tableId = th.dataset.table;
+          const column = th.dataset.sort;
+          const current = tableSortState[tableId];
+          const direction = current?.column === column && current.direction === "desc" ? "asc" : "desc";
+          tableSortState[tableId] = { column, direction };
+          const list = postTableCache.get(tableId) || [];
+          const ranking = document.querySelector(`#${CSS.escape(tableId)}-ranking`);
+          if (ranking) ranking.outerHTML = rankingSectionHtml(tableId, sortPosts(list, column, direction), th.dataset.emptyMsg || "Sem dados suficientes.");
+        });
+      }
+      bindSortableTables();
+
+      // Tooltip customizado dos graficos (evolucao de seguidores): delegado no document porque o
+      // #chartTooltip e recriado a cada render() - um listener so, escuta hover em qualquer ".chart-point".
+      let chartTooltipBound = false;
+      function bindChartTooltip() {
+        if (chartTooltipBound) return;
+        chartTooltipBound = true;
+        document.addEventListener("mousemove", (event) => {
+          const tooltip = document.querySelector("#chartTooltip");
+          if (!tooltip) return;
+          const point = event.target.closest(".chart-point");
+          if (!point) { tooltip.style.display = "none"; return; }
+          tooltip.innerHTML = point.dataset.tooltip || "";
+          tooltip.style.display = "block";
+          const margin = 14;
+          const maxLeft = window.innerWidth - tooltip.offsetWidth - margin;
+          const maxTop = window.innerHeight - tooltip.offsetHeight - margin;
+          tooltip.style.left = `${Math.min(event.clientX + margin, Math.max(margin, maxLeft))}px`;
+          tooltip.style.top = `${Math.min(event.clientY + margin, Math.max(margin, maxTop))}px`;
+        });
+        document.addEventListener("mouseout", (event) => {
+          if (!event.target.closest(".chart-point")) return;
+          const tooltip = document.querySelector("#chartTooltip");
+          if (tooltip && !event.relatedTarget?.closest(".chart-point")) tooltip.style.display = "none";
+        });
+      }
+      bindChartTooltip();
 
       function topBottomPostsHtml(rows, formato, title) {
         const posts = rows.filter((r) => r.formato === formato && !String(r.post_id || "").startsWith("page-summary:"));
         if (!posts.length) return "";
         const ranked = [...posts].sort((a, b) => num(b.engajamento) - num(a.engajamento) || num(b.alcance) - num(a.alcance));
-        const top = ranked.slice(0, 5);
-        const bottom = ranked.length > 5 ? [...ranked].reverse().slice(0, 5) : [];
+        const top = ranked.slice(0, 10);
 
-        const placeholderImg = `<span class="material-symbols-outlined" style="width:44px;height:44px;border-radius:6px;background:#f1f5f9;color:#94a3b8;display:flex;align-items:center;justify-content:center;flex:none">image</span>`;
-        // O CDN da Meta as vezes recusa carregar a imagem fora do dominio deles (hotlink); o
-        // onerror troca pelo placeholder em vez de deixar o icone de imagem quebrada do navegador.
-        const thumb = (r) => r.imagem_url
-          ? `<img src="${escapeHtml(r.imagem_url)}" alt="" loading="lazy" referrerpolicy="no-referrer" style="width:44px;height:44px;border-radius:6px;object-fit:cover;flex:none;background:#e2e8f0" onerror="this.outerHTML='${placeholderImg.replaceAll("'", "\\'")}'">`
-          : placeholderImg;
+        const topId = `tbl-top-${formato}`;
+        postTableCache.set(topId, top);
+        const topSorted = tableSortState[topId] ? sortPosts(top, tableSortState[topId].column, tableSortState[topId].direction) : top;
 
-        const rowsHtml = (list, emptyMsg) => list.length
-          ? list.map((r) => `<tr>
-              <td><div style="display:flex;align-items:center;gap:10px">${thumb(r)}${r.post_url ? `<a href="${escapeHtml(r.post_url)}" target="_blank" rel="noreferrer">${escapeHtml(textSnippet(r.tema || "Conteudo", 50))}</a>` : `<span>${escapeHtml(textSnippet(r.tema || "Conteudo", 50))}</span>`}</div></td>
-              <td>${escapeHtml(formatDateOnly(r.data_publicacao))}</td>
-              <td>${fmt.format(num(r.alcance))}</td>
-              <td>${fmt.format(num(r.engajamento))}</td>
-            </tr>`).join("")
-          : `<tr><td colspan="4">${emptyMsg}</td></tr>`;
-
-        return `<div class="grid cols">
-          <section class="card">
-            <h3>Top 5 - ${escapeHtml(title)}</h3>
-            <div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>Post</th><th>Publicado</th><th>Alcance</th><th>Engajamento</th></tr></thead><tbody>${rowsHtml(top, "Sem posts suficientes.")}</tbody></table></div>
-          </section>
-          <section class="card">
-            <h3>5 que menos renderam - ${escapeHtml(title)}</h3>
-            <div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>Post</th><th>Publicado</th><th>Alcance</th><th>Engajamento</th></tr></thead><tbody>${rowsHtml(bottom, "Poucos posts para comparar.")}</tbody></table></div>
-          </section>
-        </div>
+        return `<section class="card">
+          <h3>Top 10 - ${escapeHtml(title)}</h3>
+          ${rankingSectionHtml(topId, topSorted, "Sem posts suficientes.")}
+        </section>
         ${interactionBreakdownHtml(posts, title)}`;
       }
 
@@ -1638,7 +2129,9 @@
         const tabs = [
           ["geral", "Visão Geral"],
           ["instagram", `${instagramIcon(16)} <span>Instagram</span>`],
-          ["facebook", `${facebookIcon(16)} <span>Facebook</span>`]
+          ["facebook", `${facebookIcon(16)} <span>Facebook</span>`],
+          ["horarios", `<span class="material-symbols-outlined" style="font-size:16px">schedule</span> <span>Melhores Horários</span>`],
+          ["comparativo", `<span class="material-symbols-outlined" style="font-size:16px">difference</span> <span>Comparativo</span>`]
         ];
         return `<div class="segmented">${tabs.map(([key, label]) => `<button type="button" class="social-tab ${active === key ? "active" : ""}" data-tab="${key}" style="display:inline-flex;align-items:center;gap:6px">${label}</button>`).join("")}</div>`;
       }
@@ -1649,6 +2142,8 @@
             state.socialTab = button.dataset.tab;
             if (state.socialTab === "instagram") renderSocialFormatPage("Instagram");
             else if (state.socialTab === "facebook") renderSocialFormatPage("Facebook");
+            else if (state.socialTab === "horarios") renderBestTimesPage();
+            else if (state.socialTab === "comparativo") renderComparativo();
             else renderSocialBI();
           };
         });
@@ -1897,10 +2392,9 @@
           ${data.fallback && rows.length ? `<div class="alert success">Dados carregados da tabela <code>stage_social_format_metrics</code>. ${hasDetailedSocialMetrics(rows, rede) ? "Métricas detalhadas disponíveis para a rede." : "Posts capturados, mas a Meta ainda não liberou métricas detalhadas para esses conteúdos."}</div>` : ""}
           ${rows.length ? "" : `<div class="alert">Ainda não há métricas granulares de ${rede}. Confirme a página correta em <strong>Conexões</strong> e clique em <strong>Sincronizar confirmadas</strong>.</div>`}
           ${isInstagram ? instagramSummaryHtml(totals) : facebookSummaryHtml(totals)}
-          ${followerEvolutionSectionHtml(followerSeriesPorMarca, `Seguidores ${title}`)}
+          ${followerEvolutionSectionHtml(followerSeriesPorMarca, `Seguidores ${title}`, rows, rede)}
           ${topBottomPostsHtml(rows, reelsFormato, "Reels")}
           ${topBottomPostsHtml(rows, feedFormato, "Feed")}
-          ${isInstagram ? instagramSectionsHtml(rows) : facebookSectionsHtml(rows)}
           <section class="card">
             <h3>Insights e próximos passos</h3>
             <div class="insight-grid">
@@ -1918,9 +2412,151 @@
         document.querySelector("#refresh").onclick = () => renderSocialFormatPage(rede);
       }
 
+      // Melhores Horarios: diferente do mLabs (que usa benchmark de mercado por categoria),
+      // aqui o calculo e 100% derivado do historico de posts ja publicados pela propria marca -
+      // usamos a media de engajamento por dia da semana + hora de publicacao.
+      const DIAS_SEMANA_ORDEM = [1, 2, 3, 4, 5, 6, 0];
+      const DIAS_SEMANA_LABEL = { 0: "Domingo", 1: "Segunda-feira", 2: "Terça-feira", 3: "Quarta-feira", 4: "Quinta-feira", 5: "Sexta-feira", 6: "Sábado" };
+
+      async function loadBestTimesBI() {
+        const rows = await fetchAllRows(
+          "stage_social_format_metrics",
+          "marca,rede_social,data_publicacao,engajamento,curtidas,comentarios,compartilhamentos,salvamentos,post_id",
+          state.marca,
+          null
+        );
+        const semSummary = rows.filter((r) => r.data_publicacao && !String(r.post_id || "").startsWith("page-summary:"));
+        state.bestTimes = {
+          Instagram: semSummary.filter((r) => r.rede_social === "Instagram"),
+          Facebook: semSummary.filter((r) => r.rede_social === "Facebook")
+        };
+      }
+
+      function engajamentoDoPost(r) {
+        const explicito = num(r.engajamento);
+        if (explicito) return explicito;
+        return num(r.curtidas) + num(r.comentarios) + num(r.compartilhamentos) + num(r.salvamentos);
+      }
+
+      function formatHora(hora) {
+        return `${String(hora).padStart(2, "0")}:00`;
+      }
+
+      function computeBestTimes(posts) {
+        const buckets = {};
+        posts.forEach((r) => {
+          const data = new Date(r.data_publicacao);
+          if (Number.isNaN(data.getTime())) return;
+          const dia = data.getDay();
+          const hora = data.getHours();
+          buckets[dia] ??= {};
+          buckets[dia][hora] ??= { soma: 0, n: 0 };
+          buckets[dia][hora].soma += engajamentoDoPost(r);
+          buckets[dia][hora].n += 1;
+        });
+
+        return DIAS_SEMANA_ORDEM.map((dia) => {
+          const horas = buckets[dia] || {};
+          const entradas = Object.entries(horas).map(([hora, v]) => ({
+            hora: Number(hora),
+            media: v.n ? v.soma / v.n : 0,
+            n: v.n
+          }));
+          const totalPosts = entradas.reduce((s, e) => s + e.n, 0);
+          const ranking = [...entradas].sort((a, b) => b.media - a.media);
+          const melhores = ranking.slice(0, 2);
+          const evitar = entradas.length > 2 ? [...ranking].reverse().slice(0, entradas.length > 4 ? 2 : 1) : [];
+          return { dia, label: DIAS_SEMANA_LABEL[dia], totalPosts, melhores, evitar };
+        });
+      }
+
+      function bestTimesTableHtml(dias, rede, icon) {
+        const linha = (d) => `<tr>
+          <td><strong>${d.label}</strong></td>
+          <td>${d.melhores.length ? `<span style="color:#1baf7a;font-weight:600">${d.melhores.map((h) => formatHora(h.hora)).join(" e ")}</span>` : `<span class="muted">Amostra insuficiente</span>`}</td>
+          <td>${d.evitar.length ? `<span style="color:#c0392b">${d.evitar.map((h) => formatHora(h.hora)).join(", ")}</span>` : `<span class="muted">-</span>`}</td>
+          <td class="muted">${fmt.format(d.totalPosts)}</td>
+        </tr>`;
+
+        return `<section class="card">
+          <h3 style="display:flex;align-items:center;gap:8px">${icon} ${escapeHtml(rede)}</h3>
+          <p class="muted" style="margin-top:-6px">Baseado na média de engajamento dos posts já publicados em cada dia/horário. Dias com poucos posts mostram menos sugestões - quanto maior o histórico sincronizado, mais confiável.</p>
+          <div class="table-wrap" style="margin-top:12px">
+            <table>
+              <thead><tr><th>Dia</th><th>Seus melhores horários</th><th>Horários para evitar</th><th>Posts analisados</th></tr></thead>
+              <tbody>${dias.map(linha).join("")}</tbody>
+            </table>
+          </div>
+        </section>`;
+      }
+
+      async function renderBestTimesPage() {
+        const content = document.querySelector("#content");
+        content.innerHTML = `<div class="alert">Carregando histórico de publicações...</div>`;
+
+        if (state.marca === "Todas") {
+          content.innerHTML = `
+            <div class="page-head">
+              <div><div class="eyebrow">Seu histórico</div><h2 style="display:flex;align-items:center;gap:10px"><span class="material-symbols-outlined">schedule</span> Melhores Horários</h2><p class="muted">Selecione uma marca para ver os horários com melhor desempenho.</p></div>
+              <div class="filters">${marcaPillsHtml()}<button id="refresh" style="border-radius:999px">Atualizar</button></div>
+            </div>
+            ${socialTabsHtml("horarios")}
+            <section class="card"><p class="muted" style="margin:0">Escolha uma marca no filtro acima - o cálculo usa o histórico de posts dessa marca no Instagram e no Facebook.</p></section>`;
+          wireMarcaPills(() => renderBestTimesPage());
+          wireSocialTabs();
+          document.querySelector("#refresh").onclick = () => renderBestTimesPage();
+          return;
+        }
+
+        try {
+          await loadBestTimesBI();
+        } catch (error) {
+          content.innerHTML = `<div class="alert error">${error.message}</div>`;
+          return;
+        }
+
+        const redes = [
+          ["Instagram", instagramIcon(20)],
+          ["Facebook", facebookIcon(20)]
+        ].map(([rede, icon]) => {
+          const posts = state.bestTimes?.[rede] || [];
+          const datas = posts.map((r) => r.data_publicacao).filter(Boolean).sort();
+          return {
+            rede,
+            icon,
+            posts,
+            dias: computeBestTimes(posts),
+            totalPosts: posts.length,
+            desde: datas.length ? formatDateOnly(datas[0]) : "-",
+            ate: datas.length ? formatDateOnly(datas.at(-1)) : "-"
+          };
+        });
+
+        content.innerHTML = `
+          <div class="page-head">
+            <div><div class="eyebrow">Seu histórico</div><h2 style="display:flex;align-items:center;gap:10px"><span class="material-symbols-outlined">schedule</span> Melhores Horários</h2><p class="muted">Baseado no engajamento médio dos posts já publicados, não em benchmark de mercado.</p></div>
+            <div class="filters">
+              ${marcaPillsHtml()}
+              <button id="refresh" style="border-radius:999px">Atualizar</button>
+            </div>
+          </div>
+          ${socialTabsHtml("horarios")}
+          ${redes.map((r) => r.totalPosts
+            ? `<div class="alert success">${fmt.format(r.totalPosts)} posts de ${r.rede} analisados, de ${r.desde} até ${r.ate}.</div>`
+            : `<div class="alert">Ainda não há posts de ${r.rede} suficientes para ${escapeHtml(state.marca)}. Sincronize em <strong>Conexões</strong> e volte aqui.</div>`).join("")}
+          ${redes.map((r) => r.totalPosts ? bestTimesTableHtml(r.dias, r.rede, r.icon) : "").join("")}
+        `;
+
+        wireMarcaPills(() => renderBestTimesPage());
+        wireSocialTabs();
+        document.querySelector("#refresh").onclick = () => renderBestTimesPage();
+      }
+
       function instagramTotals(rows) {
         return {
           registros: rows.reduce((s, r) => s + num(r.total_registros), 0),
+          alcance: rows.reduce((s, r) => s + num(r.alcance), 0),
+          impressoes: rows.reduce((s, r) => s + num(r.impressoes), 0),
           views: rows.reduce((s, r) => s + num(r.total_visualizacoes), 0),
           watchTime: avg(rows.map((r) => num(r.tempo_medio_visualizacao)).filter(Boolean)),
           skipRate: avg(rows.map((r) => num(r.taxa_rejeicao_inicial)).filter(Boolean)),
@@ -1938,6 +2574,8 @@
       function facebookTotals(rows) {
         return {
           registros: rows.reduce((s, r) => s + num(r.total_registros), 0),
+          alcance: rows.reduce((s, r) => s + num(r.alcance), 0),
+          impressoes: rows.reduce((s, r) => s + num(r.impressoes), 0),
           mediaViews: rows.reduce((s, r) => s + num(r.visualizacoes_unicas_midia), 0),
           retention: avg(rows.map((r) => num(r.retencao_qualificada_5s)).filter(Boolean)),
           publicShares: rows.reduce((s, r) => s + num(r.compartilhamentos_publicos_timeline), 0),
@@ -1950,9 +2588,12 @@
       }
 
       function instagramSummaryHtml(t) {
+        const frequencia = t.alcance ? t.impressoes / t.alcance : 0;
         return `<div class="grid kpis">
           ${kpi("Registros", fmt.format(t.registros), "dataset")}
           ${kpi("Views Reels", fmt.format(t.views), "play_circle")}
+          ${kpi("Frequência média", frequencia.toFixed(2).replace(".", ","), "repeat")}
+          ${kpi("Cliques no Link/Perfil", fmt.format(t.linkClicks), "ads_click")}
           ${kpi("Tempo medio", `${t.watchTime.toFixed(1).replace(".", ",")}s`, "timer")}
           ${kpi("Skip rate 3s", `${t.skipRate.toFixed(1).replace(".", ",")}%`, "move_selection_left")}
           ${kpi("Assistiu ate o fim", `${t.completion.toFixed(1).replace(".", ",")}%`, "task_alt")}
@@ -1965,49 +2606,18 @@
       }
 
       function facebookSummaryHtml(t) {
+        const frequencia = t.alcance ? t.impressoes / t.alcance : 0;
         return `<div class="grid kpis">
           ${kpi("Registros", fmt.format(t.registros), "dataset")}
           ${kpi("Views unicas", fmt.format(t.mediaViews), "play_circle")}
+          ${kpi("Frequência média", frequencia.toFixed(2).replace(".", ","), "repeat")}
+          ${kpi("Cliques no Link/Perfil", fmt.format(t.linkClicks), "ads_click")}
           ${kpi("Retencao 5s", `${t.retention.toFixed(1).replace(".", ",")}%`, "timer")}
           ${kpi("Shares timeline", fmt.format(t.publicShares), "share")}
-          ${kpi("Cliques link", fmt.format(t.linkClicks), "link")}
           ${kpi("Ver mais", fmt.format(t.seeMore), "read_more")}
           ${kpi("Shares grupos", fmt.format(t.groupShares), "groups")}
           ${kpi("Resposta comentarios", `${t.responseHours.toFixed(1).replace(".", ",")}h`, "forum")}
         </div>`;
-      }
-
-      function instagramSectionsHtml(rows) {
-        return `
-          ${socialFormatSection("Reels", "Foco: descoberta e retencao", rows.filter((r) => r.formato === "instagram_reels"), ["marca", "conta_nome", "tema", "data_publicacao", "post_url", "alcance", "engajamento", "total_visualizacoes", "tempo_medio_visualizacao", "taxa_rejeicao_inicial", "percentual_assistido_final", "alcance_nao_seguidores_pct", "compartilhamentos", "salvamentos", "visitas_perfil", "seguidores_conquistados", "insight_social"])}
-          ${socialFormatSection("Stories", "Foco: relacionamento e conversao", rows.filter((r) => r.formato === "instagram_stories"), ["marca", "conta_nome", "tema", "data_publicacao", "post_url", "media_visualizacoes_unicas_story", "taxa_retencao_diaria", "melhor_sticker_interacoes", "melhor_sticker_tema", "respostas_dm", "cliques_sticker_link", "insight_social"])}
-          ${socialFormatSection("Feed: carrosseis e imagens", "Foco: autoridade e consideracao", rows.filter((r) => r.formato === "instagram_feed"), ["marca", "conta_nome", "tema", "data_publicacao", "post_url", "alcance", "engajamento", "salvamentos", "alcance_segunda_visualizacao", "comentarios_qualificados", "taxa_compartilhamento_feed", "visitas_perfil", "seguidores_conquistados", "insight_social"])}`;
-      }
-
-      function facebookSectionsHtml(rows) {
-        return `
-          ${socialFormatSection("Facebook Reels", "Foco: distribuicao aberta", rows.filter((r) => r.formato === "facebook_reels"), ["marca", "conta_nome", "tema", "data_publicacao", "post_url", "alcance", "engajamento", "visualizacoes_unicas_midia", "retencao_qualificada_5s", "compartilhamentos_publicos_timeline", "insight_social"])}
-          ${socialFormatSection("Feed: imagens, links e textos", "Foco: comunidade e trafego externo", rows.filter((r) => r.formato === "facebook_feed"), ["marca", "conta_nome", "tema", "data_publicacao", "post_url", "alcance", "engajamento", "cliques_link", "cliques_ver_mais", "compartilhamentos_grupos", "tempo_resposta_comentarios_horas", "insight_social"])}
-          ${socialFormatSection("Stories do Facebook", "Foco: lembranca de marca", rows.filter((r) => r.formato === "facebook_stories"), ["marca", "conta_nome", "tema", "data_publicacao", "post_url", "visualizacoes_unicas", "toques_avancar", "toques_voltar", "insight_social"])}`;
-      }
-
-      function socialFormatSection(title, subtitle, rows, fields) {
-        const labels = {
-          marca: "Marca", conta_nome: "Conta", data_publicacao: "Publicado", post_url: "Post", alcance: "Alcance", engajamento: "Engajamento", objetivo: "Objetivo", tema: "Tema", total_visualizacoes: "Views", tempo_medio_visualizacao: "Tempo medio", taxa_rejeicao_inicial: "Skip 3s", percentual_assistido_final: "Ate o fim", alcance_nao_seguidores_pct: "Nao seguidores", compartilhamentos: "Shares", salvamentos: "Saves", media_visualizacoes_unicas_story: "Views/story", taxa_retencao_diaria: "Retencao", melhor_sticker_interacoes: "Sticker", melhor_sticker_tema: "Tema sticker", respostas_dm: "DMs", cliques_sticker_link: "Cliques link", alcance_segunda_visualizacao: "2a exibicao", comentarios_qualificados: "Comentarios", taxa_compartilhamento_feed: "Share rate", visualizacoes_unicas_midia: "Views unicas", retencao_qualificada_5s: "Retencao 5s", compartilhamentos_publicos_timeline: "Shares timeline", cliques_link: "Cliques link", cliques_ver_mais: "Ver mais", compartilhamentos_grupos: "Shares grupos", tempo_resposta_comentarios_horas: "Resposta h", visualizacoes_unicas: "Views unicas", toques_avancar: "Avancar", toques_voltar: "Voltar", insight_social: "Insight", visitas_perfil: "Visitas perfil", seguidores_conquistados: "Novos seguidores"
-        };
-        return `<section class="card"><h3>${title}</h3><p class="muted">${subtitle}</p><div class="table-wrap" style="margin-top:16px"><table><thead><tr>${fields.map((field) => `<th>${labels[field] || field}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${fields.map((field) => `<td>${socialCell(row, field)}</td>`).join("")}</tr>`).join("") || `<tr><td colspan="${fields.length}">Sem dados para este formato.</td></tr>`}</tbody></table></div></section>`;
-      }
-
-      function socialCell(row, field) {
-        const value = row[field];
-        if (value === null || value === undefined || value === "") return "-";
-        if (field === "post_url") return `<a href="${escapeHtml(value)}" target="_blank" rel="noreferrer">Abrir</a>`;
-        if (/data_publicacao|ultima_referencia/.test(field)) return escapeHtml(formatDateTime(value));
-        if (/taxa|percentual|pct|retencao/.test(field)) return `${num(value).toFixed(1).replace(".", ",")}%`;
-        if (/tempo_medio/.test(field)) return `${num(value).toFixed(1).replace(".", ",")}s`;
-        if (/tempo_resposta/.test(field)) return `${num(value).toFixed(1).replace(".", ",")}h`;
-        if (typeof value === "number" || /^\d+(\.\d+)?$/.test(String(value))) return fmt.format(num(value));
-        return escapeHtml(value);
       }
 
       function hasDetailedSocialMetrics(rows, rede) {
@@ -2102,40 +2712,94 @@
         return actions;
       }
 
-      function buildExecutiveInsights(rows, ranking) {
-        if (!rows.length) return ["Sem dados sincronizados ainda para gerar leitura executiva."];
+      // Guarda a linha completa por trás de cada pill "Forte"/"Atencao" clicavel, para o modal de
+      // Raio-X abrir sem precisar re-buscar dados - so os dois diagnosticos acionaveis viram botao,
+      // "Saudavel"/"Sem dados" continuam so informativos.
+      const diagnosticoRowCache = new Map();
+      let diagnosticoModalSeq = 0;
 
-        const insights = [];
-        const comAlcance = rows.filter((r) => num(r.alcance_facebook) + num(r.alcance_instagram) > 0);
-
-        if (comAlcance.length >= 2) {
-          const ordenado = [...comAlcance].sort((a, b) => num(b.taxa_engajamento) - num(a.taxa_engajamento));
-          const melhor = ordenado[0];
-          const pior = ordenado[ordenado.length - 1];
-          if (melhor.marca !== pior.marca) {
-            insights.push(`Comparar ${melhor.marca} (${num(melhor.taxa_engajamento).toFixed(2).replace(".", ",")}% de engajamento) com ${pior.marca} (${num(pior.taxa_engajamento).toFixed(2).replace(".", ",")}%) antes de aumentar a frequência de posts na segunda.`);
-          }
-        }
-
-        const semPostDestaque = ranking.filter((r) => !r.post_destaque_semana_url).length;
-        if (semPostDestaque > 0) {
-          insights.push(`Adicionar URL do post destaque em ${semPostDestaque} registro(s) para habilitar leitura editorial completa.`);
-        }
-
-        const atencao = ranking.find((r) => r.diagnostico_conteudo === "Atenção");
-        if (atencao) {
-          const alcanceAtencao = num(atencao.alcance_facebook) + num(atencao.alcance_instagram);
-          insights.push(`Revisar conteúdo de ${atencao.marca} (${atencao.rede_social || "Meta"})${atencao.data_referencia ? ` em ${formatDateOnly(atencao.data_referencia)}` : ""}: engajamento de ${fmt.format(num(atencao.engajamento_total))} frente a alcance de ${fmt.format(alcanceAtencao)} — abaixo da média da marca.`);
-        }
-
-        if (!insights.length) insights.push("Sem sinais de alerta pelas regras atuais nos dados sincronizados — manter cadencia.");
-        return insights;
-      }
-
-      function diagnosticoPill(value) {
+      function diagnosticoPill(row) {
+        const value = row?.diagnostico_conteudo;
         const classe = value === "Forte" || value === "Saudável" ? "active" : value === "Atenção" ? "inactive" : "";
-        return `<span class="status-pill ${classe}" style="${classe ? "" : "background:#f1f5f9;color:#64748b"}">${escapeHtml(value || "-")}</span>`;
+        const clicavel = row && (value === "Forte" || value === "Atenção");
+        if (!clicavel) {
+          return `<span class="status-pill ${classe}" style="${classe ? "" : "background:#f1f5f9;color:#64748b"}">${escapeHtml(value || "-")}</span>`;
+        }
+        const id = `diag-${diagnosticoModalSeq++}`;
+        diagnosticoRowCache.set(id, row);
+        return `<button type="button" class="status-pill diag-trigger ${classe}" data-diag-id="${id}">${escapeHtml(value)}<span class="material-symbols-outlined" style="font-size:14px;vertical-align:-2px;margin-left:2px">open_in_new</span></button>`;
       }
+
+      function diagnosticoModalPanelHtml(row) {
+        const marca = row.marca || "-";
+        const rede = row.rede_social || "-";
+        const data = formatDateOnly(row.data_referencia);
+        const titulo = escapeHtml(textSnippet(row.tema || "Conteúdo", 90));
+        const positivo = row.diagnostico_conteudo === "Forte";
+
+        const mediaMarca = num((state.social?.resumo || []).find((r) => r.marca === row.marca)?.taxa_engajamento);
+        const taxaPost = num(row.taxa_engajamento);
+        const deltaPct = mediaMarca ? ((taxaPost - mediaMarca) / mediaMarca) * 100 : 0;
+        const deltaTexto = mediaMarca
+          ? `Engajamento ${deltaPct >= 0 ? `${Math.abs(deltaPct).toFixed(0)}% acima` : `${Math.abs(deltaPct).toFixed(0)}% abaixo`} da média de ${escapeHtml(marca)} (${taxaPost.toFixed(2).replace(".", ",")}% vs. média de ${mediaMarca.toFixed(2).replace(".", ",")}%).`
+          : `Taxa de engajamento deste post: ${taxaPost.toFixed(2).replace(".", ",")}%. Sem média histórica suficiente da marca para comparar.`;
+
+        return `<div class="modal-panel">
+          <div class="modal-header">
+            <div>
+              <p style="margin:0 0 4px;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Raio-X do post</p>
+              <h3 style="margin:0 0 6px;font-size:17px">${titulo}</h3>
+              <p style="margin:0;font-size:13px;color:#64748b">${escapeHtml(marca)} · ${escapeHtml(rede)} · ${escapeHtml(data)}</p>
+            </div>
+            <button type="button" class="modal-close" id="diagnosticoModalClose"><span class="material-symbols-outlined">close</span></button>
+          </div>
+          <div class="modal-body">
+            <div class="modal-block ${positivo ? "positive" : "negative"}">
+              <h4 style="margin:0 0 6px;font-size:13px;color:${positivo ? "#166534" : "#991b1b"}">O que ${positivo ? "funcionou" : "não funcionou"}</h4>
+              <p style="margin:0;font-size:14px;color:#1f2937">${deltaTexto}</p>
+            </div>
+            <div class="modal-block neutral">
+              <h4 style="margin:0 0 6px;font-size:13px;color:#1d4ed8">Ações recomendadas</h4>
+              <p style="margin:0;font-size:14px;color:#1f2937">${escapeHtml(row.recomendacao_conteudo || "Sem recomendação registrada.")}</p>
+            </div>
+            ${row.post_destaque_semana_url
+              ? `<a href="${escapeHtml(row.post_destaque_semana_url)}" target="_blank" rel="noreferrer" style="display:inline-flex;align-items:center;gap:6px;font-weight:700;color:var(--accent);text-decoration:none">Ver post original <span class="material-symbols-outlined" style="font-size:18px">open_in_new</span></a>`
+              : `<p class="muted" style="margin:0">Post original não disponível.</p>`}
+          </div>
+        </div>`;
+      }
+
+      function closeDiagnosticoModal() {
+        const overlay = document.querySelector("#diagnosticoModal");
+        if (overlay) { overlay.hidden = true; overlay.innerHTML = ""; }
+      }
+
+      function openDiagnosticoModal(row) {
+        const overlay = document.querySelector("#diagnosticoModal");
+        if (!overlay) return;
+        overlay.innerHTML = diagnosticoModalPanelHtml(row);
+        overlay.hidden = false;
+        document.querySelector("#diagnosticoModalClose").onclick = closeDiagnosticoModal;
+      }
+
+      let diagnosticoModalBound = false;
+      function bindDiagnosticoModal() {
+        if (diagnosticoModalBound) return;
+        diagnosticoModalBound = true;
+        document.addEventListener("click", (event) => {
+          const trigger = event.target.closest(".diag-trigger");
+          if (trigger) {
+            const row = diagnosticoRowCache.get(trigger.dataset.diagId);
+            if (row) openDiagnosticoModal(row);
+            return;
+          }
+          if (event.target.id === "diagnosticoModal") closeDiagnosticoModal();
+        });
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape") closeDiagnosticoModal();
+        });
+      }
+      bindDiagnosticoModal();
 
       function redeIconSmall(rede) {
         return rede === "Instagram" ? instagramIcon(16) : rede === "Facebook" ? facebookIcon(16) : "-";
@@ -2158,6 +2822,7 @@
 
         const social = state.social || { resumo: [], periodos: [], ranking: [] };
         const rows = social.resumo || [];
+        const periodos = social.periodos || [];
         const ranking = social.ranking || [];
         const totals = rows.reduce((acc, row) => ({
           total_periodos: acc.total_periodos + num(row.total_periodos),
@@ -2168,8 +2833,56 @@
           alcance_instagram: acc.alcance_instagram + num(row.alcance_instagram),
           engajamento_instagram: acc.engajamento_instagram + num(row.engajamento_instagram)
         }), { total_periodos: 0, seguidores_instagram: 0, seguidores_facebook: 0, alcance_facebook: 0, engajamento_facebook: 0, alcance_instagram: 0, engajamento_instagram: 0 });
-        totals.taxa_facebook = totals.alcance_facebook ? (totals.engajamento_facebook / totals.alcance_facebook) * 100 : 0;
-        totals.taxa_instagram = totals.alcance_instagram ? (totals.engajamento_instagram / totals.alcance_instagram) * 100 : 0;
+
+        const comunidadeTotal = totals.seguidores_instagram + totals.seguidores_facebook;
+        const alcanceBrutoCombinado = totals.alcance_facebook + totals.alcance_instagram;
+        const engajamentoBrutoCombinado = totals.engajamento_facebook + totals.engajamento_instagram;
+        const engajamentoMedio = alcanceBrutoCombinado ? (engajamentoBrutoCombinado / alcanceBrutoCombinado) * 100 : 0;
+
+        // Comparativo com periodo anterior e "nice to have": se qualquer chamada falhar (rede,
+        // schema antigo sem data_publicacao, etc.) os KPIs continuam mostrando os totais atuais,
+        // so sem a variacao - por isso tudo isolado num try/catch que nunca derruba a pagina.
+        let alcanceDeltaPct = null, engajamentoDeltaPct = null, seguidoresDeltaAbs = null, postsDeltaAbs = null, score = null, scoreDelta = null;
+        let deltaAlcancePorMarca = {};
+        const prevRange = previousPeriodRange();
+        if (prevRange) {
+          try {
+            const [prevTotais, comunidade, prevPorMarca] = await Promise.all([
+              loadPeriodTotals(prevRange.from, prevRange.to, state.marca),
+              loadCommunityDelta(state.marca, fromDate(), toDate()),
+              Promise.all(Object.keys(CORES_MARCA).map((marca) => loadPeriodTotals(prevRange.from, prevRange.to, marca).then((t) => [marca, t])))
+            ]);
+            alcanceDeltaPct = prevTotais.alcance ? ((alcanceBrutoCombinado - prevTotais.alcance) / prevTotais.alcance) * 100 : null;
+            engajamentoDeltaPct = prevTotais.taxa ? engajamentoMedio - prevTotais.taxa : null;
+            postsDeltaAbs = totals.total_periodos - prevTotais.posts;
+            seguidoresDeltaAbs = comunidade.delta;
+            const comunidadeAnterior = comunidade.atual - comunidade.delta;
+            const seguidoresDeltaPct = comunidadeAnterior ? (comunidade.delta / comunidadeAnterior) * 100 : 0;
+            score = computeExecutiveScore({ taxaEngajamento: engajamentoMedio, alcanceDeltaPct: alcanceDeltaPct ?? 0, seguidoresDeltaPct });
+            prevPorMarca.forEach(([marca, t]) => {
+              const atualMarca = rows.find((r) => r.marca === marca);
+              const alcanceMarcaAtual = num(atualMarca?.alcance_facebook) + num(atualMarca?.alcance_instagram);
+              deltaAlcancePorMarca[marca] = t.alcance ? ((alcanceMarcaAtual - t.alcance) / t.alcance) * 100 : null;
+            });
+
+            // Score do periodo anterior, encadeando mais um "periodo antes desse" so pra ter algo
+            // pra comparar com ele mesmo - da o badge "+N pontos vs periodo anterior" do card Score.
+            const prevPrevRange = rangeBefore(prevRange.from, prevRange.to);
+            if (prevPrevRange) {
+              const [prevPrevTotais, prevComunidade] = await Promise.all([
+                loadPeriodTotals(prevPrevRange.from, prevPrevRange.to, state.marca),
+                loadCommunityDelta(state.marca, prevRange.from, prevRange.to)
+              ]);
+              const prevAlcanceDeltaPct = prevPrevTotais.alcance ? ((prevTotais.alcance - prevPrevTotais.alcance) / prevPrevTotais.alcance) * 100 : 0;
+              const prevComunidadeAnterior = prevComunidade.atual - prevComunidade.delta;
+              const prevSeguidoresDeltaPct = prevComunidadeAnterior ? (prevComunidade.delta / prevComunidadeAnterior) * 100 : 0;
+              const prevScore = computeExecutiveScore({ taxaEngajamento: prevTotais.taxa, alcanceDeltaPct: prevAlcanceDeltaPct, seguidoresDeltaPct: prevSeguidoresDeltaPct });
+              scoreDelta = score - prevScore;
+            }
+          } catch {
+            // silencioso - os KPIs caem para "sem periodo anterior para comparar"
+          }
+        }
 
         content.innerHTML = `
           <div class="page-head">
@@ -2182,54 +2895,60 @@
           </div>
           ${socialTabsHtml("geral")}
           ${social.fallback ? `<div class="alert ${social.usingMetaStage ? "success" : ""}">${social.usingMetaStage ? "Resumo montado com os registros sincronizados diretamente da Meta em <code>stage_social_format_metrics</code>." : "Usando base stage antiga como contingência."} ${social.fallbackReason ? `Detalhe técnico: <code>${escapeHtml(social.fallbackReason)}</code>` : ""}</div>` : ""}
-          <div class="grid kpis" style="grid-template-columns:repeat(2,minmax(0,1fr))">
-            ${kpi("Posts sincronizados", fmt.format(totals.total_periodos), "calendar_month")}
-            ${kpi("Diagnóstico do melhor post", ranking[0]?.diagnostico_conteudo || "-", "psychology")}
+
+          <div class="eyebrow" style="margin:18px 0 8px">Mês atual vs. mês anterior</div>
+          <div class="grid kpis" style="grid-template-columns:repeat(5,minmax(0,1fr))">
+            ${kpiWithDelta("Alcance", fmt.format(alcanceBrutoCombinado), "public", deltaLineHtml(alcanceDeltaPct))}
+            ${kpiWithDelta("Engajamento", `${engajamentoMedio.toFixed(2).replace(".", ",")}%`, "favorite", deltaLineHtml(engajamentoDeltaPct, { suffix: "p.p. vs. taxa anterior" }))}
+            ${kpiWithDelta("Seguidores", fmt.format(comunidadeTotal), "diversity_3", deltaLineAbsHtml(seguidoresDeltaAbs))}
+            ${kpiWithDelta("Posts", fmt.format(totals.total_periodos), "calendar_month", deltaLineAbsHtml(postsDeltaAbs, { suffix: "posts no período" }))}
+            ${kpiWithDelta("Score Geral", score === null ? "-" : `${score}/100`, "military_tech", scoreDelta === null
+              ? `<small class="muted" style="display:block;margin-top:4px">Engajamento 50% · alcance 30% · seguidores 20%</small>`
+              : `<small style="display:block;margin-top:4px;font-weight:700;color:${scoreDelta >= 0 ? "#16a34a" : "#dc2626"}">${scoreDelta >= 0 ? "+" : ""}${scoreDelta} ponto${Math.abs(scoreDelta) === 1 ? "" : "s"} vs. período anterior</small>`)}
           </div>
-          <section class="card">
-            <h3 style="display:flex;align-items:center;gap:8px">${facebookIcon(22)} Informações do Facebook</h3>
-            <div class="grid kpis" style="margin-top:14px">
-              ${kpi("Seguidores", fmt.format(totals.seguidores_facebook), "thumb_up")}
-              ${kpi("Alcance", fmt.format(totals.alcance_facebook), "sensors")}
-              ${kpi("Engajamento", fmt.format(totals.engajamento_facebook), "favorite")}
-              ${kpi("Taxa engajamento", `${totals.taxa_facebook.toFixed(2).replace(".", ",")}%`, "monitoring")}
-            </div>
-          </section>
-          <section class="card">
-            <h3 style="display:flex;align-items:center;gap:8px">${instagramIcon(22)} Informações do Instagram</h3>
-            <div class="grid kpis" style="margin-top:14px">
-              ${kpi("Seguidores", fmt.format(totals.seguidores_instagram), "group")}
-              ${kpi("Alcance", fmt.format(totals.alcance_instagram), "sensors")}
-              ${kpi("Engajamento", fmt.format(totals.engajamento_instagram), "favorite")}
-              ${kpi("Taxa engajamento", `${totals.taxa_instagram.toFixed(2).replace(".", ",")}%`, "monitoring")}
-            </div>
-          </section>
-          <section class="card">
+
+          <div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-top:18px">
+            ${socialCompareSectionHtml(rows)}
+            <section class="card">
+              <h3>Share of Performance</h3>
+              <p class="muted" style="margin:6px 0 14px">Participação de cada marca no alcance e no engajamento combinados do período.</p>
+              ${shareOfPerformanceHtml(rows)}
+            </section>
+          </div>
+
+          <div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-top:18px">
+            <section class="card">
+              <h3>🏆 Ranking das Marcas</h3>
+              <p class="muted" style="margin:6px 0 14px">Marcas ordenadas pela taxa de engajamento do período, com variação de alcance.</p>
+              ${brandPodiumHtml(rows, deltaAlcancePorMarca)}
+            </section>
+            <section class="card">
+              <h3>🤖 Insights IA</h3>
+              <p class="muted" style="margin:6px 0 14px">Melhor formato, melhor horário e alertas de frequência por marca, lidos direto dos dados do período.</p>
+              ${aiInsightsListHtml(generateAIInsights(rows, periodos, ranking))}
+            </section>
+          </div>
+
+          <section class="card" style="margin-top:18px">
             <h3>Resumo por marca</h3>
-            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Posts</th><th>Seg. Instagram</th><th>Seg. Facebook</th><th>Alcance FB</th><th>Engaj. FB</th><th>Alcance IG</th><th>Engaj. IG</th><th>Última referência</th></tr></thead><tbody>${rows.map((r) => `<tr><td>${r.marca}</td><td>${fmt.format(num(r.total_periodos))}</td><td>${fmt.format(num(r.seguidores_instagram))}</td><td>${fmt.format(num(r.seguidores_facebook))}</td><td>${fmt.format(num(r.alcance_facebook))}</td><td>${fmt.format(num(r.engajamento_facebook))}</td><td>${fmt.format(num(r.alcance_instagram))}</td><td>${fmt.format(num(r.engajamento_instagram))}</td><td>${r.ultima_referencia || "-"}</td></tr>`).join("") || `<tr><td colspan="9">Sem dados de Meta Business.</td></tr>`}</tbody></table></div>
+            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Posts</th><th>Seg. Instagram</th><th>Seg. Facebook</th><th>Alcance FB</th><th>Engaj. FB</th><th>Alcance IG</th><th>Engaj. IG</th><th>Última referência</th></tr></thead><tbody>${rows.map((r) => `<tr><td>${r.marca}</td><td>${fmt.format(num(r.total_periodos))}</td><td>${fmt.format(num(r.seguidores_instagram))}</td><td>${fmt.format(num(r.seguidores_facebook))}</td><td>${fmt.format(num(r.alcance_facebook))}</td><td>${fmt.format(num(r.engajamento_facebook))}</td><td>${fmt.format(num(r.alcance_instagram))}</td><td>${fmt.format(num(r.engajamento_instagram))}</td><td>${escapeHtml(formatDateTime(r.ultima_referencia))}</td></tr>`).join("") || `<tr><td colspan="9">Sem dados de Meta Business.</td></tr>`}</tbody></table></div>
           </section>
           <section class="card">
             <h3>Ranking de destaques</h3>
-            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Rede</th><th>Data</th><th>Alcance</th><th>Engajamento</th><th>Taxa</th><th>Diagnóstico</th><th>Post</th></tr></thead><tbody>${ranking.map((r) => `<tr><td>${r.marca}</td><td>${redeIconSmall(r.rede_social)}</td><td>${formatDateOnly(r.data_referencia)}</td><td>${fmt.format(num(r.alcance_facebook) + num(r.alcance_instagram))}</td><td>${fmt.format(num(r.engajamento_total))}</td><td>${num(r.taxa_engajamento).toFixed(2).replace(".", ",")}%</td><td>${diagnosticoPill(r.diagnostico_conteudo)}</td><td>${r.post_destaque_semana_url ? `<a href="${r.post_destaque_semana_url}" target="_blank" rel="noreferrer">Abrir</a>` : "-"}</td></tr>`).join("") || `<tr><td colspan="8">Sem ranking de conteúdo.</td></tr>`}</tbody></table></div>
+            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Rede</th><th>Data</th><th>Alcance</th><th>Engajamento</th><th>Taxa</th><th>Diagnóstico</th><th>Post</th></tr></thead><tbody>${ranking.map((r) => `<tr><td>${r.marca}</td><td>${redeIconSmall(r.rede_social)}</td><td>${formatDateOnly(r.data_referencia)}</td><td>${fmt.format(num(r.alcance_facebook) + num(r.alcance_instagram))}</td><td>${fmt.format(num(r.engajamento_total))}</td><td>${num(r.taxa_engajamento).toFixed(2).replace(".", ",")}%</td><td>${diagnosticoPill(r)}</td><td>${r.post_destaque_semana_url ? `<a href="${r.post_destaque_semana_url}" target="_blank" rel="noreferrer">Abrir</a>` : "-"}</td></tr>`).join("") || `<tr><td colspan="8">Sem ranking de conteúdo.</td></tr>`}</tbody></table></div>
           </section>
-          <div class="grid cols">
-            <section class="card">
-              <h3>Recomendações de conteúdo</h3>
-              <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Rede</th><th>Diagnóstico</th><th>Recomendação</th></tr></thead><tbody>${ranking.slice(0, 8).map((r) => `<tr><td>${r.marca}</td><td>${redeIconSmall(r.rede_social)}</td><td>${diagnosticoPill(r.diagnostico_conteudo)}</td><td>${r.recomendacao_conteudo || "-"}</td></tr>`).join("") || `<tr><td colspan="4">Sem recomendações.</td></tr>`}</tbody></table></div>
-            </section>
-            <section class="card">
-              <h3>Leitura executiva</h3>
-              <div class="insight-panel" style="margin-top:16px">
-                <h4>Prioridade</h4>
-                ${insightCardsHtml(buildExecutiveInsights(rows, ranking), "info", "lightbulb")}
-              </div>
-            </section>
-          </div>`;
+          <section class="card">
+            <h3>Recomendações de conteúdo</h3>
+            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Rede</th><th>Diagnóstico</th><th>Recomendação</th></tr></thead><tbody>${ranking.slice(0, 8).map((r) => `<tr><td>${r.marca}</td><td>${redeIconSmall(r.rede_social)}</td><td>${diagnosticoPill(r)}</td><td>${r.recomendacao_conteudo || "-"}</td></tr>`).join("") || `<tr><td colspan="4">Sem recomendações.</td></tr>`}</tbody></table></div>
+          </section>`;
 
         wireMarcaPills(renderSocialBI);
         wirePeriodoDropdown(renderSocialBI);
         wireSocialTabs();
         document.querySelector("#refresh").onclick = renderSocialBI;
+        document.querySelectorAll(".compare-metric-btn").forEach((button) => {
+          button.onclick = () => { state.socialCompareMetric = button.dataset.metric; renderSocialBI(); };
+        });
       }
 
       function escapeHtml(value) {
@@ -2302,22 +3021,66 @@
         return labels[objetivo] || objetivo || "-";
       }
 
+      function groupAdsByCampaign(rows) {
+        const byCampaign = new Map();
+        for (const row of rows) {
+          const key = `${row.marca}::${row.ad_account_id}::${row.campaign_id}`;
+          const existing = byCampaign.get(key);
+          if (!existing) {
+            byCampaign.set(key, {
+              marca: row.marca,
+              ad_account_id: row.ad_account_id,
+              campaign_id: row.campaign_id,
+              campaign_name: row.campaign_name,
+              objetivo: row.objetivo,
+              status: row.status,
+              data_referencia: row.data_referencia,
+              investimento: num(row.investimento),
+              impressoes: num(row.impressoes),
+              alcance: num(row.alcance),
+              cliques: num(row.cliques),
+              cliques_link: num(row.cliques_link)
+            });
+            continue;
+          }
+
+          existing.investimento += num(row.investimento);
+          existing.impressoes += num(row.impressoes);
+          existing.alcance += num(row.alcance);
+          existing.cliques += num(row.cliques);
+          existing.cliques_link += num(row.cliques_link);
+          if ((row.data_referencia || "") > (existing.data_referencia || "")) {
+            existing.campaign_name = row.campaign_name;
+            existing.objetivo = row.objetivo;
+            existing.status = row.status;
+            existing.data_referencia = row.data_referencia;
+          }
+        }
+
+        const grouped = Array.from(byCampaign.values());
+        for (const campaign of grouped) {
+          campaign.cpm = campaign.impressoes ? (campaign.investimento / campaign.impressoes) * 1000 : 0;
+          campaign.cpc = campaign.cliques ? campaign.investimento / campaign.cliques : 0;
+          campaign.ctr = campaign.impressoes ? (campaign.cliques / campaign.impressoes) * 100 : 0;
+        }
+        return grouped;
+      }
+
       async function renderMetaAds() {
         const content = document.querySelector("#content");
         content.innerHTML = `<div class="alert">Carregando campanhas de anúncios Meta...</div>`;
 
         let rows = [];
         try {
-          let query = supabase
-            .from("stage_meta_ads_metrics")
-            .select("marca,ad_account_id,campaign_id,campaign_name,objetivo,status,periodo_inicio,periodo_fim,investimento,impressoes,alcance,cliques,cliques_link,cpm,cpc,ctr,frequencia")
-            .order("investimento", { ascending: false });
-          if (state.marca !== "Todas") query = query.eq("marca", state.marca);
-          const { data, error } = await query;
-          if (error) throw error;
-          rows = data || [];
+          const dailyRows = await fetchAllRows(
+            "stage_meta_ads_metrics",
+            "marca,ad_account_id,campaign_id,campaign_name,objetivo,status,data_referencia,investimento,impressoes,alcance,cliques,cliques_link",
+            state.marca,
+            "data_referencia"
+          );
+          rows = groupAdsByCampaign(dailyRows).sort((a, b) => b.investimento - a.investimento);
         } catch (error) {
-          content.innerHTML = `<div class="alert error">${escapeHtml(error.message)}<br><br>Aplique as migrations <code>supabase/migrations/20260803_013_meta_ads_integration.sql</code> e <code>20260803_014_meta_ads_public_view.sql</code>.</div>`;
+          content.innerHTML = `<div class="alert error">${escapeHtml(error.message)}<br><br>Aplique as migrations <code>supabase/migrations/20260803_013_meta_ads_integration.sql</code>, <code>20260803_014_meta_ads_public_view.sql</code> e <code>20260805_017_meta_ads_daily_history.sql</code>.</div>`;
           return;
         }
 
@@ -2335,9 +3098,10 @@
 
         content.innerHTML = `
           <div class="page-head">
-            <div><div class="eyebrow">Meta Ads</div><h2>Anúncios</h2><p class="muted">Investimento, alcance e performance de campanhas — últimos 30 dias, atualizado a cada sincronização.</p></div>
+            <div><div class="eyebrow">Meta Ads</div><h2>Anúncios</h2><p class="muted">Investimento, alcance e performance de campanhas no período selecionado.</p></div>
             <div class="filters">
               ${marcaPillsHtml()}
+              ${periodoDropdownHtml()}
               <button id="refresh">Atualizar</button>
             </div>
           </div>
@@ -2380,7 +3144,190 @@
           </section>`;
 
         wireMarcaPills(renderMetaAds);
+        wirePeriodoDropdown(renderMetaAds);
         document.querySelector("#refresh").onclick = renderMetaAds;
+      }
+
+      function summarizeSocialRows(rows) {
+        const acc = { alcanceInstagram: 0, alcanceFacebook: 0, engajamentoInstagram: 0, engajamentoFacebook: 0, visualizacoes: 0, cliquesLink: 0, posts: rows.length };
+        for (const row of rows) {
+          const alcance = num(row.alcance);
+          const engajamento = num(row.engajamento) || (num(row.curtidas) + num(row.comentarios) + num(row.compartilhamentos) + num(row.salvos));
+          const visualizacoes = num(row.total_visualizacoes) || num(row.visualizacoes);
+          const cliquesLink = num(row.cliques_link) + num(row.cliques_sticker_link);
+
+          if (row.rede_social === "Instagram") {
+            acc.alcanceInstagram += alcance;
+            acc.engajamentoInstagram += engajamento;
+          } else if (row.rede_social === "Facebook") {
+            acc.alcanceFacebook += alcance;
+            acc.engajamentoFacebook += engajamento;
+          }
+          acc.visualizacoes += visualizacoes;
+          acc.cliquesLink += cliquesLink;
+        }
+
+        acc.alcanceTotal = acc.alcanceInstagram + acc.alcanceFacebook;
+        acc.engajamentoTotal = acc.engajamentoInstagram + acc.engajamentoFacebook;
+        return acc;
+      }
+
+      function summarizeFollowerRows(rows) {
+        const sorted = [...rows].sort((a, b) => String(a.data_referencia || "").localeCompare(String(b.data_referencia || "")));
+        const first = sorted[0] || null;
+        const last = sorted[sorted.length - 1] || null;
+        const seguidoresInstagram = last ? num(last.seguidores_instagram) : 0;
+        const seguidoresFacebook = last ? num(last.seguidores_facebook) : 0;
+        const crescimentoInstagram = first && last ? num(last.seguidores_instagram) - num(first.seguidores_instagram) : 0;
+        const crescimentoFacebook = first && last ? num(last.seguidores_facebook) - num(first.seguidores_facebook) : 0;
+
+        return {
+          seguidoresInstagram,
+          seguidoresFacebook,
+          seguidoresTotal: seguidoresInstagram + seguidoresFacebook,
+          crescimentoInstagram,
+          crescimentoFacebook,
+          crescimentoTotal: crescimentoInstagram + crescimentoFacebook
+        };
+      }
+
+      function summarizeAdsRows(rows) {
+        const campaigns = groupAdsByCampaign(rows);
+        const totals = campaigns.reduce((acc, c) => ({
+          investimento: acc.investimento + c.investimento,
+          impressoes: acc.impressoes + c.impressoes,
+          alcance: acc.alcance + c.alcance,
+          cliques: acc.cliques + c.cliques,
+          cliquesLink: acc.cliquesLink + c.cliques_link
+        }), { investimento: 0, impressoes: 0, alcance: 0, cliques: 0, cliquesLink: 0 });
+
+        totals.qtdCampanhas = campaigns.length;
+        totals.cpmMedio = totals.impressoes ? (totals.investimento / totals.impressoes) * 1000 : 0;
+        totals.cpcMedio = totals.cliques ? totals.investimento / totals.cliques : 0;
+        totals.ctrMedio = totals.impressoes ? (totals.cliques / totals.impressoes) * 100 : 0;
+        return totals;
+      }
+
+      async function loadComparativoPeriodo(marca, de, ate) {
+        const [followerRows, socialRows, adsRows] = await Promise.all([
+          fetchRowsInRange("stage_meta_business_analytics", "marca,data_referencia,seguidores_instagram,seguidores_facebook", marca, "data_referencia", de, ate),
+          fetchRowsInRange("stage_social_format_metrics", "marca,rede_social,data_referencia,alcance,engajamento,curtidas,comentarios,compartilhamentos,salvos,total_visualizacoes,visualizacoes,cliques_link,cliques_sticker_link", marca, "data_referencia", de, ate),
+          fetchRowsInRange("stage_meta_ads_metrics", "marca,ad_account_id,campaign_id,campaign_name,objetivo,status,data_referencia,investimento,impressoes,alcance,cliques,cliques_link", marca, "data_referencia", de, ate)
+        ]);
+
+        return {
+          followers: summarizeFollowerRows(followerRows),
+          social: summarizeSocialRows(socialRows),
+          ads: summarizeAdsRows(adsRows)
+        };
+      }
+
+      function pctDelta(a, b) {
+        if (!a) return b > 0 ? 100 : (b < 0 ? -100 : 0);
+        return ((b - a) / Math.abs(a)) * 100;
+      }
+
+      function deltaArrowHtml(a, b) {
+        const delta = pctDelta(a, b);
+        const sign = delta >= 0 ? "↑" : "↓";
+        const color = delta >= 0 ? "#0ca30c" : "#d03b3b";
+        return `<span style="color:${color};font-weight:700">${sign} ${Math.abs(delta).toFixed(2).replace(".", ",")}%</span>`;
+      }
+
+      function comparativoMetricRowHtml(label, a, b, formatter = (v) => fmt.format(v)) {
+        return `<tr><td>${label}</td><td>${formatter(a)}</td><td>${formatter(b)}</td><td>${deltaArrowHtml(a, b)}</td></tr>`;
+      }
+
+      function comparativoDateInputsHtml(idPrefix, range, label) {
+        return `
+          <div class="card" style="padding:16px">
+            <h3 style="margin:0 0 12px">${label}</h3>
+            <div class="dropdown-dates" style="display:flex;gap:12px">
+              <label>Data inicial<input type="date" id="${idPrefix}De" value="${range.de}"></label>
+              <label>Data final<input type="date" id="${idPrefix}Ate" value="${range.ate}"></label>
+            </div>
+          </div>`;
+      }
+
+      async function renderComparativo() {
+        const content = document.querySelector("#content");
+
+        if (!state.compareA.de || !state.compareA.ate || !state.compareB.de || !state.compareB.ate) {
+          const hoje = new Date();
+          const inicioA = new Date(hoje); inicioA.setDate(inicioA.getDate() - 29);
+          const fimB = new Date(hoje); fimB.setDate(fimB.getDate() - 30);
+          const inicioB = new Date(hoje); inicioB.setDate(inicioB.getDate() - 59);
+          state.compareA = { de: inicioA.toISOString().slice(0, 10), ate: hoje.toISOString().slice(0, 10) };
+          state.compareB = { de: inicioB.toISOString().slice(0, 10), ate: fimB.toISOString().slice(0, 10) };
+        }
+
+        content.innerHTML = `<div class="alert">Carregando comparativo...</div>`;
+
+        let dataA, dataB;
+        try {
+          [dataA, dataB] = await Promise.all([
+            loadComparativoPeriodo(state.marca, state.compareA.de, state.compareA.ate),
+            loadComparativoPeriodo(state.marca, state.compareB.de, state.compareB.ate)
+          ]);
+        } catch (error) {
+          content.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          return;
+        }
+
+        const money2 = (v) => `R$ ${fmt.format(Math.round(v))}`;
+        const pct2 = (v) => `${v.toFixed(2).replace(".", ",")}%`;
+
+        content.innerHTML = `
+          <div class="page-head">
+            <div><div class="eyebrow">Comparativo</div><h2>Comparativo de Período</h2><p class="muted">Compare orgânico (Instagram/Facebook) e tráfego pago entre dois intervalos de data à sua escolha.</p></div>
+            <div class="filters">${marcaPillsHtml()}</div>
+          </div>
+          ${socialTabsHtml("comparativo")}
+          <div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+            ${comparativoDateInputsHtml("compareA", state.compareA, "Período A")}
+            ${comparativoDateInputsHtml("compareB", state.compareB, "Período B")}
+          </div>
+          <section class="card">
+            <h3>Orgânico — Instagram/Facebook</h3>
+            <div class="table-wrap" style="margin-top:16px">
+              <table>
+                <thead><tr><th>Métrica</th><th>Período A</th><th>Período B</th><th>Variação B vs A</th></tr></thead>
+                <tbody>
+                  ${comparativoMetricRowHtml("Seguidores (fim de período)", dataA.followers.seguidoresTotal, dataB.followers.seguidoresTotal)}
+                  ${comparativoMetricRowHtml("Crescimento de seguidores", dataA.followers.crescimentoTotal, dataB.followers.crescimentoTotal)}
+                  ${comparativoMetricRowHtml("Alcance total", dataA.social.alcanceTotal, dataB.social.alcanceTotal)}
+                  ${comparativoMetricRowHtml("Engajamento total", dataA.social.engajamentoTotal, dataB.social.engajamentoTotal)}
+                  ${comparativoMetricRowHtml("Visualizações", dataA.social.visualizacoes, dataB.social.visualizacoes)}
+                  ${comparativoMetricRowHtml("Cliques em link", dataA.social.cliquesLink, dataB.social.cliquesLink)}
+                </tbody>
+              </table>
+            </div>
+          </section>
+          <section class="card">
+            <h3>Tráfego pago</h3>
+            <div class="table-wrap" style="margin-top:16px">
+              <table>
+                <thead><tr><th>Métrica</th><th>Período A</th><th>Período B</th><th>Variação B vs A</th></tr></thead>
+                <tbody>
+                  ${comparativoMetricRowHtml("Investimento", dataA.ads.investimento, dataB.ads.investimento, money2)}
+                  ${comparativoMetricRowHtml("Qtd. campanhas", dataA.ads.qtdCampanhas, dataB.ads.qtdCampanhas)}
+                  ${comparativoMetricRowHtml("Alcance", dataA.ads.alcance, dataB.ads.alcance)}
+                  ${comparativoMetricRowHtml("Cliques", dataA.ads.cliques, dataB.ads.cliques)}
+                  ${comparativoMetricRowHtml("CPM médio", dataA.ads.cpmMedio, dataB.ads.cpmMedio, money2)}
+                  ${comparativoMetricRowHtml("CPC médio", dataA.ads.cpcMedio, dataB.ads.cpcMedio, money2)}
+                  ${comparativoMetricRowHtml("CTR médio", dataA.ads.ctrMedio, dataB.ads.ctrMedio, pct2)}
+                </tbody>
+              </table>
+            </div>
+            <p class="muted" style="margin-top:12px">Segmentação de público não é capturada pela sincronização de anúncios hoje — apenas objetivo, investimento e performance por campanha.</p>
+          </section>`;
+
+        wireMarcaPills(renderComparativo);
+        wireSocialTabs();
+        document.querySelector("#compareADe").onchange = (e) => { state.compareA.de = e.target.value; renderComparativo(); };
+        document.querySelector("#compareAAte").onchange = (e) => { state.compareA.ate = e.target.value; renderComparativo(); };
+        document.querySelector("#compareBDe").onchange = (e) => { state.compareB.de = e.target.value; renderComparativo(); };
+        document.querySelector("#compareBAte").onchange = (e) => { state.compareB.ate = e.target.value; renderComparativo(); };
       }
 
       async function renderConnections(statusMessage = "") {
@@ -3089,6 +4036,34 @@
         let allRows = [];
         const de = dateColumn ? fromDate() : null;
         const ate = dateColumn ? toDate() : null;
+
+        while (true) {
+          let query = supabase
+            .from(table)
+            .select(columns)
+            .range(from, from + pageSize - 1);
+
+          if (marca !== "Todas") query = query.eq("marca", marca);
+          if (de) query = query.gte(dateColumn, de);
+          if (ate) query = query.lte(dateColumn, ate);
+
+          const { data, error } = await query;
+          if (error) throw error;
+
+          const rows = data || [];
+          allRows = allRows.concat(rows);
+
+          if (rows.length < pageSize) break;
+          from += pageSize;
+        }
+
+        return allRows;
+      }
+
+      async function fetchRowsInRange(table, columns, marca, dateColumn, de, ate) {
+        const pageSize = 1000;
+        let from = 0;
+        let allRows = [];
 
         while (true) {
           let query = supabase

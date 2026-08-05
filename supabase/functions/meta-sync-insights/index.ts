@@ -1,6 +1,7 @@
 ﻿import {
   assertAdminOrGestor,
   corsHeaders,
+  errorMessage,
   getAdminClient,
   getAuthenticatedUser,
   jsonResponse,
@@ -167,6 +168,7 @@ async function syncInstagram(integration: Integration, warnings: string[]) {
   let imported = 0;
 
   for (const item of media.data || []) {
+    try {
     const itemWarnings: string[] = [];
     const formato = mapInstagramFormat(item.media_type || "");
     const isReels = formato === "instagram_reels";
@@ -265,6 +267,18 @@ async function syncInstagram(integration: Integration, warnings: string[]) {
     );
 
     imported += 1;
+    } catch (itemError) {
+      const message = errorMessage(itemError);
+      warnings.push(`Post Instagram ${item.id}: ${message}`);
+      await logMetaEvent({
+        integracao_id: integration.id,
+        marca: integration.marca,
+        tipo_evento: "instagram_media_upsert",
+        status: "aviso",
+        mensagem: message,
+        payload_resumo: { media_id: item.id },
+      });
+    }
   }
 
   return imported;
@@ -554,6 +568,7 @@ async function syncFacebook(integration: Integration, warnings: string[]) {
   let imported = 0;
 
   for (const post of posts.data || []) {
+   try {
     // post_impressions, post_impressions_unique, post_engaged_users e post_clicks foram
     // descontinuadas pela Meta (erro #100) e nao tem substituto para cliques/impressoes.
     // Desde 15/jun/2026 o Post Reach classico tambem saiu de todas as versoes da API; o
@@ -618,6 +633,18 @@ async function syncFacebook(integration: Integration, warnings: string[]) {
     );
 
     imported += 1;
+   } catch (itemError) {
+      const message = errorMessage(itemError);
+      warnings.push(`Post Facebook ${post.id}: ${message}`);
+      await logMetaEvent({
+        integracao_id: integration.id,
+        marca: integration.marca,
+        tipo_evento: "facebook_post_upsert",
+        status: "aviso",
+        mensagem: message,
+        payload_resumo: { post_id: post.id },
+      });
+   }
   }
 
   const pageSummaryImported = await syncFacebookPageSummary(integration, warnings);
@@ -755,7 +782,7 @@ Deno.serve(async (req) => {
           },
         });
       } catch (syncError) {
-        result.error = syncError instanceof Error ? syncError.message : String(syncError);
+        result.error = errorMessage(syncError);
         await logMetaEvent({
           integracao_id: integration.id,
           marca: integration.marca,
