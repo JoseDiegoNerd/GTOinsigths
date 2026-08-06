@@ -179,11 +179,12 @@ async function syncInstagram(integration: Integration, warnings: string[]) {
     // function. O campo nao e exibido na UI hoje, entao nao ha perda em tira-la.
     // ig_reels_avg_watch_time e reels_skip_rate so existem para Reels - pedir para outros formatos
     // sempre falha e derruba a chamada combinada, entao ficam de fora da lista pros demais formatos.
-    // profile_visits/follows medem quando o proprio post levou alguem a visitar o perfil ou
-    // seguir a conta - o sinal de "descoberta" que o app ja rotula nos Reels mas nunca mediu.
+    // profile_visits/follows foram removidas: a API rejeita as duas com erro #100 em todo post
+    // desta conta, o que derrubava a chamada combinada e forcava o fallback lento metrica-por-metrica
+    // em 100% dos posts, estourando o timeout do sync antes de chegar nas outras marcas da fila.
     const instagramMetrics = isReels
-      ? ["reach", "saved", "comments", "likes", "shares", "views", "total_interactions", "profile_visits", "follows", "ig_reels_avg_watch_time", "reels_skip_rate"]
-      : ["reach", "saved", "comments", "likes", "shares", "views", "total_interactions", "profile_visits", "follows"];
+      ? ["reach", "saved", "comments", "likes", "shares", "views", "total_interactions", "ig_reels_avg_watch_time", "reels_skip_rate"]
+      : ["reach", "saved", "comments", "likes", "shares", "views", "total_interactions"];
     const combinedWarnings: string[] = [];
     const combined = await tryMetaGet(`/${item.id}/insights`, {
       metric: instagramMetrics.join(","),
