@@ -10,7 +10,7 @@
     <style>
       :root { --accent: #2563eb; --accent-rgb: 37,99,235; }
       * { box-sizing: border-box; }
-      body { margin: 0; font-family: Inter, system-ui, sans-serif; background: #f8fafc; color: #111c2d; }
+      body { margin: 0; font-family: Inter, system-ui, sans-serif; background: #f8fafc; color: #111c2d; overflow-x: hidden; }
       button, input, select { font: inherit; }
       button { border: 0; border-radius: 8px; background: var(--accent); color: white; padding: 10px 14px; font-weight: 700; cursor: pointer; }
       button.secondary { background: white; color: #334155; border: 1px solid #cbd5e1; }
@@ -39,7 +39,7 @@
       .page-head h2 { margin: 4px 0; font-size: 30px; overflow-wrap: anywhere; }
       .muted { color: #64748b; }
       .eyebrow { color: var(--accent); font-size: 12px; text-transform: uppercase; font-weight: 800; letter-spacing: .05em; }
-      .filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+      .filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-end; }
       .grid { display: grid; gap: 20px; min-width: 0; }
       .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
       .cols { grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr); }
@@ -126,12 +126,13 @@
       .segmented button { background: transparent; color: #475569; padding: 8px 16px; border-radius: 999px; font-size: 13px; }
       .segmented button.active { background: white; color: var(--accent); box-shadow: 0 1px 3px rgba(15,23,42,.12); }
       .dropdown { position: relative; }
-      .dropdown-menu { position: absolute; top: calc(100% + 8px); left: 0; z-index: 10; background: white; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 16px 32px rgba(15,23,42,.14); padding: 8px; display: grid; gap: 2px; min-width: 200px; }
-      .dropdown-item { display: block; width: 100%; text-align: left; background: transparent; color: #334155; font-weight: 600; padding: 9px 12px; border-radius: 8px; }
+      .dropdown-menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 10; background: white; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 16px 32px rgba(15,23,42,.14); padding: 8px; display: grid; gap: 2px; min-width: 200px; max-width: min(280px, calc(100vw - 32px)); }
+      .dropdown-item { display: block; width: 100%; text-align: left; background: transparent; color: #334155; font-weight: 600; font-size: 13px; padding: 8px 12px; border-radius: 8px; }
       .dropdown-item:hover:not(.active) { background: #f1f5f9; }
       .dropdown-item.active { background: var(--accent); color: white; }
       .dropdown-dates { border-top: 1px solid #e2e8f0; margin-top: 6px; padding-top: 8px; display: grid; gap: 8px; }
-      .dropdown-dates label { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; display: grid; gap: 4px; }
+      .dropdown-dates label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; display: grid; gap: 4px; }
+      .dropdown-dates input { font-size: 13px; font-weight: 500; width: 100%; box-sizing: border-box; padding: 6px 8px; border: 1px solid #d8e3fb; border-radius: 6px; color: #334155; }
       .chart-point { cursor: pointer; }
       .chart-tooltip { position: fixed; z-index: 50; background: #1e293b; color: #fff; padding: 8px 11px; border-radius: 8px; font-size: 12px; line-height: 1.5; pointer-events: none; box-shadow: 0 10px 24px rgba(15,23,42,.28); display: none; max-width: 220px; }
       .chart-tooltip strong { display: block; margin-bottom: 2px; }
@@ -326,6 +327,13 @@
         render();
       }
 
+      // Ano com 4 digitos e plausivel (>=2000) - rejeita valores parciais tipo "0002-07-05" que o
+      // input[type=date] as vezes emite no meio da digitacao do ano.
+      function isCompleteIsoDate(value) {
+        const match = /^(\d{4})-\d{2}-\d{2}$/.exec(value);
+        return Boolean(match) && Number(match[1]) >= 2000;
+      }
+
       function fromDate() {
         if (state.periodo === "all") return null;
         if (state.periodo === "custom") return state.periodoDe || null;
@@ -362,8 +370,8 @@
                 ${periodoOpcoes.map(([value, label]) => `<button type="button" class="dropdown-item periodo-opt ${state.periodo === value ? "active" : ""}" data-periodo="${value}">${label}</button>`).join("")}
                 ${state.periodo === "custom" ? `
                   <div class="dropdown-dates">
-                    <label>Data inicial<input type="date" id="periodoDe" value="${state.periodoDe}" max="${hoje}"></label>
-                    <label>Data final<input type="date" id="periodoAte" value="${state.periodoAte}" max="${hoje}"></label>
+                    <label>Data inicial<input type="date" id="periodoDe" value="${state.periodoDe}" min="2000-01-01" max="${hoje}"></label>
+                    <label>Data final<input type="date" id="periodoAte" value="${state.periodoAte}" min="2000-01-01" max="${hoje}"></label>
                   </div>
                 ` : ""}
               </div>
@@ -400,11 +408,18 @@
           };
         });
         document.querySelector("#periodoDe")?.addEventListener("change", (event) => {
-          state.periodoDe = event.currentTarget.value;
+          const value = event.currentTarget.value;
+          // input[type=date] as vezes dispara "change" com o ano ainda pela metade (ex: "0002-07-05"
+          // enquanto o usuario digita "2026"). Recriar a pagina nesse instante travava o campo nesse
+          // valor quebrado - so aceita e re-renderiza quando o ano tem 4 digitos plausiveis.
+          if (value && !isCompleteIsoDate(value)) { event.currentTarget.value = state.periodoDe || ""; return; }
+          state.periodoDe = value;
           onSelect();
         });
         document.querySelector("#periodoAte")?.addEventListener("change", (event) => {
-          state.periodoAte = event.currentTarget.value;
+          const value = event.currentTarget.value;
+          if (value && !isCompleteIsoDate(value)) { event.currentTarget.value = state.periodoAte || ""; return; }
+          state.periodoAte = value;
           onSelect();
         });
         bindPeriodoOutsideClick(onSelect);
@@ -2378,14 +2393,17 @@
         const demografia = state.marca !== "Todas"
           ? await loadAudienceDemographics(state.marca, rede).catch(() => null)
           : null;
+        const lastSync = await loadUltimaSincronizacao("vw_integracao_meta_contas_publica", state.marca).catch(() => null);
 
         content.innerHTML = `
           <div class="page-head">
             <div><div class="eyebrow">${isInstagram ? "Rede principal" : "Rede secundária"}</div><h2 style="display:flex;align-items:center;gap:10px">${isInstagram ? instagramIcon(28) : facebookIcon(28)} ${title}</h2><p class="muted">${subtitle}</p></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin:14px 0 4px">
+            ${marcaPillsHtml()}
             <div class="filters">
-              ${marcaPillsHtml()}
+              ${ultimaAtualizacaoHtml(lastSync)}
               ${periodoDropdownHtml()}
-              <button id="refresh">Atualizar</button>
             </div>
           </div>
           ${socialTabsHtml(isInstagram ? "instagram" : "facebook")}
@@ -2409,7 +2427,6 @@
         wireMarcaPills(() => renderSocialFormatPage(rede));
         wirePeriodoDropdown(() => renderSocialFormatPage(rede));
         wireSocialTabs();
-        document.querySelector("#refresh").onclick = () => renderSocialFormatPage(rede);
       }
 
       // Melhores Horarios: diferente do mLabs (que usa benchmark de mercado por categoria),
@@ -2495,16 +2512,19 @@
         content.innerHTML = `<div class="alert">Carregando histórico de publicações...</div>`;
 
         if (state.marca === "Todas") {
+          const lastSyncTodas = await loadUltimaSincronizacao("vw_integracao_meta_contas_publica", state.marca).catch(() => null);
           content.innerHTML = `
             <div class="page-head">
               <div><div class="eyebrow">Seu histórico</div><h2 style="display:flex;align-items:center;gap:10px"><span class="material-symbols-outlined">schedule</span> Melhores Horários</h2><p class="muted">Selecione uma marca para ver os horários com melhor desempenho.</p></div>
-              <div class="filters">${marcaPillsHtml()}<button id="refresh" style="border-radius:999px">Atualizar</button></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin:14px 0 4px">
+              ${marcaPillsHtml()}
+              <div class="filters">${ultimaAtualizacaoHtml(lastSyncTodas)}</div>
             </div>
             ${socialTabsHtml("horarios")}
             <section class="card"><p class="muted" style="margin:0">Escolha uma marca no filtro acima - o cálculo usa o histórico de posts dessa marca no Instagram e no Facebook.</p></section>`;
           wireMarcaPills(() => renderBestTimesPage());
           wireSocialTabs();
-          document.querySelector("#refresh").onclick = () => renderBestTimesPage();
           return;
         }
 
@@ -2532,13 +2552,15 @@
           };
         });
 
+        const lastSync = await loadUltimaSincronizacao("vw_integracao_meta_contas_publica", state.marca).catch(() => null);
+
         content.innerHTML = `
           <div class="page-head">
             <div><div class="eyebrow">Seu histórico</div><h2 style="display:flex;align-items:center;gap:10px"><span class="material-symbols-outlined">schedule</span> Melhores Horários</h2><p class="muted">Baseado no engajamento médio dos posts já publicados, não em benchmark de mercado.</p></div>
-            <div class="filters">
-              ${marcaPillsHtml()}
-              <button id="refresh" style="border-radius:999px">Atualizar</button>
-            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin:14px 0 4px">
+            ${marcaPillsHtml()}
+            <div class="filters">${ultimaAtualizacaoHtml(lastSync)}</div>
           </div>
           ${socialTabsHtml("horarios")}
           ${redes.map((r) => r.totalPosts
@@ -2549,7 +2571,6 @@
 
         wireMarcaPills(() => renderBestTimesPage());
         wireSocialTabs();
-        document.querySelector("#refresh").onclick = () => renderBestTimesPage();
       }
 
       function instagramTotals(rows) {
@@ -2884,13 +2905,17 @@
           }
         }
 
+        const lastSync = await loadUltimaSincronizacao("vw_integracao_meta_contas_publica", state.marca).catch(() => null);
+
         content.innerHTML = `
           <div class="page-head">
             <div><div class="eyebrow">Meta Business</div><h2>Redes Sociais</h2><p class="muted">Alcance, engajamento, ranking de destaques e recomendações de conteúdo.</p></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin:14px 0 4px">
+            ${marcaPillsHtml()}
             <div class="filters">
-              ${marcaPillsHtml()}
+              ${ultimaAtualizacaoHtml(lastSync)}
               ${periodoDropdownHtml()}
-              <button id="refresh">Atualizar</button>
             </div>
           </div>
           ${socialTabsHtml("geral")}
@@ -2945,7 +2970,6 @@
         wireMarcaPills(renderSocialBI);
         wirePeriodoDropdown(renderSocialBI);
         wireSocialTabs();
-        document.querySelector("#refresh").onclick = renderSocialBI;
         document.querySelectorAll(".compare-metric-btn").forEach((button) => {
           button.onclick = () => { state.socialCompareMetric = button.dataset.metric; renderSocialBI(); };
         });
@@ -2965,6 +2989,26 @@
         const date = new Date(value);
         if (Number.isNaN(date.getTime())) return "Nunca";
         return date.toLocaleString("pt-BR");
+      }
+
+      // Mesma logica do card "Ultima sincronizacao" da pagina Conexoes: maior ultima_sincronizacao_em
+      // entre contas confirmadas/ativas/nao ignoradas, filtrado por marca (ou todas as marcas juntas
+      // quando o filtro e "Todas"). Usado para trocar o botao "Atualizar" por um indicador passivo.
+      async function loadUltimaSincronizacao(view, marcaFiltro) {
+        let query = supabase
+          .from(view)
+          .select("marca,ultima_sincronizacao_em")
+          .eq("conta_confirmada", true)
+          .eq("ativo", true)
+          .eq("ignorada", false);
+        if (marcaFiltro !== "Todas") query = query.eq("marca", marcaFiltro);
+        const { data, error } = await query;
+        if (error || !data?.length) return null;
+        return data.map((r) => r.ultima_sincronizacao_em).filter(Boolean).sort().pop() || null;
+      }
+
+      function ultimaAtualizacaoHtml(timestamp) {
+        return `<span class="pill" style="cursor:default"><span class="material-symbols-outlined" style="font-size:16px;vertical-align:-3px;margin-right:4px">sync</span>Última atualização: ${escapeHtml(formatDateTime(timestamp))}</span>`;
       }
 
       function metaReturnUrl() {
@@ -3095,14 +3139,17 @@
         const cpcMedio = totals.cliques ? totals.investimento / totals.cliques : 0;
         const ctrMedio = totals.impressoes ? (totals.cliques / totals.impressoes) * 100 : 0;
         const melhorCampanha = [...rows].sort((a, b) => num(b.ctr) - num(a.ctr))[0] || null;
+        const lastSync = await loadUltimaSincronizacao("vw_integracao_meta_ads_contas_publica", state.marca).catch(() => null);
 
         content.innerHTML = `
           <div class="page-head">
             <div><div class="eyebrow">Meta Ads</div><h2>Anúncios</h2><p class="muted">Investimento, alcance e performance de campanhas no período selecionado.</p></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin:14px 0 4px">
+            ${marcaPillsHtml()}
             <div class="filters">
-              ${marcaPillsHtml()}
+              ${ultimaAtualizacaoHtml(lastSync)}
               ${periodoDropdownHtml()}
-              <button id="refresh">Atualizar</button>
             </div>
           </div>
           ${rows.length ? "" : `<div class="alert">Nenhuma campanha sincronizada ainda. Confirme uma conta de anúncios em <strong>Conexões</strong> e clique em <strong>Sincronizar anúncios confirmados</strong>.</div>`}
@@ -3145,7 +3192,6 @@
 
         wireMarcaPills(renderMetaAds);
         wirePeriodoDropdown(renderMetaAds);
-        document.querySelector("#refresh").onclick = renderMetaAds;
       }
 
       function summarizeSocialRows(rows) {
