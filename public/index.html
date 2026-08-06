@@ -186,6 +186,16 @@
         const value = parseInt(clean.length === 3 ? clean.split("").map((c) => c + c).join("") : clean, 16);
         return `${(value >> 16) & 255},${(value >> 8) & 255},${value & 255}`;
       }
+      // Mistura um hex com branco/preto na proporcao "ratio" (0-1) pra gerar tons mais claros/escuros
+      // da mesma cor - usado pra dar variantes "da familia" da cor da marca (em vez de uma paleta
+      // generica que pode coincidir com a cor de outra marca).
+      function mixHex(hex, target, ratio) {
+        const [r, g, b] = hexToRgb(hex).split(",").map(Number);
+        const mix = (c) => Math.round(c + (target - c) * ratio);
+        return `#${[mix(r), mix(g), mix(b)].map((c) => c.toString(16).padStart(2, "0")).join("")}`;
+      }
+      const lighten = (hex, ratio) => mixHex(hex, 255, ratio);
+      const darken = (hex, ratio) => mixHex(hex, 0, ratio);
       function applyBrandTheme() {
         const color = brandColors[state.marca] || brandColors.Todas;
         document.documentElement.style.setProperty("--accent", color);
@@ -200,7 +210,7 @@
         social_format_metrics: "stage_social_format_metrics"
       };
 
-      let state = { session: null, perfil: null, page: "dashboard", marca: "Todas", periodo: "30d", periodoDe: "", periodoAte: "", periodoMenuOpen: false, rows: [], rd: [], meta: [], google: null, propostas: [], bi: null, channels: null, email: null, emailSelectedId: null, social: null, socialFormat: null, socialTab: "geral", connections: [], bestTimes: null, socialCompareMetric: "alcance", compareA: { de: "", ate: "" }, compareB: { de: "", ate: "" } };
+      let state = { session: null, perfil: null, page: "dashboard", marca: "Todas", periodo: "30d", periodoDe: "", periodoAte: "", periodoMenuOpen: false, rows: [], rd: [], meta: [], google: null, propostas: [], bi: null, channels: null, email: null, emailSelectedId: null, social: null, socialFormat: null, socialTab: "geral", connections: [], bestTimes: null, socialCompareMetric: "alcance", socialEficienciaTab: "frequencia", compareA: { de: "", ate: "" }, compareB: { de: "", ate: "" } };
 
       const fmt = new Intl.NumberFormat("pt-BR");
       const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
@@ -836,7 +846,8 @@
             taxa_engajamento: alcance ? (engajamento / alcance) * 100 : 0,
             post_destaque_semana_url: row.post_url,
             tema: row.tema || row.tipo_conteudo || "Conteúdo Meta",
-            formato: row.formato || null
+            formato: row.formato || null,
+            tipo_conteudo: row.tipo_conteudo || null
           };
         });
 
@@ -1415,9 +1426,9 @@
       }
 
       const CORES_MARCA = {
-        "Tesoura de Ouro": "#2a78d6",
-        "Magazine da Economia": "#eb6834",
-        "Free Center Calçados": "#1baf7a"
+        "Tesoura de Ouro": brandColors["Tesoura de Ouro"],
+        "Magazine da Economia": brandColors["Magazine da Economia"],
+        "Free Center Calçados": brandColors["Free Center Calçados"]
       };
 
       const SOCIAL_COMPARE_METRICS = [
@@ -1548,19 +1559,71 @@
         if (deltaPct === null || !Number.isFinite(deltaPct)) return `<small class="muted" style="display:block;margin-top:4px">Sem período anterior para comparar</small>`;
         const positivo = invert ? deltaPct <= 0 : deltaPct >= 0;
         const cor = positivo ? "#16a34a" : "#dc2626";
-        const seta = deltaPct >= 0 ? "↑" : "↓";
-        return `<small style="display:block;margin-top:4px;font-weight:700;color:${cor}">${seta} ${Math.abs(deltaPct).toFixed(1).replace(".", ",")}% ${suffix}</small>`;
+        const seta = deltaPct >= 0 ? "▲" : "▼";
+        return `<small class="muted" style="display:block;margin-top:4px"><span style="font-weight:700;color:${cor}">${seta} ${Math.abs(deltaPct).toFixed(1).replace(".", ",")}%</span> ${suffix}</small>`;
       }
 
-      function deltaLineAbsHtml(deltaAbs, { suffix = "no período" } = {}) {
-        if (deltaAbs === null || !Number.isFinite(deltaAbs)) return `<small class="muted" style="display:block;margin-top:4px">Sem período anterior para comparar</small>`;
-        const cor = deltaAbs >= 0 ? "#16a34a" : "#dc2626";
-        const sinal = deltaAbs >= 0 ? "+" : "";
-        return `<small style="display:block;margin-top:4px;font-weight:700;color:${cor}">${sinal}${fmt.format(deltaAbs)} ${suffix}</small>`;
+      // Rodape padrao para os cards de KPI que precisam mostrar o valor exato do mes anterior
+      // (nao so o delta), ex.: Posts e Score Geral - deixa a conta "atual - anterior = delta" visivel.
+      function comparativoFooterHtml({ atual, anterior, formatar = (v) => fmt.format(v), unidade = "", sufixoDelta = unidade, fallbackHtml } = {}) {
+        if (anterior === null || !Number.isFinite(anterior)) {
+          return fallbackHtml ?? `<small class="muted" style="display:block;margin-top:4px">Sem período anterior para comparar</small>`;
+        }
+        const delta = atual - anterior;
+        const cor = delta >= 0 ? "#16a34a" : "#dc2626";
+        const seta = delta >= 0 ? "▲" : "▼";
+        const sinal = delta >= 0 ? "+" : "";
+        return `<small class="muted" style="display:block;margin-top:4px">Mês anterior: ${formatar(anterior)}${unidade} · <span style="font-weight:700;color:${cor}">${seta} ${sinal}${formatar(delta)}${sufixoDelta}</span></small>`;
+      }
+
+      function seguidoresFooterHtml(novosAtual, novosAnterior) {
+        if (novosAtual === null || !Number.isFinite(novosAtual)) return `<small class="muted" style="display:block;margin-top:4px">Sem período anterior para comparar</small>`;
+        const cor = novosAtual >= 0 ? "#16a34a" : "#dc2626";
+        const sinalAtual = novosAtual >= 0 ? "+" : "";
+        const anteriorTxt = (novosAnterior !== null && Number.isFinite(novosAnterior))
+          ? ` · Mês anterior: ${novosAnterior >= 0 ? "+" : ""}${fmt.format(novosAnterior)}`
+          : "";
+        return `<small class="muted" style="display:block;margin-top:4px">Novos no mês: <span style="font-weight:700;color:${cor}">${sinalAtual}${fmt.format(novosAtual)}</span>${anteriorTxt}</small>`;
       }
 
       function kpiWithDelta(label, value, icon, deltaHtml) {
         return `<article class="card kpi"><div class="kpi-top"><span>${label}</span><span class="material-symbols-outlined">${icon}</span></div><strong>${value}</strong>${deltaHtml || ""}</article>`;
+      }
+
+      function donutMetricHtml(dados, metricKey, label, ariaLabel) {
+        const total = dados.reduce((s, d) => s + d[metricKey], 0);
+        const size = 150, r = 54, cx = size / 2, cy = size / 2, strokeW = 26;
+        const circunferencia = 2 * Math.PI * r;
+        let acumulado = 0;
+        const segmentos = dados.filter((d) => d[metricKey] > 0).map((d) => {
+          const fracao = total ? d[metricKey] / total : 0;
+          const comprimento = fracao * circunferencia;
+          const dasharray = `${comprimento.toFixed(2)} ${(circunferencia - comprimento).toFixed(2)}`;
+          const dashoffset = (-acumulado * circunferencia).toFixed(2);
+          acumulado += fracao;
+          const cor = CORES_MARCA[d.marca];
+          const pct = (fracao * 100).toFixed(1).replace(".", ",");
+          const tooltip = `<strong>${escapeHtml(d.marca)}</strong><br>${pct}% de ${label.toLowerCase()}<br>${label}: ${fmt.format(d[metricKey])}`.replaceAll("\"", "&quot;");
+          return `<circle class="chart-point" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${cor}" stroke-width="${strokeW}" stroke-dasharray="${dasharray}" stroke-dashoffset="${dashoffset}" transform="rotate(-90 ${cx} ${cy})" data-tooltip="${tooltip}"></circle>`;
+        }).join("");
+
+        const linhas = dados.map((d) => {
+          const pct = total ? (d[metricKey] / total) * 100 : 0;
+          const cor = CORES_MARCA[d.marca];
+          return `<div style="display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;font-size:12px">
+            <span style="width:9px;height:9px;border-radius:3px;background:${cor};display:inline-block"></span>
+            <span style="color:#334155;font-weight:600">${escapeHtml(d.marca)}</span>
+            <span style="color:${cor};font-weight:700">${pct.toFixed(1).replace(".", ",")}%</span>
+          </div>`;
+        }).join("");
+
+        return `<div style="display:flex;flex-direction:column;align-items:center;gap:12px;flex:1;min-width:180px">
+          <p class="muted" style="margin:0;font-weight:600;color:#334155">${label}</p>
+          <svg viewBox="0 0 ${size} ${size}" style="width:130px;height:130px;flex:none" role="img" aria-label="${ariaLabel}">
+            ${segmentos}
+          </svg>
+          <div style="display:grid;gap:7px;width:100%">${linhas}</div>
+        </div>`;
       }
 
       function shareOfPerformanceHtml(rows) {
@@ -1577,39 +1640,58 @@
         const totalEngajamento = dados.reduce((s, d) => s + d.engajamento, 0);
         if (!totalAlcance && !totalEngajamento) return `<p class="muted" style="margin:0">Sem dados suficientes para calcular participação por marca.</p>`;
 
+        return `<div style="display:flex;gap:20px;flex-wrap:wrap">
+          ${donutMetricHtml(dados, "alcance", "Participação no Alcance", "Participação no alcance por marca")}
+          ${donutMetricHtml(dados, "engajamento", "Participação no Engajamento", "Participação no engajamento por marca")}
+        </div>`;
+      }
+
+      // Mesma logica de donutMetricHtml, mas generico para qualquer lista de {label, valor, cor} -
+      // usado na composicao de formatos (Reels/Carrossel/Post Unico/Stories) de uma unica marca.
+      function donutGenericHtml(itens, label, ariaLabel) {
+        const total = itens.reduce((s, d) => s + d.valor, 0);
         const size = 150, r = 54, cx = size / 2, cy = size / 2, strokeW = 26;
         const circunferencia = 2 * Math.PI * r;
         let acumulado = 0;
-        const segmentos = dados.filter((d) => d.alcance > 0).map((d) => {
-          const fracao = totalAlcance ? d.alcance / totalAlcance : 0;
+        const segmentos = itens.filter((d) => d.valor > 0).map((d) => {
+          const fracao = total ? d.valor / total : 0;
           const comprimento = fracao * circunferencia;
           const dasharray = `${comprimento.toFixed(2)} ${(circunferencia - comprimento).toFixed(2)}`;
           const dashoffset = (-acumulado * circunferencia).toFixed(2);
           acumulado += fracao;
-          const cor = CORES_MARCA[d.marca];
           const pct = (fracao * 100).toFixed(1).replace(".", ",");
-          const tooltip = `<strong>${escapeHtml(d.marca)}</strong><br>${pct}% do alcance<br>Alcance: ${fmt.format(d.alcance)}`.replaceAll("\"", "&quot;");
-          return `<circle class="chart-point" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${cor}" stroke-width="${strokeW}" stroke-dasharray="${dasharray}" stroke-dashoffset="${dashoffset}" transform="rotate(-90 ${cx} ${cy})" data-tooltip="${tooltip}"></circle>`;
+          const tooltip = `<strong>${escapeHtml(d.label)}</strong><br>${pct}% (${fmt.format(d.valor)})`.replaceAll("\"", "&quot;");
+          return `<circle class="chart-point" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${d.cor}" stroke-width="${strokeW}" stroke-dasharray="${dasharray}" stroke-dashoffset="${dashoffset}" transform="rotate(-90 ${cx} ${cy})" data-tooltip="${tooltip}"></circle>`;
         }).join("");
 
-        const linhas = dados.map((d) => {
-          const pctAlcance = totalAlcance ? (d.alcance / totalAlcance) * 100 : 0;
-          const pctEngajamento = totalEngajamento ? (d.engajamento / totalEngajamento) * 100 : 0;
-          const cor = CORES_MARCA[d.marca];
-          return `<div style="display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:10px;font-size:12px">
-            <span style="width:9px;height:9px;border-radius:3px;background:${cor};display:inline-block"></span>
-            <span style="color:#334155;font-weight:600">${escapeHtml(d.marca)}</span>
-            <span style="color:#64748b">Alcance ${pctAlcance.toFixed(1).replace(".", ",")}%</span>
-            <span style="color:#64748b">Engaj. ${pctEngajamento.toFixed(1).replace(".", ",")}%</span>
+        const linhas = itens.filter((d) => d.valor > 0).map((d) => {
+          const pct = total ? (d.valor / total) * 100 : 0;
+          return `<div style="display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;font-size:12px">
+            <span style="width:9px;height:9px;border-radius:3px;background:${d.cor};display:inline-block"></span>
+            <span style="color:#334155;font-weight:600">${escapeHtml(d.label)}</span>
+            <span style="color:${d.cor};font-weight:700">${pct.toFixed(1).replace(".", ",")}%</span>
           </div>`;
         }).join("");
 
-        return `<div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
-          <svg viewBox="0 0 ${size} ${size}" style="width:140px;height:140px;flex:none" role="img" aria-label="Participação no alcance por marca">
+        return `<div style="display:flex;flex-direction:column;align-items:center;gap:12px;flex:1;min-width:180px">
+          <p class="muted" style="margin:0;font-weight:600;color:#334155">${label}</p>
+          <svg viewBox="0 0 ${size} ${size}" style="width:130px;height:130px;flex:none" role="img" aria-label="${ariaLabel}">
             ${segmentos}
-            <text x="${cx}" y="${cy}" text-anchor="middle" font-size="11" fill="#64748b">Alcance</text>
           </svg>
-          <div style="display:grid;gap:9px;flex:1;min-width:220px">${linhas}</div>
+          <div style="display:grid;gap:7px;width:100%">${linhas}</div>
+        </div>`;
+      }
+
+      function formatoComposicaoMarcaHtml(periodos, marca) {
+        const contagem = contagemFormatoPorMarca(periodos, marca);
+        const engajamento = engajamentoPorFormatoMarca(periodos, marca);
+        const cores = formatoCoresDaMarca(marca);
+        const postsItens = FORMATO_CONTAGEM_ORDEM.filter((k) => contagem[k] > 0).map((k) => ({ label: k, valor: contagem[k], cor: cores[k] }));
+        if (!postsItens.length) return `<p class="muted" style="margin:0">Sem dados de formato suficientes para ${escapeHtml(marca)}.</p>`;
+        const engajItens = FORMATO_CONTAGEM_ORDEM.filter((k) => engajamento[k] > 0).map((k) => ({ label: k, valor: engajamento[k], cor: cores[k] }));
+        return `<div style="display:flex;gap:20px;flex-wrap:wrap">
+          ${donutGenericHtml(postsItens, "Nº de Posts", `Distribuição de posts por formato - ${escapeHtml(marca)}`)}
+          ${engajItens.length ? donutGenericHtml(engajItens, "Engajamento Total", `Distribuição de engajamento por formato - ${escapeHtml(marca)}`) : ""}
         </div>`;
       }
 
@@ -1644,65 +1726,297 @@
         return `<div class="podium">${cards}</div>`;
       }
 
-      // "Insights IA": nao e um modelo de IA de fato, e um conjunto de heuristicas sobre os dados ja
-      // carregados na Visao Geral (mesmo post-level "periodos" que alimenta o ranking/diagnostico) -
-      // melhor formato, melhor horario de publicacao, marcas paradas ha muitos dias e contagem de
-      // posts com diagnostico "Atencao".
-      function generateAIInsights(rows, periodos, ranking) {
-        const insights = [];
+      const EFICIENCIA_TABS = [["frequencia", "Frequência Diária"], ["formato", "Formato Campeão"], ["ritmo", "Constância & Ritmo"]];
+      const FORMATO_BUCKET_ICONS = { "Reels": "movie", "Feed/Carrossel": "view_carousel", "Stories": "auto_stories" };
+      // Paleta escolhida para nao colidir com nenhuma cor de marca (Tesoura #2e3192 indigo,
+      // Magazine #ec078d rosa, Free Center #f16e2c laranja) - fica toda no "vao" livre do circulo
+      // cromatico entre laranja e indigo (verde/teal/ciano/dourado), pra nao virar "tudo laranja"
+      // quando a marca selecionada e o Free Center, por ex.
+      const FORMATO_CONTAGEM_CORES = { "Reels": "#0ea5e9", "Carrossel": "#16a34a", "Post Único": "#ca8a04", "Stories": "#0d9488" };
+      const FORMATO_CONTAGEM_ORDEM = ["Reels", "Carrossel", "Post Único", "Stories"];
 
-        const porFormato = {};
-        periodos.forEach((p) => {
-          if (!p.formato) return;
-          const bucket = /reels/i.test(p.formato) ? "Reels" : /stories/i.test(p.formato) ? "Stories" : "Feed";
-          porFormato[bucket] ??= { soma: 0, n: 0 };
-          porFormato[bucket].soma += num(p.taxa_engajamento);
-          porFormato[bucket].n += 1;
-        });
-        const formatoEntries = Object.entries(porFormato).filter(([, v]) => v.n >= 2).map(([k, v]) => [k, v.soma / v.n]);
-        if (formatoEntries.length) {
-          const [melhorFormato, taxaMedia] = [...formatoEntries].sort((a, b) => b[1] - a[1])[0];
-          insights.push({ type: "success", text: `${melhorFormato} é o formato mais eficiente do período, com taxa média de engajamento de ${taxaMedia.toFixed(2).replace(".", ",")}%.` });
-        }
-
-        const porHora = {};
-        periodos.forEach((p) => {
-          if (!p.data_referencia) return;
-          const data = new Date(p.data_referencia);
-          if (Number.isNaN(data.getTime())) return;
-          const hora = data.getHours();
-          porHora[hora] ??= { soma: 0, n: 0 };
-          porHora[hora].soma += num(p.taxa_engajamento);
-          porHora[hora].n += 1;
-        });
-        const horaEntries = Object.entries(porHora).filter(([, v]) => v.n >= 2).map(([h, v]) => [Number(h), v.soma / v.n]);
-        if (horaEntries.length) {
-          const [melhorHora] = [...horaEntries].sort((a, b) => b[1] - a[1])[0];
-          insights.push({ type: "success", text: `Posts publicados por volta das ${String(melhorHora).padStart(2, "0")}:00 têm o melhor engajamento médio no período.` });
-        }
-
-        const hoje = new Date();
-        Object.keys(CORES_MARCA).forEach((marca) => {
-          const r = rows.find((row) => row.marca === marca);
-          if (!r?.ultima_referencia) { insights.push({ type: "warning", text: `${marca} sem publicações registradas no período selecionado.` }); return; }
-          const dias = Math.floor((hoje - new Date(r.ultima_referencia)) / 86400000);
-          if (dias >= 5) insights.push({ type: "warning", text: `${marca} está há ${dias} dias sem novo post — risco de queda de alcance orgânico.` });
-        });
-
-        const atencaoCount = ranking.filter((r) => r.diagnostico_conteudo === "Atenção").length;
-        if (atencaoCount) insights.push({ type: "warning", text: `${atencaoCount} post${atencaoCount > 1 ? "s" : ""} no ranking com diagnóstico "Atenção" — engajamento abaixo da média da própria marca.` });
-
-        if (!insights.length) insights.push({ type: "success", text: "Sem alertas — desempenho dentro do esperado para todas as marcas no período." });
-        return insights;
+      // Para a composicao de formatos de UMA marca (Evolucao Historica / Composicao de Formatos),
+      // usa variantes da propria cor da marca em vez da paleta generica acima - assim o donut fica
+      // no mesmo "tom" da marca selecionada, igual ja acontece no grafico de Evolucao Historica.
+      function formatoCoresDaMarca(marca) {
+        const base = CORES_MARCA[marca] || brandColors.Todas;
+        return { "Reels": darken(base, 0.35), "Carrossel": base, "Post Único": lighten(base, 0.35), "Stories": lighten(base, 0.6) };
       }
 
-      function aiInsightsListHtml(insights) {
-        return `<ul style="list-style:none;margin:0;padding:0;display:grid;gap:12px">
-          ${insights.map((i) => `<li style="display:flex;align-items:flex-start;gap:10px;font-size:13.5px;color:#1f2937;line-height:1.4">
-            <span class="material-symbols-outlined" style="font-size:19px;color:${i.type === "success" ? "#16a34a" : "#d97706"};flex:none">${i.type === "success" ? "check_circle" : "warning"}</span>
-            <span>${escapeHtml(i.text)}</span>
-          </li>`).join("")}
-        </ul>`;
+      function bucketFormato(formato) {
+        if (!formato) return null;
+        return /reels/i.test(formato) ? "Reels" : /stories/i.test(formato) ? "Stories" : "Feed/Carrossel";
+      }
+
+      // Numero de dias corridos entre "from" e "to" (inclusive) - usado tanto para a frequencia do
+      // periodo atual quanto do anterior, ambos com o mesmo tamanho de janela (ver rangeBefore).
+      function periodoSpanDias(fromStr, toStr) {
+        if (!fromStr) return null;
+        const fromD = new Date(`${fromStr}T00:00:00`);
+        const toD = new Date(`${(toStr || new Date().toISOString().slice(0, 10))}T00:00:00`);
+        return Math.max(1, Math.round((toD - fromD) / 86400000) + 1);
+      }
+
+      // Grafico de colunas verticais agrupadas (mes atual vs. mes anterior) por marca, com a variacao
+      // percentual do grupo fixada no topo do grafico (nao em cima da barra) para nao colidir quando
+      // as alturas das duas colunas sao muito diferentes.
+      function frequenciaDiariaChartHtml(dados) {
+        const w = 640, h = 300, padL = 20, padR = 20, padT = 46, padB = 46;
+        const maxV = Math.max(0.1, ...dados.flatMap((d) => [d.atual, d.anterior ?? 0]));
+        const groupW = (w - padL - padR) / dados.length;
+        const barW = Math.min(46, groupW * 0.26);
+        const gap = 8;
+
+        const conteudo = dados.map((d, i) => {
+          const cor = CORES_MARCA[d.marca];
+          const corAnterior = `${cor}4d`;
+          const cx = padL + i * groupW + groupW / 2;
+          const xAtual = cx - barW - gap / 2;
+          const xAnterior = cx + gap / 2;
+          const areaH = h - padT - padB;
+          const hAtual = maxV ? (d.atual / maxV) * areaH : 0;
+          const yAtual = h - padB - hAtual;
+          const hAnterior = d.anterior === null ? 0 : maxV ? (d.anterior / maxV) * areaH : 0;
+          const yAnterior = h - padB - hAnterior;
+          const variacaoTxt = d.variacao === null ? "" : `${d.variacao >= 0 ? "▲ +" : "▼ "}${d.variacao.toFixed(0)}%`;
+          const corVariacao = d.variacao === null ? "#64748b" : d.variacao >= 0 ? "#16a34a" : "#dc2626";
+          const barraAtual = `<rect class="chart-point" x="${xAtual.toFixed(1)}" y="${yAtual.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(0.5, hAtual).toFixed(1)}" rx="5" fill="${cor}" data-tooltip="${escapeHtml(d.marca)}: ${d.atual.toFixed(2).replace(".", ",")}/dia (mês atual)"></rect>
+            <text x="${(xAtual + barW / 2).toFixed(1)}" y="${(yAtual - 6).toFixed(1)}" font-size="11" font-weight="700" fill="${cor}" text-anchor="middle">${d.atual.toFixed(2).replace(".", ",")}</text>`;
+          const barraAnterior = d.anterior === null ? "" : `<rect class="chart-point" x="${xAnterior.toFixed(1)}" y="${yAnterior.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(0.5, hAnterior).toFixed(1)}" rx="5" fill="${corAnterior}" data-tooltip="${escapeHtml(d.marca)}: ${d.anterior.toFixed(2).replace(".", ",")}/dia (mês anterior)"></rect>
+            <text x="${(xAnterior + barW / 2).toFixed(1)}" y="${(yAnterior - 6).toFixed(1)}" font-size="11" font-weight="700" fill="#94a3b8" text-anchor="middle">${d.anterior.toFixed(2).replace(".", ",")}</text>`;
+          return `${variacaoTxt ? `<text x="${cx.toFixed(1)}" y="20" font-size="12" font-weight="800" fill="${corVariacao}" text-anchor="middle">${variacaoTxt}</text>` : ""}
+            ${barraAtual}
+            ${barraAnterior}
+            <text x="${cx.toFixed(1)}" y="${(h - padB + 20).toFixed(1)}" font-size="11" fill="#64748b" text-anchor="middle">${escapeHtml(d.marca)}</text>`;
+        }).join("");
+
+        return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:320px" role="img" aria-label="Frequência diária por marca, mês atual vs. mês anterior">
+          <line x1="${padL}" y1="${h - padB}" x2="${w - padR}" y2="${h - padB}" stroke="#e2e8f0" stroke-width="1"/>
+          ${conteudo}
+        </svg>
+        <div style="display:flex;gap:16px;justify-content:center;margin-top:2px;font-size:11px;color:#64748b">
+          <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:3px;background:#334155;display:inline-block"></span>Mês atual</span>
+          <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:3px;background:#334155;opacity:.3;display:inline-block"></span>Mês anterior</span>
+        </div>`;
+      }
+
+      function frequenciaDiariaHtml(freqAtualPorMarca, freqAnteriorPorMarca) {
+        const marcas = Object.keys(CORES_MARCA);
+        const dados = marcas.map((marca) => {
+          const atual = freqAtualPorMarca?.[marca] ?? 0;
+          const anterior = freqAnteriorPorMarca ? (freqAnteriorPorMarca[marca] ?? 0) : null;
+          const variacao = anterior === null ? null : anterior > 0 ? ((atual - anterior) / anterior) * 100 : (atual > 0 ? 100 : null);
+          return { marca, atual, anterior, variacao };
+        });
+        return `${frequenciaDiariaChartHtml(dados)}
+          <p class="muted" style="margin:10px 0 0;font-size:12px">${freqAnteriorPorMarca
+            ? "Frequência = posts ÷ dias corridos no período selecionado, comparada ao mesmo intervalo de dias do mês anterior."
+            : `Frequência = posts ÷ dias corridos no período selecionado. Sem período anterior para comparar${state.periodo === "all" ? " (filtro atual = \"Todo o histórico\")" : ""}.`}</p>`;
+      }
+
+      // Grafico de colunas por metrica (Alcance, Taxa Engaj., Posts), mes atual vs. mes anterior, de
+      // uma unica marca. Cada metrica escala pro seu proprio maximo (nao um maximo global) porque
+      // Alcance (milhares) e Taxa (%) e Posts (dezenas) tem ordens de grandeza incompativeis.
+      function evolucaoHistoricaChartHtml(itens, cor) {
+        const w = 640, h = 300, padL = 20, padR = 20, padT = 46, padB = 46;
+        const groupW = (w - padL - padR) / itens.length;
+        const barW = Math.min(46, groupW * 0.26);
+        const gap = 8;
+        const corAnterior = `${cor}4d`;
+
+        const conteudo = itens.map((item, i) => {
+          const itemMax = Math.max(0.0001, item.atual, item.anterior ?? 0);
+          const areaH = h - padT - padB;
+          const cx = padL + i * groupW + groupW / 2;
+          const xAtual = cx - barW - gap / 2;
+          const xAnterior = cx + gap / 2;
+          const hAtual = (item.atual / itemMax) * areaH;
+          const yAtual = h - padB - hAtual;
+          const hAnterior = item.anterior === null ? 0 : (item.anterior / itemMax) * areaH;
+          const yAnterior = h - padB - hAnterior;
+          const variacao = item.anterior === null ? null : item.anterior > 0 ? ((item.atual - item.anterior) / item.anterior) * 100 : (item.atual > 0 ? 100 : null);
+          const variacaoTxt = variacao === null ? "" : `${variacao >= 0 ? "▲ +" : "▼ "}${variacao.toFixed(0)}%`;
+          const corVariacao = variacao === null ? "#64748b" : variacao >= 0 ? "#16a34a" : "#dc2626";
+          const barraAtual = `<rect class="chart-point" x="${xAtual.toFixed(1)}" y="${yAtual.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(0.5, hAtual).toFixed(1)}" rx="5" fill="${cor}" data-tooltip="${escapeHtml(item.label)}: ${escapeHtml(item.formatar(item.atual))} (mês atual)"></rect>
+            <text x="${(xAtual + barW / 2).toFixed(1)}" y="${(yAtual - 6).toFixed(1)}" font-size="11" font-weight="700" fill="${cor}" text-anchor="middle">${escapeHtml(item.formatar(item.atual))}</text>`;
+          const barraAnterior = item.anterior === null ? "" : `<rect class="chart-point" x="${xAnterior.toFixed(1)}" y="${yAnterior.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(0.5, hAnterior).toFixed(1)}" rx="5" fill="${corAnterior}" data-tooltip="${escapeHtml(item.label)}: ${escapeHtml(item.formatar(item.anterior))} (mês anterior)"></rect>
+            <text x="${(xAnterior + barW / 2).toFixed(1)}" y="${(yAnterior - 6).toFixed(1)}" font-size="11" font-weight="700" fill="#94a3b8" text-anchor="middle">${escapeHtml(item.formatar(item.anterior))}</text>`;
+          return `${variacaoTxt ? `<text x="${cx.toFixed(1)}" y="20" font-size="12" font-weight="800" fill="${corVariacao}" text-anchor="middle">${variacaoTxt}</text>` : ""}
+            ${barraAtual}
+            ${barraAnterior}
+            <text x="${cx.toFixed(1)}" y="${(h - padB + 20).toFixed(1)}" font-size="11" fill="#64748b" text-anchor="middle">${escapeHtml(item.label)}</text>`;
+        }).join("");
+
+        return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:320px" role="img" aria-label="Evolução histórica da marca, mês atual vs. mês anterior">
+          <line x1="${padL}" y1="${h - padB}" x2="${w - padR}" y2="${h - padB}" stroke="#e2e8f0" stroke-width="1"/>
+          ${conteudo}
+        </svg>
+        <div style="display:flex;gap:16px;justify-content:center;margin-top:2px;font-size:11px;color:#64748b">
+          <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:3px;background:#334155;display:inline-block"></span>Mês atual</span>
+          <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:3px;background:#334155;opacity:.3;display:inline-block"></span>Mês anterior</span>
+        </div>`;
+      }
+
+      function evolucaoHistoricaSectionHtml(marca, totals, prevTotais) {
+        const cor = CORES_MARCA[marca];
+        const alcanceAtual = totals.alcance_facebook + totals.alcance_instagram;
+        const engajamentoAtual = totals.engajamento_facebook + totals.engajamento_instagram;
+        const taxaAtual = alcanceAtual ? (engajamentoAtual / alcanceAtual) * 100 : 0;
+        const itens = [
+          { label: "Alcance", atual: alcanceAtual, anterior: prevTotais ? prevTotais.alcance : null, formatar: (v) => v === null ? "-" : fmt.format(Math.round(v)) },
+          { label: "Taxa Engaj.", atual: taxaAtual, anterior: prevTotais ? prevTotais.taxa : null, formatar: (v) => v === null ? "-" : `${v.toFixed(2).replace(".", ",")}%` },
+          { label: "Posts", atual: totals.total_periodos, anterior: prevTotais ? prevTotais.posts : null, formatar: (v) => v === null ? "-" : fmt.format(Math.round(v)) }
+        ];
+        return `<section class="card">
+          <h3 style="margin:0">Evolução Histórica da Marca</h3>
+          <p class="muted" style="margin:6px 0 14px">${escapeHtml(marca)} — mês atual vs. mês anterior, por métrica.${prevTotais ? "" : " Sem período anterior para comparar."}</p>
+          ${evolucaoHistoricaChartHtml(itens, cor)}
+        </section>`;
+      }
+
+      // Classifica um post em Reels / Carrossel / Post Unico / Stories: dentro do bucket
+      // "Feed/Carrossel", tipo_conteudo (CAROUSEL_ALBUM/album vindo da Meta) separa Carrossel de
+      // Post Unico - mesma logica usada no detalhamento de feed por rede.
+      function classificarFormatoPost(p) {
+        const bucket = bucketFormato(p.formato);
+        if (bucket === "Reels") return "Reels";
+        if (bucket === "Stories") return "Stories";
+        if (bucket === "Feed/Carrossel") return /carousel|album/i.test(String(p.tipo_conteudo || "")) ? "Carrossel" : "Post Único";
+        return null;
+      }
+
+      // Conta posts por tipo de midia (usado no formato campeao e na composicao de formatos da marca).
+      function contagemFormatoPorMarca(periodos, marca) {
+        const contagem = { "Reels": 0, "Carrossel": 0, "Post Único": 0, "Stories": 0 };
+        periodos.filter((p) => p.marca === marca).forEach((p) => {
+          const key = classificarFormatoPost(p);
+          if (key) contagem[key] += 1;
+        });
+        return contagem;
+      }
+
+      // Soma o engajamento por tipo de midia - mesma classificacao de contagemFormatoPorMarca, so
+      // que somando engajamento_total em vez de contar posts.
+      function engajamentoPorFormatoMarca(periodos, marca) {
+        const soma = { "Reels": 0, "Carrossel": 0, "Post Único": 0, "Stories": 0 };
+        periodos.filter((p) => p.marca === marca).forEach((p) => {
+          const key = classificarFormatoPost(p);
+          if (key) soma[key] += num(p.engajamento_total);
+        });
+        return soma;
+      }
+
+      function formatoSegmentedBarHtml(contagem) {
+        const total = Object.values(contagem).reduce((s, v) => s + v, 0);
+        if (!total) return "";
+        const segmentos = FORMATO_CONTAGEM_ORDEM.filter((k) => contagem[k] > 0).map((k) => {
+          const pct = (contagem[k] / total) * 100;
+          return `<div style="width:${pct.toFixed(2)}%;background:${FORMATO_CONTAGEM_CORES[k]}"></div>`;
+        }).join("");
+        return `<div style="display:flex;height:8px;border-radius:999px;overflow:hidden;background:#f1f5f9;margin-top:10px">${segmentos}</div>`;
+      }
+
+      function formatoCampeaoTabHtml(periodos) {
+        const cards = Object.keys(CORES_MARCA).map((marca) => {
+          const cor = CORES_MARCA[marca];
+          const porFormato = {};
+          periodos.filter((p) => p.marca === marca).forEach((p) => {
+            const bucket = bucketFormato(p.formato);
+            if (!bucket) return;
+            porFormato[bucket] ??= { soma: 0, n: 0 };
+            porFormato[bucket].soma += num(p.taxa_engajamento);
+            porFormato[bucket].n += 1;
+          });
+          const entradas = Object.entries(porFormato).filter(([, v]) => v.n > 0).map(([k, v]) => [k, v.soma / v.n]).sort((a, b) => b[1] - a[1]);
+          const contagem = contagemFormatoPorMarca(periodos, marca);
+          const totalPosts = Object.values(contagem).reduce((s, v) => s + v, 0);
+          const chips = FORMATO_CONTAGEM_ORDEM.filter((k) => contagem[k] > 0).map((k) => `<span style="display:inline-flex;align-items:center;gap:4px;background:${FORMATO_CONTAGEM_CORES[k]}1a;color:${FORMATO_CONTAGEM_CORES[k]};font-weight:700;font-size:11px;padding:3px 9px;border-radius:999px">${contagem[k]} ${escapeHtml(k)}</span>`).join("");
+
+          if (!entradas.length) {
+            return `<div style="border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px">
+              <div style="display:flex;align-items:center;gap:12px">
+                <span style="width:9px;height:9px;border-radius:3px;background:${cor};display:inline-block;flex:none"></span>
+                <div><strong style="display:block;color:#1f2937">${escapeHtml(marca)}</strong><span class="muted" style="font-size:13px">Sem dados de formato suficientes.</span></div>
+              </div>
+            </div>`;
+          }
+
+          const [melhorFormato, taxaMelhor] = entradas[0];
+          const segundo = entradas[1];
+          const comparativoTxt = segundo
+            ? `${escapeHtml(melhorFormato)} (${taxaMelhor.toFixed(2).replace(".", ",")}%) vs. ${escapeHtml(segundo[0])} (${segundo[1].toFixed(2).replace(".", ",")}%)${segundo[1] > 0 ? ` — ${escapeHtml(melhorFormato)} engaja ${(((taxaMelhor / segundo[1]) - 1) * 100).toFixed(0)}% a mais` : ""}`
+            : "Único formato com dados suficientes no período.";
+
+          return `<div style="border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+              <div style="display:flex;align-items:center;gap:12px">
+                <span class="material-symbols-outlined" style="font-size:22px;color:${cor}">${FORMATO_BUCKET_ICONS[melhorFormato] || "photo"}</span>
+                <div><strong style="display:block;color:#1f2937">${escapeHtml(marca)}</strong><span class="muted" style="font-size:13px">${comparativoTxt}</span></div>
+              </div>
+              <b style="color:${cor};font-size:16px;white-space:nowrap">${taxaMelhor.toFixed(2).replace(".", ",")}%</b>
+            </div>
+            <p style="margin:12px 0 0;font-size:12.5px;color:#334155">${escapeHtml(marca)} — ${fmt.format(totalPosts)} posts no período</p>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${chips}</div>
+            ${formatoSegmentedBarHtml(contagem)}
+          </div>`;
+        }).join("");
+        return `<p class="muted" style="margin:12px 0 0;font-size:12px">Comparado ao segundo melhor formato pela taxa média de engajamento (engajamento ÷ alcance) no período.</p>
+          <div style="display:grid;gap:12px;margin-top:10px">${cards}</div>`;
+      }
+
+      function statusRitmo(freqAtual, freqAnterior) {
+        if (!freqAtual) return { label: "Abaixo do Ritmo", cor: "#991b1b", bg: "#fee2e2", variacao: (freqAnterior ?? 0) > 0 ? -100 : null };
+        if (freqAnterior === null || !freqAnterior) return { label: "Ritmo Alto", cor: "#166534", bg: "#dcfce7", variacao: null };
+        const variacao = ((freqAtual - freqAnterior) / freqAnterior) * 100;
+        if (variacao >= 10) return { label: "Ritmo Alto", cor: "#166534", bg: "#dcfce7", variacao };
+        if (variacao <= -10) return { label: "Abaixo do Ritmo", cor: "#991b1b", bg: "#fee2e2", variacao };
+        return { label: "Estável", cor: "#1d4ed8", bg: "#dbeafe", variacao };
+      }
+
+      function constanciaRitmoHtml(rows, freqAtualPorMarca, freqAnteriorPorMarca) {
+        const cards = Object.keys(CORES_MARCA).map((marca) => {
+          const r = rows.find((row) => row.marca === marca);
+          const cor = CORES_MARCA[marca];
+          const freqAtual = freqAtualPorMarca?.[marca] ?? 0;
+          const freqAnterior = freqAnteriorPorMarca ? (freqAnteriorPorMarca[marca] ?? 0) : null;
+          const status = statusRitmo(freqAtual, freqAnterior);
+          const intervaloHoras = freqAtual > 0 ? 24 / freqAtual : null;
+          const intervaloTxt = intervaloHoras
+            ? `Média de 1 post a cada ${intervaloHoras < 24 ? `${intervaloHoras.toFixed(0)}h` : `${(intervaloHoras / 24).toFixed(1)} dias`}`
+            : "Sem publicações suficientes para calcular intervalo";
+          const variacaoTxt = status.variacao === null
+            ? "Sem período anterior para comparar cadência"
+            : `${status.variacao >= 0 ? "+" : ""}${status.variacao.toFixed(0)}% na cadência vs. mês anterior`;
+          return `<div style="border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:12px;min-width:0">
+              <span style="width:9px;height:9px;border-radius:3px;background:${cor};display:inline-block;flex:none"></span>
+              <div style="min-width:0">
+                <strong style="display:block;color:#1f2937">${escapeHtml(marca)}</strong>
+                <span class="muted" style="font-size:12.5px">${variacaoTxt} · ${intervaloTxt}</span>
+                <span class="muted" style="display:block;font-size:12px;margin-top:2px">Último post: ${formatDateTime(r?.ultima_referencia)}</span>
+              </div>
+            </div>
+            <span class="status-pill" style="background:${status.bg};color:${status.cor};white-space:nowrap">${status.label}</span>
+          </div>`;
+        }).join("");
+        return `<p class="muted" style="margin:12px 0 0;font-size:12px">Ritmo comparado ao mesmo intervalo do mês anterior; intervalo médio entre posts calculado a partir da frequência diária de publicações.</p>
+          <div style="display:grid;gap:10px;margin-top:10px">${cards}</div>`;
+      }
+
+      function eficienciaRitmoSectionHtml(rows, periodos, freqAtualPorMarca, freqAnteriorPorMarca) {
+        const tab = state.socialEficienciaTab || "frequencia";
+        const conteudo = tab === "formato"
+          ? formatoCampeaoTabHtml(periodos)
+          : tab === "ritmo"
+            ? constanciaRitmoHtml(rows, freqAtualPorMarca, freqAnteriorPorMarca)
+            : frequenciaDiariaHtml(freqAtualPorMarca, freqAnteriorPorMarca);
+        return `<section class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <h3 style="margin:0">Eficiência & Ritmo do Grupo</h3>
+            <div class="segmented">${EFICIENCIA_TABS.map(([key, label]) => `<button type="button" class="eficiencia-tab-btn ${tab === key ? "active" : ""}" data-tab="${key}">${label}</button>`).join("")}</div>
+          </div>
+          ${conteudo}
+        </section>`;
       }
 
       async function loadFollowerHistoryPorMarca(field, options = {}) {
@@ -1932,6 +2246,19 @@
           </div>`;
         }).join("");
         return `<div class="podium">${cards}</div>`;
+      }
+
+      // Top 3 posts da marca no periodo selecionado, reaproveitando o podio generico acima -
+      // periodos ja vem filtrado por marca quando o filtro nao e "Todas".
+      function topPostsPodioMarcaHtml(periodos, marca) {
+        const posts = periodos.filter((p) => p.marca === marca).map((p) => ({
+          tema: p.tema,
+          post_url: p.post_destaque_semana_url,
+          alcance: num(p.alcance_facebook) + num(p.alcance_instagram),
+          engajamento: num(p.engajamento_total)
+        })).sort((a, b) => b.engajamento - a.engajamento || b.alcance - a.alcance).slice(0, 3);
+        if (!posts.length) return `<p class="muted" style="margin:0">Sem posts suficientes no período para ${escapeHtml(marca)}.</p>`;
+        return podiumHtml(posts);
       }
 
       function rankingSectionHtml(tableId, sortedList, emptyMsg) {
@@ -2864,15 +3191,20 @@
         // schema antigo sem data_publicacao, etc.) os KPIs continuam mostrando os totais atuais,
         // so sem a variacao - por isso tudo isolado num try/catch que nunca derruba a pagina.
         let alcanceDeltaPct = null, engajamentoDeltaPct = null, seguidoresDeltaAbs = null, postsDeltaAbs = null, score = null, scoreDelta = null;
+        let seguidoresNovosAnterior = null;
+        let freqAtualPorMarca = null, freqAnteriorPorMarca = null;
+        let prevTotaisMarca = null;
         let deltaAlcancePorMarca = {};
         const prevRange = previousPeriodRange();
         if (prevRange) {
           try {
-            const [prevTotais, comunidade, prevPorMarca] = await Promise.all([
+            const [prevTotais, comunidade, prevPorMarca, currPorMarca] = await Promise.all([
               loadPeriodTotals(prevRange.from, prevRange.to, state.marca),
               loadCommunityDelta(state.marca, fromDate(), toDate()),
-              Promise.all(Object.keys(CORES_MARCA).map((marca) => loadPeriodTotals(prevRange.from, prevRange.to, marca).then((t) => [marca, t])))
+              Promise.all(Object.keys(CORES_MARCA).map((marca) => loadPeriodTotals(prevRange.from, prevRange.to, marca).then((t) => [marca, t]))),
+              Promise.all(Object.keys(CORES_MARCA).map((marca) => loadPeriodTotals(fromDate(), toDate(), marca).then((t) => [marca, t])))
             ]);
+            prevTotaisMarca = prevTotais;
             alcanceDeltaPct = prevTotais.alcance ? ((alcanceBrutoCombinado - prevTotais.alcance) / prevTotais.alcance) * 100 : null;
             engajamentoDeltaPct = prevTotais.taxa ? engajamentoMedio - prevTotais.taxa : null;
             postsDeltaAbs = totals.total_periodos - prevTotais.posts;
@@ -2885,6 +3217,16 @@
               const alcanceMarcaAtual = num(atualMarca?.alcance_facebook) + num(atualMarca?.alcance_instagram);
               deltaAlcancePorMarca[marca] = t.alcance ? ((alcanceMarcaAtual - t.alcance) / t.alcance) * 100 : null;
             });
+
+            // Frequencia diaria (posts / dias corridos) por marca, mes atual vs. mes anterior - a
+            // mesma janela de dias usada nas outras comparacoes de periodo, so que quebrada por marca
+            // para alimentar as 3 abas do card "Eficiencia & Ritmo do Grupo".
+            const spanAtualDias = periodoSpanDias(fromDate(), toDate());
+            const spanAnteriorDias = periodoSpanDias(prevRange.from, prevRange.to);
+            freqAtualPorMarca = {};
+            freqAnteriorPorMarca = {};
+            currPorMarca.forEach(([marca, t]) => { freqAtualPorMarca[marca] = spanAtualDias ? t.posts / spanAtualDias : 0; });
+            prevPorMarca.forEach(([marca, t]) => { freqAnteriorPorMarca[marca] = spanAnteriorDias ? t.posts / spanAnteriorDias : 0; });
 
             // Score do periodo anterior, encadeando mais um "periodo antes desse" so pra ter algo
             // pra comparar com ele mesmo - da o badge "+N pontos vs periodo anterior" do card Score.
@@ -2899,10 +3241,26 @@
               const prevSeguidoresDeltaPct = prevComunidadeAnterior ? (prevComunidade.delta / prevComunidadeAnterior) * 100 : 0;
               const prevScore = computeExecutiveScore({ taxaEngajamento: prevTotais.taxa, alcanceDeltaPct: prevAlcanceDeltaPct, seguidoresDeltaPct: prevSeguidoresDeltaPct });
               scoreDelta = score - prevScore;
+              seguidoresNovosAnterior = prevComunidade.delta;
             }
           } catch {
             // silencioso - os KPIs caem para "sem periodo anterior para comparar"
           }
+        }
+
+        // Sem periodo anterior disponivel (filtro "Todo o historico" ou a comparacao acima falhou):
+        // a frequencia do mes atual ainda da pra mostrar, usando o span real dos dados carregados -
+        // so a coluna "mes anterior" das abas de Eficiencia & Ritmo fica de fora.
+        if (!freqAtualPorMarca) {
+          const datasCarregadas = periodos.map((p) => p.data_referencia).filter(Boolean).sort();
+          const spanFallback = datasCarregadas.length
+            ? Math.max(1, Math.round((new Date(datasCarregadas.at(-1)) - new Date(datasCarregadas[0])) / 86400000) + 1)
+            : null;
+          freqAtualPorMarca = {};
+          Object.keys(CORES_MARCA).forEach((marca) => {
+            const posts = num(rows.find((row) => row.marca === marca)?.total_periodos);
+            freqAtualPorMarca[marca] = spanFallback ? posts / spanFallback : 0;
+          });
         }
 
         const lastSync = await loadUltimaSincronizacao("vw_integracao_meta_contas_publica", state.marca).catch(() => null);
@@ -2925,33 +3283,45 @@
           <div class="grid kpis" style="grid-template-columns:repeat(5,minmax(0,1fr))">
             ${kpiWithDelta("Alcance", fmt.format(alcanceBrutoCombinado), "public", deltaLineHtml(alcanceDeltaPct))}
             ${kpiWithDelta("Engajamento", `${engajamentoMedio.toFixed(2).replace(".", ",")}%`, "favorite", deltaLineHtml(engajamentoDeltaPct, { suffix: "p.p. vs. taxa anterior" }))}
-            ${kpiWithDelta("Seguidores", fmt.format(comunidadeTotal), "diversity_3", deltaLineAbsHtml(seguidoresDeltaAbs))}
-            ${kpiWithDelta("Posts", fmt.format(totals.total_periodos), "calendar_month", deltaLineAbsHtml(postsDeltaAbs, { suffix: "posts no período" }))}
-            ${kpiWithDelta("Score Geral", score === null ? "-" : `${score}/100`, "military_tech", scoreDelta === null
-              ? `<small class="muted" style="display:block;margin-top:4px">Engajamento 50% · alcance 30% · seguidores 20%</small>`
-              : `<small style="display:block;margin-top:4px;font-weight:700;color:${scoreDelta >= 0 ? "#16a34a" : "#dc2626"}">${scoreDelta >= 0 ? "+" : ""}${scoreDelta} ponto${Math.abs(scoreDelta) === 1 ? "" : "s"} vs. período anterior</small>`)}
+            ${kpiWithDelta("Seguidores", fmt.format(comunidadeTotal), "diversity_3", seguidoresFooterHtml(seguidoresDeltaAbs, seguidoresNovosAnterior))}
+            ${kpiWithDelta("Posts", fmt.format(totals.total_periodos), "calendar_month", comparativoFooterHtml({
+              atual: totals.total_periodos,
+              anterior: postsDeltaAbs === null ? null : totals.total_periodos - postsDeltaAbs,
+              unidade: " posts",
+              sufixoDelta: " posts"
+            }))}
+            ${kpiWithDelta("Score Geral", score === null ? "-" : `${score}/100`, "military_tech", comparativoFooterHtml({
+              atual: score,
+              anterior: scoreDelta === null ? null : score - scoreDelta,
+              formatar: (v) => `${v}`,
+              unidade: "/100",
+              sufixoDelta: " ponto" + (scoreDelta !== null && Math.abs(scoreDelta) === 1 ? "" : "s"),
+              fallbackHtml: `<small class="muted" style="display:block;margin-top:4px">Engajamento 50% · alcance 30% · seguidores 20%</small>`
+            }))}
           </div>
 
           <div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-top:18px">
-            ${socialCompareSectionHtml(rows)}
+            ${state.marca === "Todas"
+              ? socialCompareSectionHtml(rows)
+              : evolucaoHistoricaSectionHtml(state.marca, totals, prevTotaisMarca)}
             <section class="card">
-              <h3>Share of Performance</h3>
-              <p class="muted" style="margin:6px 0 14px">Participação de cada marca no alcance e no engajamento combinados do período.</p>
-              ${shareOfPerformanceHtml(rows)}
+              <h3>${state.marca === "Todas" ? "Participação no Resultado por Marca" : "Composição de Formatos da Marca"}</h3>
+              <p class="muted" style="margin:6px 0 14px">${state.marca === "Todas"
+                ? "Participação de cada marca no alcance e no engajamento combinados do período."
+                : `Fatia de Reels, Carrossel e Post Único de ${escapeHtml(state.marca)} no período, por número de posts e por engajamento.`}</p>
+              ${state.marca === "Todas" ? shareOfPerformanceHtml(rows) : formatoComposicaoMarcaHtml(periodos, state.marca)}
             </section>
           </div>
 
-          <div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-top:18px">
+          <div class="grid cols" style="grid-template-columns:repeat(${state.marca === "Todas" ? 2 : 1},minmax(0,1fr));margin-top:18px">
             <section class="card">
-              <h3>🏆 Ranking das Marcas</h3>
-              <p class="muted" style="margin:6px 0 14px">Marcas ordenadas pela taxa de engajamento do período, com variação de alcance.</p>
-              ${brandPodiumHtml(rows, deltaAlcancePorMarca)}
+              <h3>${state.marca === "Todas" ? "🏆 Ranking das Marcas" : "🏆 Top 3 Posts da Marca"}</h3>
+              <p class="muted" style="margin:6px 0 14px">${state.marca === "Todas"
+                ? "Marcas ordenadas pela taxa de engajamento do período, com variação de alcance."
+                : `Posts de ${escapeHtml(state.marca)} com maior engajamento no período selecionado.`}</p>
+              ${state.marca === "Todas" ? brandPodiumHtml(rows, deltaAlcancePorMarca) : topPostsPodioMarcaHtml(periodos, state.marca)}
             </section>
-            <section class="card">
-              <h3>🤖 Insights IA</h3>
-              <p class="muted" style="margin:6px 0 14px">Melhor formato, melhor horário e alertas de frequência por marca, lidos direto dos dados do período.</p>
-              ${aiInsightsListHtml(generateAIInsights(rows, periodos, ranking))}
-            </section>
+            ${state.marca === "Todas" ? eficienciaRitmoSectionHtml(rows, periodos, freqAtualPorMarca, freqAnteriorPorMarca) : ""}
           </div>
 
           <section class="card" style="margin-top:18px">
@@ -2972,6 +3342,9 @@
         wireSocialTabs();
         document.querySelectorAll(".compare-metric-btn").forEach((button) => {
           button.onclick = () => { state.socialCompareMetric = button.dataset.metric; renderSocialBI(); };
+        });
+        document.querySelectorAll(".eficiencia-tab-btn").forEach((button) => {
+          button.onclick = () => { state.socialEficienciaTab = button.dataset.tab; renderSocialBI(); };
         });
       }
 
