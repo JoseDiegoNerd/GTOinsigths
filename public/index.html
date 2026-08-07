@@ -21,19 +21,26 @@
       .login { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
       .login-card { width: min(420px, 100%); display: grid; gap: 16px; background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 28px; box-shadow: 0 12px 30px rgba(15,23,42,.1); }
       .brand { width: 44px; height: 44px; border-radius: 10px; display: grid; place-items: center; background: #2563eb; color: white; font-weight: 800; }
-      .shell { display: grid; grid-template-columns: 260px minmax(0, 1fr); min-height: 100vh; }
-      aside { background: #0f172a; color: white; padding: 18px 12px; display: flex; flex-direction: column; gap: 22px; }
-      .side-brand { display: flex; align-items: center; gap: 12px; padding: 0 10px; }
+      .shell { display: flex; height: 100vh; overflow: hidden; }
+      aside { width: 260px; height: 100vh; flex: none; background: #0f172a; color: white; padding: 16px 12px; display: flex; flex-direction: column; justify-content: space-between; gap: 12px; overflow-y: auto; }
+      .side-brand { display: flex; align-items: center; gap: 12px; padding: 0 10px; flex: none; }
       aside h1 { margin: 0; font-size: 18px; }
       aside small, aside span { color: #cbd5e1; }
-      nav { display: grid; gap: 6px; }
-      nav button { display: flex; gap: 10px; align-items: center; justify-content: flex-start; background: transparent; color: #cbd5e1; border-left: 3px solid transparent; }
+      nav { display: grid; gap: 2px; }
+      nav button { display: flex; gap: 10px; align-items: center; justify-content: flex-start; background: transparent; color: #cbd5e1; border-left: 3px solid transparent; padding: 9px 10px; }
       nav button.active, nav button:hover { background: rgba(var(--accent-rgb),.12); color: white; border-left-color: var(--accent); }
-      .profile { margin-top: auto; display: grid; gap: 8px; border-top: 1px solid rgba(255,255,255,.12); padding: 12px; }
-      .profile button { background: rgba(255,255,255,.08); }
-      header { min-height: 64px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 32px; background: white; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 2; }
-      main { min-width: 0; }
-      .content { padding: 32px; display: grid; gap: 24px; min-width: 0; }
+      .profile { margin-top: auto; flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid rgba(255,255,255,.12); padding: 10px 12px; }
+      .profile-info { display: grid; gap: 1px; min-width: 0; }
+      .profile-info strong { font-size: 13px; font-weight: 600; color: #f1f5f9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .profile-info span { display: block; font-size: 11px; color: #94a3b8; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .profile-actions { display: flex; gap: 4px; flex: none; }
+      .icon-btn { position: relative; flex: none; width: 26px; height: 26px; padding: 0; border-radius: 7px; background: rgba(255,255,255,.08); color: #cbd5e1; display: inline-flex; align-items: center; justify-content: center; }
+      .icon-btn .material-symbols-outlined { font-size: 15px; }
+      .icon-btn:hover { background: rgba(255,255,255,.18); color: white; }
+      .icon-btn[title]:hover::after { content: attr(title); position: absolute; bottom: calc(100% + 7px); left: 50%; transform: translateX(-50%); background: #1e293b; color: white; font-size: 11px; font-weight: 600; padding: 4px 8px; border-radius: 6px; white-space: nowrap; box-shadow: 0 6px 16px rgba(0,0,0,.35); pointer-events: none; z-index: 5; }
+      main { min-width: 0; flex: 1; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
+      header { min-height: 64px; flex: none; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 32px; background: white; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 2; }
+      .content { padding: 32px; display: grid; gap: 24px; min-width: 0; flex: 1; }
       .content > * { min-width: 0; }
       .page-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; align-items: end; }
       .page-head h2 { margin: 4px 0; font-size: 30px; overflow-wrap: anywhere; }
@@ -62,6 +69,11 @@
       th.sortable-th:hover { color: var(--accent); }
       th.sortable-th.active { color: var(--accent); }
       th.sortable-th .sort-indicator { font-size: 9px; margin-left: 2px; }
+      .ads-table th, .ads-table td { padding: 6px 10px; font-size: 12.5px; }
+      .truncate-cell { display: inline-block; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+      .creativo-trigger { cursor: zoom-in; }
+      .creativo-trigger .creativo-thumb { transition: transform .15s ease, box-shadow .15s ease; }
+      .creativo-trigger:hover .creativo-thumb { transform: scale(1.6); box-shadow: 0 4px 14px rgba(15,23,42,.35); position: relative; z-index: 5; }
       .podium { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; gap: 24px; margin: 4px 0 20px; }
       .podium-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px 18px; text-align: center; box-shadow: 0 1px 2px rgba(15,23,42,.05); }
       .podium-card.rank-1 { order: 2; border-color: #f2c94c; background: linear-gradient(180deg,#fffbea,#fff); }
@@ -132,12 +144,50 @@
       .dropdown-item.active { background: var(--accent); color: white; }
       .dropdown-dates { border-top: 1px solid #e2e8f0; margin-top: 6px; padding-top: 8px; display: grid; gap: 8px; }
       .dropdown-dates label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; display: grid; gap: 4px; }
+      .topbar-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+      .status-online-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #166534; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 999px; padding: 5px 12px; white-space: nowrap; }
+      .status-online-dot { position: relative; display: inline-flex; width: 8px; height: 8px; flex: none; }
+      .status-online-dot::after { content: ""; display: block; width: 8px; height: 8px; border-radius: 50%; background: #34d399; }
+      .status-online-ping { position: absolute; inset: 0; border-radius: 50%; background: #34d399; opacity: .75; animation: status-ping 1.6s cubic-bezier(0,0,.2,1) infinite; }
+      @keyframes status-ping { 75%, 100% { transform: scale(2.4); opacity: 0; } }
+      .topbar-profile { position: relative; }
+      .topbar-profile-trigger { display: inline-flex; align-items: center; gap: 8px; background: transparent; border: 1px solid transparent; border-radius: 999px; padding: 4px 12px 4px 4px; cursor: pointer; color: #1f2937; }
+      .topbar-profile-trigger:hover { background: #f8fafc; border-color: #e2e8f0; }
+      .topbar-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; overflow: hidden; flex: none; }
+      .topbar-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .topbar-greeting { font-size: 13px; font-weight: 600; white-space: nowrap; }
+      .topbar-dropdown .dropdown-item { display: flex; align-items: center; gap: 8px; }
       .dropdown-dates input { font-size: 13px; font-weight: 500; width: 100%; box-sizing: border-box; padding: 6px 8px; border: 1px solid #d8e3fb; border-radius: 6px; color: #334155; }
       .chart-point { cursor: pointer; }
       .chart-tooltip { position: fixed; z-index: 50; background: #1e293b; color: #fff; padding: 8px 11px; border-radius: 8px; font-size: 12px; line-height: 1.5; pointer-events: none; box-shadow: 0 10px 24px rgba(15,23,42,.28); display: none; max-width: 220px; }
       .chart-tooltip strong { display: block; margin-bottom: 2px; }
       .diag-trigger { padding: 6px 10px; font-size: 12px; font-weight: 800; }
       .diag-trigger:hover { filter: brightness(0.96); }
+      .profile-avatar-row { display: flex; align-items: center; gap: 16px; }
+      .profile-avatar { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 800; flex: none; overflow: hidden; }
+      .profile-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .profile-avatar-actions { display: grid; gap: 4px; }
+      .profile-avatar-actions label { text-transform: none; font-size: 13px; font-weight: 700; color: #334155; }
+      .field-hint { font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: none; margin: 4px 0 0; }
+      .field-error { font-size: 11px; color: #dc2626; font-weight: 700; text-transform: none; margin: 4px 0 0; }
+      .marca-checks { display: grid; gap: 8px; }
+      .marca-check { display: flex; align-items: center; gap: 10px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; font-size: 13px; font-weight: 600; color: #334155; text-transform: none; cursor: pointer; }
+      .marca-check input { width: 16px; height: 16px; accent-color: var(--accent); }
+      .marca-check.disabled { opacity: .6; cursor: not-allowed; }
+      .switch { position: relative; display: inline-block; width: 42px; height: 24px; flex: none; }
+      .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+      .switch .slider { position: absolute; inset: 0; background: #cbd5e1; border-radius: 999px; cursor: pointer; transition: background .15s; }
+      .switch .slider::before { content: ""; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: transform .15s; box-shadow: 0 1px 2px rgba(15,23,42,.3); }
+      .switch input:checked + .slider { background: var(--accent); }
+      .switch input:checked + .slider::before { transform: translateX(18px); }
+      .switch input:disabled + .slider { opacity: .5; cursor: not-allowed; }
+      .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid #e2e8f0; }
+      .switch-row:last-child { border-bottom: 0; }
+      .switch-row-label { display: grid; gap: 2px; }
+      .switch-row-label strong { font-size: 14px; color: #1f2937; font-weight: 700; }
+      .switch-row-label span { font-size: 12px; color: #64748b; font-weight: 500; text-transform: none; }
+      .modal-section-title { margin: 4px 0 0; font-size: 12px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: .04em; }
+      .profile-modal-form { display: grid; gap: 16px; }
       .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,.55); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
       .modal-overlay[hidden] { display: none; }
       .modal-panel { background: #fff; border-radius: 16px; max-width: 560px; width: 100%; max-height: 88vh; overflow-y: auto; box-shadow: 0 24px 64px rgba(15,23,42,.35); }
@@ -156,7 +206,14 @@
       .login-hero .side-brand { padding: 0; }
       .login-form-side { display: flex; align-items: center; justify-content: center; padding: 24px; }
       @media (max-width: 860px) { .login-split { grid-template-columns: 1fr; } .login-hero { padding: 32px 24px; } }
-      @media (max-width: 980px) { .shell, .kpis, .cols, .insight-grid { grid-template-columns: 1fr; } aside { min-height: auto; } .page-head, .filters { flex-direction: column; align-items: stretch; } .bar-row { grid-template-columns: 1fr; } }
+      @media (max-width: 980px) {
+        .kpis, .cols, .insight-grid { grid-template-columns: 1fr; }
+        .shell { flex-direction: column; height: auto; overflow: visible; }
+        aside { width: 100%; height: auto; overflow: visible; }
+        main { height: auto; overflow: visible; }
+        .page-head, .filters { flex-direction: column; align-items: stretch; }
+        .bar-row { grid-template-columns: 1fr; }
+      }
     </style>
   </head>
   <body>
@@ -210,7 +267,7 @@
         social_format_metrics: "stage_social_format_metrics"
       };
 
-      let state = { session: null, perfil: null, page: "dashboard", marca: "Todas", periodo: "30d", periodoDe: "", periodoAte: "", periodoMenuOpen: false, rows: [], rd: [], meta: [], google: null, propostas: [], bi: null, channels: null, email: null, emailSelectedId: null, social: null, socialFormat: null, socialTab: "geral", connections: [], bestTimes: null, socialCompareMetric: "alcance", socialEficienciaTab: "frequencia", compareA: { de: "", ate: "" }, compareB: { de: "", ate: "" } };
+      let state = { session: null, perfil: null, page: "dashboard", marca: "Todas", periodo: "30d", periodoDe: "", periodoAte: "", periodoMenuOpen: false, rows: [], rd: [], meta: [], google: null, propostas: [], bi: null, channels: null, email: null, emailSelectedId: null, social: null, socialFormat: null, socialTab: "geral", connections: [], bestTimes: null, socialCompareMetric: "alcance", socialEficienciaTab: "frequencia", compareA: { de: "", ate: "" }, compareB: { de: "", ate: "" }, adsStatusFilter: "todas", adsObjetivoFilter: "todos", adsCrossMetric: "alcance", adsSortColumn: "investimento", adsSortDirection: "desc", topbarMenuOpen: false };
 
       const fmt = new Intl.NumberFormat("pt-BR");
       const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
@@ -1125,6 +1182,119 @@
         document.querySelector("#resetPasswordForm").addEventListener("submit", updatePassword);
       }
 
+      // Saudacao dinamica da topbar baseada na hora do sistema (do navegador, nao do servidor) -
+      // 05h-11h59 bom dia, 12h-17h59 boa tarde, 18h-04h59 boa noite.
+      function saudacaoPorHorario() {
+        const hora = new Date().getHours();
+        if (hora >= 5 && hora < 12) return "Bom dia";
+        if (hora >= 12 && hora < 18) return "Boa tarde";
+        return "Boa noite";
+      }
+
+      function primeiroNome(nomeCompleto) {
+        const nome = String(nomeCompleto || "").trim();
+        return nome ? nome.split(" ")[0] : "";
+      }
+
+      function topbarAvatarHtml() {
+        const url = state.perfil?.avatar_url;
+        if (url) return `<img src="${escapeHtml(url)}" alt="" referrerpolicy="no-referrer">`;
+        const base = (state.perfil?.nome || state.session?.user?.email || "?").trim();
+        return escapeHtml(base.charAt(0).toUpperCase() || "?");
+      }
+
+      // Badge "Authenticated" generico virou perfil do usuario + saudacao por horario + status de
+      // conexao - o dropdown reaproveita as mesmas acoes que ja existiam na barra lateral
+      // (editar perfil / sair), so que mais a mao no topo da tela.
+      // "Preferencias" removida por enquanto: nao existe um modal de configuracoes do sistema
+      // separado ainda, e o modal de Editar Perfil ja embute as preferencias de notificacao - ter
+      // os dois itens abrindo o mesmo modal era confuso/duplicado. Reintroduzir quando houver um
+      // modal de preferencias de verdade (relatorios, etc.).
+      function topbarProfileMenuHtml() {
+        const nomeExibicao = primeiroNome(state.perfil?.nome) || state.session?.user?.email || "Usuário";
+        const saudacao = `${saudacaoPorHorario()}, ${nomeExibicao}!`;
+        return `
+          <div class="topbar-actions">
+            <span class="status-online-pill" title="Conexão com o Supabase ativa">
+              <span class="status-online-dot"><span class="status-online-ping"></span></span>
+              Dados Sincronizados
+            </span>
+            <div class="dropdown topbar-profile" id="topbarProfile">
+              <button type="button" class="topbar-profile-trigger" id="topbarProfileTrigger" aria-haspopup="true" aria-expanded="${state.topbarMenuOpen ? "true" : "false"}">
+                <span class="topbar-avatar">${topbarAvatarHtml()}</span>
+                <span class="topbar-greeting" id="topbarGreeting">${escapeHtml(saudacao)}</span>
+                <span class="material-symbols-outlined" style="font-size:18px">expand_more</span>
+              </button>
+              ${state.topbarMenuOpen ? `
+                <div class="dropdown-menu topbar-dropdown">
+                  <button type="button" class="dropdown-item" id="topbarEditProfile"><span class="material-symbols-outlined" style="font-size:18px">edit</span>Editar Perfil</button>
+                  <button type="button" class="dropdown-item" id="topbarLogout"><span class="material-symbols-outlined" style="font-size:18px">logout</span>Sair</button>
+                </div>` : ""}
+            </div>
+          </div>`;
+      }
+
+      // Fecha o dropdown removendo o no do DOM na hora, em vez de so atualizar `state` e esperar um
+      // proximo render() acontecer - abrir o modal de perfil (openProfileModal) ou fazer logout
+      // (signOut) nao re-renderiza o cabecalho por conta propria, entao so mexer no `state` deixava
+      // o menu "preso" visualmente aberto atras do modal. Chamar isso synchronamente garante que o
+      // menu some imediatamente em qualquer um dos 3 casos: clique numa opcao, novo clique no
+      // trigger, ou clique fora.
+      function closeTopbarMenu() {
+        if (!state.topbarMenuOpen) return;
+        state.topbarMenuOpen = false;
+        document.querySelector(".topbar-dropdown")?.remove();
+        document.querySelector("#topbarProfileTrigger")?.setAttribute("aria-expanded", "false");
+      }
+
+      function wireTopbarProfileMenu() {
+        document.querySelector("#topbarProfileTrigger")?.addEventListener("click", (event) => {
+          event.stopPropagation();
+          if (state.topbarMenuOpen) {
+            closeTopbarMenu();
+          } else {
+            state.topbarMenuOpen = true;
+            render();
+          }
+        });
+        document.querySelector("#topbarEditProfile")?.addEventListener("click", (event) => {
+          event.stopPropagation();
+          closeTopbarMenu();
+          openProfileModal();
+        });
+        document.querySelector("#topbarLogout")?.addEventListener("click", (event) => {
+          event.stopPropagation();
+          closeTopbarMenu();
+          signOut();
+        });
+      }
+
+      let topbarOutsideClickBound = false;
+      function bindTopbarOutsideClick() {
+        if (topbarOutsideClickBound) return;
+        topbarOutsideClickBound = true;
+        document.addEventListener("click", (event) => {
+          if (!state.topbarMenuOpen) return;
+          const dropdown = document.querySelector("#topbarProfile");
+          if (dropdown && !dropdown.contains(event.target)) closeTopbarMenu();
+        });
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape") closeTopbarMenu();
+        });
+      }
+      bindTopbarOutsideClick();
+
+      // A saudacao e calculada a cada render(), mas se a aba ficar aberta sem nenhuma interacao
+      // durante a virada de turno (ex.: 11h59 -> 12h00) o texto ficaria parado ate a proxima acao
+      // do usuario - esse intervalo so atualiza o <span> da saudacao (sem re-renderizar o resto da
+      // tela, pra nao fechar dropdowns/modais abertos nem perder o que o usuario esta digitando).
+      setInterval(() => {
+        const el = document.querySelector("#topbarGreeting");
+        if (!el || !state.perfil) return;
+        const nomeExibicao = primeiroNome(state.perfil?.nome) || state.session?.user?.email || "Usuário";
+        el.textContent = `${saudacaoPorHorario()}, ${nomeExibicao}!`;
+      }, 60000);
+
       async function render() {
         if (!state.session) return renderLogin();
         applyBrandTheme();
@@ -1142,15 +1312,28 @@
               <button id="navGMN" class="${state.page === "google_business" ? "active" : ""}"><span class="material-symbols-outlined">store</span>Google Meu Negócio</button>
               <button id="navImport" class="${state.page === "import" ? "active" : ""}"><span class="material-symbols-outlined">upload_file</span>Importar Planilhas</button>
             </nav>
-            <div class="profile"><strong>${state.perfil?.nome || state.session.user.email}</strong><span>${state.perfil?.cargo || "Perfil"} · ${state.perfil?.marca_vinculada || "Todas as marcas"}</span><button id="logout">Sair</button></div>
+            <div class="profile">
+              <div class="profile-info">
+                <strong>${escapeHtml(state.perfil?.nome || state.session.user.email)}</strong>
+                <span>${escapeHtml(state.perfil?.cargo_oficial || state.perfil?.cargo || "Perfil")} · ${escapeHtml(state.perfil?.marca_vinculada || "Todas as marcas")}</span>
+              </div>
+              <div class="profile-actions">
+                <button id="editProfile" class="icon-btn" title="Editar perfil" aria-label="Editar perfil"><span class="material-symbols-outlined">edit</span></button>
+                <button id="logout" class="icon-btn" title="Sair" aria-label="Sair"><span class="material-symbols-outlined">logout</span></button>
+              </div>
+            </div>
           </aside>
           <main>
-            <header><div><strong>${pageTitle()}</strong><br><span class="muted">Supabase com RLS por marca</span></div><span class="alert success">Authenticated</span></header>
+            <header><div><strong>${pageTitle()}</strong><br><span class="muted">Supabase com RLS por marca</span></div>${topbarProfileMenuHtml()}</header>
             <div class="content" id="content"></div>
           </main>
           <div class="chart-tooltip" id="chartTooltip"></div>
-          <div class="modal-overlay" id="diagnosticoModal" hidden></div>`;
+          <div class="modal-overlay" id="diagnosticoModal" hidden></div>
+          <div class="modal-overlay" id="profileModal" hidden></div>
+          <div class="modal-overlay" id="creativoModal" hidden></div>`;
         document.querySelector("#logout").onclick = signOut;
+        document.querySelector("#editProfile").onclick = openProfileModal;
+        wireTopbarProfileMenu();
         document.querySelector("#navDash").onclick = () => { state.page = "dashboard"; render(); };
         document.querySelector("#navCred").onclick = () => { state.page = "credsystem"; render(); };
         document.querySelector("#navEmail").onclick = () => { state.page = "email"; render(); };
@@ -1522,6 +1705,33 @@
         return { alcance, engajamento, posts: rows.length, taxa: alcance ? (engajamento / alcance) * 100 : 0 };
       }
 
+      async function loadAdsPeriodTotals(marcaFiltro, from, to) {
+        const rows = await fetchRowsInRange(
+          "stage_meta_ads_metrics",
+          "investimento,impressoes,alcance,cliques,cliques_link,conversoes",
+          marcaFiltro,
+          "data_referencia",
+          from,
+          to
+        );
+        const totals = rows.reduce((acc, row) => ({
+          investimento: acc.investimento + num(row.investimento),
+          impressoes: acc.impressoes + num(row.impressoes),
+          alcance: acc.alcance + num(row.alcance),
+          cliques: acc.cliques + num(row.cliques),
+          cliquesLink: acc.cliquesLink + num(row.cliques_link),
+          conversoes: acc.conversoes + num(row.conversoes)
+        }), { investimento: 0, impressoes: 0, alcance: 0, cliques: 0, cliquesLink: 0, conversoes: 0 });
+        return {
+          ...totals,
+          cpmMedio: totals.impressoes ? (totals.investimento / totals.impressoes) * 1000 : 0,
+          cpcMedio: totals.cliques ? totals.investimento / totals.cliques : 0,
+          ctrMedio: totals.impressoes ? (totals.cliques / totals.impressoes) * 100 : 0,
+          cpaMedio: totals.conversoes ? totals.investimento / totals.conversoes : 0,
+          taxaConversaoClique: totals.cliques ? (totals.conversoes / totals.cliques) * 100 : 0
+        };
+      }
+
       async function loadCommunityDelta(marcaFiltro, from, to) {
         const [ig, fb] = await Promise.all([
           loadFollowerHistoryPorMarca("seguidores_instagram", { marcaFiltro, from, to }),
@@ -1584,6 +1794,49 @@
           ? ` · Mês anterior: ${novosAnterior >= 0 ? "+" : ""}${fmt.format(novosAnterior)}`
           : "";
         return `<small class="muted" style="display:block;margin-top:4px">Novos no mês: <span style="font-weight:700;color:${cor}">${sinalAtual}${fmt.format(novosAtual)}</span>${anteriorTxt}</small>`;
+      }
+
+      // Mes anterior "sem dado real" para fins de comparacao: null/undefined (query falhou ou nao ha
+      // filtro de periodo) ou 0 (sem historico suficiente ainda - ex.: conta de anuncios conectada ha
+      // menos dias que a duracao do periodo filtrado) - nos dois casos dividir ou subtrair geraria um
+      // numero enganoso (ex.: "+100%"), entao os dois helpers abaixo caem pro badge sutil "Periodo
+      // base" em vez de calcular.
+      function semPeriodoAnteriorAds(anterior) {
+        return anterior === null || anterior === undefined || !Number.isFinite(anterior) || anterior === 0;
+      }
+
+      function periodoBaseBadgeHtml() {
+        return `<small style="display:block;margin-top:4px"><span class="muted" style="display:inline-block;padding:1px 8px;border-radius:999px;background:#f1f5f9;font-size:11px;font-weight:600" title="Ainda não há dados de um período anterior completo para comparar (histórico de sincronização recente).">Período base</span></small>`;
+      }
+
+      // Rodape para KPIs de Anuncios (Investimento/Alcance/Impressoes/Cliques): variacao percentual
+      // vs. mes anterior, verde para alta e vermelho para queda - `invert` inverte o sentido da cor
+      // para metricas onde "menor" e bom.
+      function adsDeltaPercentHtml(atual, anterior, { invert = false } = {}) {
+        if (semPeriodoAnteriorAds(anterior)) {
+          return periodoBaseBadgeHtml();
+        }
+        const deltaPct = ((atual - anterior) / anterior) * 100;
+        const positivo = invert ? deltaPct <= 0 : deltaPct >= 0;
+        const cor = positivo ? "#16a34a" : "#dc2626";
+        const seta = deltaPct >= 0 ? "▲" : "▼";
+        const sinal = deltaPct >= 0 ? "+" : "-";
+        return `<small class="muted" style="display:block;margin-top:4px"><span style="font-weight:700;color:${cor}">${seta} ${sinal}${Math.abs(deltaPct).toFixed(1).replace(".", ",")}%</span> vs. mês anterior</small>`;
+      }
+
+      // Rodape para KPIs de Anuncios em valor absoluto (CPM/CPC em R$, CTR em p.p.): mostra o delta
+      // exato vs. mes anterior - `invert` inverte o sentido da cor para metricas de custo (CPM/CPC),
+      // onde uma queda e uma melhoria (verde) e uma alta e um problema (vermelho).
+      function adsDeltaAbsHtml(atual, anterior, { formatar = (v) => v.toFixed(2).replace(".", ","), prefix = "", suffix = "", invert = false } = {}) {
+        if (semPeriodoAnteriorAds(anterior)) {
+          return periodoBaseBadgeHtml();
+        }
+        const delta = atual - anterior;
+        const positivo = invert ? delta <= 0 : delta >= 0;
+        const cor = positivo ? "#16a34a" : "#dc2626";
+        const seta = delta >= 0 ? "▲" : "▼";
+        const sinal = delta >= 0 ? "+" : "-";
+        return `<small class="muted" style="display:block;margin-top:4px"><span style="font-weight:700;color:${cor}">${seta} ${sinal}${prefix}${formatar(Math.abs(delta))}${suffix}</span> vs. mês anterior</small>`;
       }
 
       function kpiWithDelta(label, value, icon, deltaHtml) {
@@ -3149,6 +3402,287 @@
       }
       bindDiagnosticoModal();
 
+      // Modal "Perfil do Usuario": nome/avatar/cargo oficial ficam livres para o proprio
+      // usuario editar; nivel de acesso, marcas atribuidas e status da conta so mudam para
+      // Admin/Gestor (a RLS de public.perfis_marcas e o trigger em public.perfis bloqueiam
+      // essas colunas no backend mesmo que alguem burle a UI, entao o disabled aqui e so
+      // conveniencia visual - a trava de verdade esta no banco).
+      const marcasDisponiveis = ["Tesoura de Ouro", "Magazine da Economia", "Free Center Calçados"];
+      const cargosDisponiveis = ["Admin", "Gestor", "Coordenador", "Analista"];
+
+      function isPrivilegiado() {
+        return state.perfil?.cargo === "Admin" || state.perfil?.cargo === "Gestor";
+      }
+
+      let profileModalState = null;
+
+      async function openProfileModal() {
+        const overlay = document.querySelector("#profileModal");
+        if (!overlay || !state.perfil) return;
+        const { data: marcasRows } = await supabase.from("perfis_marcas").select("marca").eq("perfil_id", state.perfil.id);
+        profileModalState = {
+          avatarUrl: state.perfil.avatar_url || null,
+          avatarUploading: false,
+          marcas: (marcasRows || []).map((r) => r.marca),
+          saving: false,
+          error: ""
+        };
+        overlay.innerHTML = profileModalPanelHtml();
+        overlay.hidden = false;
+        wireProfileModal();
+      }
+
+      function closeProfileModal() {
+        const overlay = document.querySelector("#profileModal");
+        if (overlay) { overlay.hidden = true; overlay.innerHTML = ""; }
+        profileModalState = null;
+      }
+
+      function profileAvatarPreviewHtml() {
+        const url = profileModalState.avatarUrl;
+        if (url) return `<div class="profile-avatar"><img src="${escapeHtml(url)}" alt="Avatar" /></div>`;
+        const base = (state.perfil?.nome || state.perfil?.email || "?").trim();
+        return `<div class="profile-avatar">${escapeHtml(base.charAt(0).toUpperCase() || "?")}</div>`;
+      }
+
+      function profileModalPanelHtml() {
+        const p = state.perfil;
+        const privilegiado = isPrivilegiado();
+        const marcas = profileModalState.marcas;
+        const todasMarcadas = marcasDisponiveis.every((m) => marcas.includes(m));
+
+        return `<div class="modal-panel">
+          <div class="modal-header">
+            <div>
+              <p style="margin:0 0 4px;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Perfil do usuário</p>
+              <h3 style="margin:0;font-size:17px">Editar perfil</h3>
+            </div>
+            <button type="button" class="modal-close" id="profileModalClose"><span class="material-symbols-outlined">close</span></button>
+          </div>
+          <form id="profileForm" class="modal-body profile-modal-form">
+            <div class="profile-avatar-row" id="profileAvatarRow">
+              ${profileAvatarPreviewHtml()}
+              <div class="profile-avatar-actions">
+                <label for="profileAvatarInput">Avatar / foto de perfil</label>
+                <input type="file" id="profileAvatarInput" accept="image/png,image/jpeg,image/webp" ${profileModalState.avatarUploading ? "disabled" : ""} />
+                <p class="field-hint" id="profileAvatarHint">${profileModalState.avatarUploading ? "Enviando imagem..." : "PNG, JPG ou WEBP, até 4MB."}</p>
+              </div>
+            </div>
+
+            <label>Nome completo
+              <input name="nome" type="text" required value="${escapeHtml(p.nome || "")}" />
+            </label>
+
+            <label>E-mail corporativo
+              <input name="email" type="email" value="${escapeHtml(p.email || state.session.user.email || "")}" readonly disabled />
+            </label>
+
+            <label>Cargo oficial
+              <input name="cargo_oficial" type="text" placeholder="ex.: Analista de Tráfego" value="${escapeHtml(p.cargo_oficial || "")}" />
+            </label>
+
+            <label>Nível de acesso
+              <select name="cargo" ${privilegiado ? "" : "disabled"}>
+                ${cargosDisponiveis.map((c) => `<option value="${c}" ${p.cargo === c ? "selected" : ""}>${c}</option>`).join("")}
+              </select>
+            </label>
+            ${!privilegiado ? `<p class="field-hint" style="margin-top:-10px">Somente Admin/Gestor pode alterar o nível de acesso.</p>` : ""}
+
+            <div>
+              <p class="modal-section-title">Marcas atribuídas</p>
+              <div class="marca-checks" style="margin-top:8px">
+                <label class="marca-check ${privilegiado ? "" : "disabled"}">
+                  <input type="checkbox" data-marca-all ${todasMarcadas ? "checked" : ""} ${privilegiado ? "" : "disabled"} />
+                  Todas
+                </label>
+                ${marcasDisponiveis.map((m) => `<label class="marca-check ${privilegiado ? "" : "disabled"}">
+                  <input type="checkbox" data-marca="${escapeHtml(m)}" ${marcas.includes(m) ? "checked" : ""} ${privilegiado ? "" : "disabled"} />
+                  ${escapeHtml(m)}
+                </label>`).join("")}
+              </div>
+              <p class="field-hint">${privilegiado ? "Necessário selecionar ao menos uma marca." : "Somente Admin/Gestor pode alterar as marcas atribuídas."}</p>
+            </div>
+
+            <div class="switch-row">
+              <div class="switch-row-label"><strong>Status da conta</strong><span>${p.ativo ? "Ativo" : "Inativo"} · controla o acesso ao sistema</span></div>
+              <label class="switch">
+                <input type="checkbox" name="ativo" ${p.ativo ? "checked" : ""} ${privilegiado ? "" : "disabled"} />
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div>
+              <p class="modal-section-title">Preferências de notificação</p>
+              <div class="switch-row">
+                <div class="switch-row-label"><strong>Resumos semanais por e-mail</strong><span>Envio semanal com os principais indicadores.</span></div>
+                <label class="switch">
+                  <input type="checkbox" name="notif_resumo_semanal" ${p.notif_resumo_semanal !== false ? "checked" : ""} />
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="switch-row">
+                <div class="switch-row-label"><strong>Alertas de queda de performance</strong><span>Aviso quando uma métrica cair fora do esperado.</span></div>
+                <label class="switch">
+                  <input type="checkbox" name="notif_alerta_performance" ${p.notif_alerta_performance !== false ? "checked" : ""} />
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+
+            ${profileModalState.error ? `<div class="alert error">${escapeHtml(profileModalState.error)}</div>` : ""}
+
+            <div class="actions" style="justify-content:flex-end">
+              <button type="button" class="secondary" id="profileCancel">Cancelar</button>
+              <button type="submit" id="profileSubmit" ${profileModalState.saving || profileModalState.avatarUploading ? "disabled" : ""}>${profileModalState.saving ? "Salvando..." : "Salvar alterações"}</button>
+            </div>
+          </form>
+        </div>`;
+      }
+
+      function refreshProfileModal() {
+        const overlay = document.querySelector("#profileModal");
+        if (!overlay || overlay.hidden || !profileModalState) return;
+        overlay.innerHTML = profileModalPanelHtml();
+        wireProfileModal();
+      }
+
+      function wireProfileModal() {
+        const overlay = document.querySelector("#profileModal");
+        document.querySelector("#profileModalClose").onclick = closeProfileModal;
+        document.querySelector("#profileCancel").onclick = closeProfileModal;
+        document.querySelector("#profileForm").onsubmit = submitProfileForm;
+        overlay.onclick = (event) => { if (event.target.id === "profileModal") closeProfileModal(); };
+
+        const avatarInput = document.querySelector("#profileAvatarInput");
+        if (avatarInput) avatarInput.onchange = (event) => handleAvatarUpload(event.target.files?.[0]);
+
+        const allCheckbox = overlay.querySelector("[data-marca-all]");
+        const marcaCheckboxes = overlay.querySelectorAll("[data-marca]");
+        if (allCheckbox) {
+          allCheckbox.onchange = () => {
+            profileModalState.marcas = allCheckbox.checked ? [...marcasDisponiveis] : [];
+            marcaCheckboxes.forEach((el) => { el.checked = profileModalState.marcas.includes(el.dataset.marca); });
+          };
+        }
+        marcaCheckboxes.forEach((el) => {
+          el.onchange = () => {
+            const marca = el.dataset.marca;
+            if (el.checked) { if (!profileModalState.marcas.includes(marca)) profileModalState.marcas.push(marca); }
+            else { profileModalState.marcas = profileModalState.marcas.filter((m) => m !== marca); }
+            if (allCheckbox) allCheckbox.checked = marcasDisponiveis.every((m) => profileModalState.marcas.includes(m));
+          };
+        });
+      }
+
+      async function handleAvatarUpload(file) {
+        if (!file || !profileModalState) return;
+        const hint = document.querySelector("#profileAvatarHint");
+        const input = document.querySelector("#profileAvatarInput");
+        if (file.size > 4 * 1024 * 1024) {
+          if (hint) hint.textContent = "Arquivo maior que 4MB. Escolha uma imagem menor.";
+          if (input) input.value = "";
+          return;
+        }
+        profileModalState.avatarUploading = true;
+        if (input) input.disabled = true;
+        if (hint) hint.textContent = "Enviando imagem...";
+        try {
+          const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+          const path = `${state.session.user.id}/avatar.${ext}`;
+          const { error: uploadError } = await supabase.storage.from("avatars").upload(path, file, { upsert: true, cacheControl: "3600" });
+          if (uploadError) throw uploadError;
+          const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+          profileModalState.avatarUrl = `${data.publicUrl}?v=${Date.now()}`;
+          const row = document.querySelector("#profileAvatarRow");
+          if (row) row.querySelector(".profile-avatar").outerHTML = profileAvatarPreviewHtml();
+          if (hint) hint.textContent = "Imagem atualizada.";
+        } catch (error) {
+          if (hint) hint.textContent = error.message || "Falha ao enviar imagem.";
+        } finally {
+          profileModalState.avatarUploading = false;
+          if (input) { input.disabled = false; input.value = ""; }
+        }
+      }
+
+      async function submitProfileForm(event) {
+        event.preventDefault();
+        if (!profileModalState) return;
+        const form = event.currentTarget;
+        const data = new FormData(form);
+        const nome = (data.get("nome") || "").toString().trim();
+        const cargoOficial = (data.get("cargo_oficial") || "").toString().trim();
+        const cargo = (data.get("cargo") || state.perfil.cargo || "").toString();
+        const ativo = form.querySelector('input[name="ativo"]').checked;
+        const notifResumo = form.querySelector('input[name="notif_resumo_semanal"]').checked;
+        const notifAlerta = form.querySelector('input[name="notif_alerta_performance"]').checked;
+        const marcas = profileModalState.marcas;
+        const privilegiado = isPrivilegiado();
+
+        const errors = [];
+        if (!nome) errors.push("Informe o nome completo.");
+        if (!cargo) errors.push("Selecione o nível de acesso.");
+        if (privilegiado && marcas.length === 0) errors.push("Selecione ao menos uma marca atribuída.");
+
+        if (errors.length) {
+          profileModalState.error = errors.join(" ");
+          refreshProfileModal();
+          return;
+        }
+
+        profileModalState.saving = true;
+        profileModalState.error = "";
+        refreshProfileModal();
+
+        try {
+          const payload = {
+            nome,
+            cargo_oficial: cargoOficial || null,
+            avatar_url: profileModalState.avatarUrl,
+            notif_resumo_semanal: notifResumo,
+            notif_alerta_performance: notifAlerta
+          };
+          if (privilegiado) {
+            payload.cargo = cargo;
+            payload.ativo = ativo;
+          }
+          const { error: updateError } = await supabase.from("perfis").update(payload).eq("id", state.perfil.id);
+          if (updateError) throw updateError;
+
+          if (privilegiado) {
+            const atuais = await supabase.from("perfis_marcas").select("marca").eq("perfil_id", state.perfil.id);
+            const atuaisMarcas = (atuais.data || []).map((r) => r.marca);
+            const paraAdicionar = marcas.filter((m) => !atuaisMarcas.includes(m));
+            const paraRemover = atuaisMarcas.filter((m) => !marcas.includes(m));
+            if (paraAdicionar.length) {
+              const { error: insertError } = await supabase.from("perfis_marcas").insert(paraAdicionar.map((marca) => ({ perfil_id: state.perfil.id, marca })));
+              if (insertError) throw insertError;
+            }
+            for (const marca of paraRemover) {
+              const { error: deleteError } = await supabase.from("perfis_marcas").delete().eq("perfil_id", state.perfil.id).eq("marca", marca);
+              if (deleteError) throw deleteError;
+            }
+          }
+
+          await loadPerfil();
+          closeProfileModal();
+          await render();
+        } catch (error) {
+          profileModalState.saving = false;
+          profileModalState.error = error.message || "Não foi possível salvar as alterações.";
+          refreshProfileModal();
+        }
+      }
+
+      let profileModalBound = false;
+      function bindProfileModalGlobal() {
+        if (profileModalBound) return;
+        profileModalBound = true;
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape" && profileModalState) closeProfileModal();
+        });
+      }
+      bindProfileModalGlobal();
+
       function redeIconSmall(rede) {
         return rede === "Instagram" ? instagramIcon(16) : rede === "Facebook" ? facebookIcon(16) : "-";
       }
@@ -3451,12 +3985,16 @@
               campaign_name: row.campaign_name,
               objetivo: row.objetivo,
               status: row.status,
+              destino_url: row.destino_url || null,
+              criativo_thumbnail_url: row.criativo_thumbnail_url || null,
+              criativo_formato: row.criativo_formato || null,
               data_referencia: row.data_referencia,
               investimento: num(row.investimento),
               impressoes: num(row.impressoes),
               alcance: num(row.alcance),
               cliques: num(row.cliques),
-              cliques_link: num(row.cliques_link)
+              cliques_link: num(row.cliques_link),
+              conversoes: num(row.conversoes)
             });
             continue;
           }
@@ -3466,11 +4004,19 @@
           existing.alcance += num(row.alcance);
           existing.cliques += num(row.cliques);
           existing.cliques_link += num(row.cliques_link);
+          existing.conversoes += num(row.conversoes);
           if ((row.data_referencia || "") > (existing.data_referencia || "")) {
             existing.campaign_name = row.campaign_name;
             existing.objetivo = row.objetivo;
             existing.status = row.status;
             existing.data_referencia = row.data_referencia;
+            if (row.destino_url) existing.destino_url = row.destino_url;
+            if (row.criativo_thumbnail_url) existing.criativo_thumbnail_url = row.criativo_thumbnail_url;
+            if (row.criativo_formato) existing.criativo_formato = row.criativo_formato;
+          } else {
+            if (!existing.destino_url && row.destino_url) existing.destino_url = row.destino_url;
+            if (!existing.criativo_thumbnail_url && row.criativo_thumbnail_url) existing.criativo_thumbnail_url = row.criativo_thumbnail_url;
+            if (!existing.criativo_formato && row.criativo_formato) existing.criativo_formato = row.criativo_formato;
           }
         }
 
@@ -3479,8 +4025,948 @@
           campaign.cpm = campaign.impressoes ? (campaign.investimento / campaign.impressoes) * 1000 : 0;
           campaign.cpc = campaign.cliques ? campaign.investimento / campaign.cliques : 0;
           campaign.ctr = campaign.impressoes ? (campaign.cliques / campaign.impressoes) * 100 : 0;
+          campaign.cpa = campaign.conversoes ? campaign.investimento / campaign.conversoes : 0;
+          campaign.taxaConversaoClique = campaign.cliques ? (campaign.conversoes / campaign.cliques) * 100 : 0;
         }
         return grouped;
+      }
+
+      function adsStatusFilterHtml() {
+        const opcoes = [["todas", "Todas"], ["ativas", "Ativas"], ["pausadas", "Pausadas"]];
+        return `<div class="pills">${opcoes.map(([value, label]) => `<button type="button" class="pill ads-status-pill ${state.adsStatusFilter === value ? "active" : ""}" data-status="${value}">${label}</button>`).join("")}</div>`;
+      }
+
+      function wireAdsStatusPills(onSelect) {
+        document.querySelectorAll(".ads-status-pill").forEach((button) => {
+          button.onclick = () => {
+            state.adsStatusFilter = button.dataset.status;
+            onSelect();
+          };
+        });
+      }
+
+      // Agrupa os varios `objective` do Marketing API nos 3 baldes de negocio que o filtro exibe -
+      // campanhas com objetivo fora desses baldes (ex.: Vendas/Leads) so aparecem em "Todos os
+      // Objetivos", ja que o pedido definiu so essas 3 categorias + "Todos".
+      const ADS_OBJETIVO_BALDES = {
+        trafego: ["LINK_CLICKS", "OUTCOME_TRAFFIC"],
+        engajamento: ["OUTCOME_ENGAGEMENT", "POST_ENGAGEMENT"],
+        reconhecimento: ["OUTCOME_AWARENESS", "REACH"]
+      };
+
+      function campanhaNoBaldeObjetivo(objetivo, balde) {
+        if (balde === "todos") return true;
+        return (ADS_OBJETIVO_BALDES[balde] || []).includes(objetivo);
+      }
+
+      function adsObjetivoFilterHtml() {
+        const opcoes = [
+          ["todos", "Todos os Objetivos"],
+          ["trafego", "Tráfego / Cliques"],
+          ["engajamento", "Engajamento"],
+          ["reconhecimento", "Reconhecimento / Alcance"]
+        ];
+        return `<div class="pills">${opcoes.map(([value, label]) => `<button type="button" class="pill ads-objetivo-pill ${state.adsObjetivoFilter === value ? "active" : ""}" data-objetivo="${value}">${label}</button>`).join("")}</div>`;
+      }
+
+      function wireAdsObjetivoPills(onSelect) {
+        document.querySelectorAll(".ads-objetivo-pill").forEach((button) => {
+          button.onclick = () => {
+            state.adsObjetivoFilter = button.dataset.objetivo;
+            onSelect();
+          };
+        });
+      }
+
+      function campaignFormatoIcon(formato) {
+        return { "Vídeo": "movie", "Carrossel": "view_carousel", "Imagem": "image" }[formato] || "image";
+      }
+
+      const CAMPAIGN_OBJETIVO_TITULO = {
+        LINK_CLICKS: "Anúncio de Tráfego",
+        OUTCOME_TRAFFIC: "Anúncio de Tráfego",
+        OUTCOME_ENGAGEMENT: "Impulsionamento de Post",
+        POST_ENGAGEMENT: "Impulsionamento de Post",
+        OUTCOME_LEADS: "Geração de Leads",
+        OUTCOME_SALES: "Anúncio de Conversão",
+        CONVERSIONS: "Anúncio de Conversão",
+        OUTCOME_AWARENESS: "Anúncio de Reconhecimento",
+        REACH: "Anúncio de Alcance"
+      };
+
+      // Canal citado no proprio nome/URL da campanha, so pra dar um sufixo reconhecivel ao titulo
+      // limpo (ex.: "Anúncio de Tráfego - Instagram") em vez de deixar generico demais.
+      function campaignUrlChannelSuffix(url) {
+        try {
+          const host = new URL(url).hostname.replace(/^www\./, "");
+          if (host.includes("instagram.com")) return "Instagram";
+          if (host.includes("facebook.com") || host.includes("fb.com")) return "Facebook";
+          if (host.includes("linktr.ee") || host.includes("linktree") || host.includes("listink.bio")) return "Linktree";
+          if (host.includes("whatsapp.com") || host.includes("wa.me")) return "WhatsApp";
+          return null;
+        } catch {
+          return null;
+        }
+      }
+
+      // Higienizacao do nome da campanha: quando o nome bruto e (ou contem) uma URL gigante - ex.
+      // "[22/07/2026] Promovendo \"https://listink.bio/hlyym-uqub\"" - troca por um titulo curto e
+      // legivel derivado do objetivo da campanha (+ canal, se reconhecivel na URL). O nome original
+      // completo continua disponivel no tooltip (atributo title) da celula, entao nada se perde.
+      function campaignFriendlyLabel(row) {
+        const nome = String(row.campaign_name || row.campaign_id || "").trim();
+        if (!nome) return "Campanha sem nome";
+        const urlMatch = nome.match(/https?:\/\/\S+/i);
+        if (!urlMatch) return nome;
+        const titulo = CAMPAIGN_OBJETIVO_TITULO[row.objetivo] || "Anúncio Publicitário";
+        const canal = campaignUrlChannelSuffix(urlMatch[0].replace(/["')]+$/, ""));
+        return canal ? `${titulo} - ${canal}` : titulo;
+      }
+
+      function campaignEhIneficiente(r) {
+        return num(r.ctr) < 1.0 || num(r.cpc) > 1.5;
+      }
+
+      function campaignAlertBadgeHtml(r) {
+        if (!campaignEhIneficiente(r)) return "";
+        return `<div style="margin-top:2px"><span style="display:inline-block;padding:1px 7px;border-radius:999px;background:#fee2e2;color:#991b1b;font-size:10.5px;font-weight:700;white-space:nowrap" title="CTR abaixo de 1,0% ou CPC acima de R$ 1,50 — considere pausar ou revisar o criativo.">⚠️ Alto Custo / Baixo CTR</span></div>`;
+      }
+
+      function campaignNameCellHtml(r) {
+        const bruto = r.campaign_name || r.campaign_id;
+        return `<div style="max-width:280px">
+          <span class="truncate-cell" title="${escapeHtml(bruto)}">${escapeHtml(campaignFriendlyLabel(r))}</span>
+          ${campaignAlertBadgeHtml(r)}
+        </div>`;
+      }
+
+      // Cache de linhas por id efemero: o clique na thumbnail so manda o id no dataset (HTML nao
+      // carrega objeto), entao o modal busca a linha completa aqui na hora de abrir.
+      let creativoModalSeq = 0;
+      const creativoRowCache = new Map();
+
+      // Deteccao de link cruzado entre marcas: a mesma conta de anuncios as vezes roda campanhas
+      // promovendo o perfil/pagina de OUTRA marca do grupo (achado real, nao bug de sync - ver
+      // conversa: campanha dentro da conta da Tesoura de Ouro promovendo "Lojas Free Center
+      // Calcados"). So sinaliza quando o destino bate com uma palavra-chave de outra marca
+      // conhecida; links nao reconhecidos (dominios curtos, Linktree etc.) nao sao flagados, pra
+      // evitar falso positivo.
+      const ADS_BRAND_LINK_KEYWORDS = {
+        "Tesoura de Ouro": ["tesouradeouro"],
+        "Magazine da Economia": ["magazinedaeconomia"],
+        "Free Center Calçados": ["freecenter"]
+      };
+
+      function adsLinkDeOutraMarca(destinoUrl, marcaAtual) {
+        if (!destinoUrl) return null;
+        const alvo = destinoUrl.toLowerCase();
+        const propriosKeywords = ADS_BRAND_LINK_KEYWORDS[marcaAtual] || [];
+        if (propriosKeywords.some((kw) => alvo.includes(kw))) return null;
+        for (const [marca, keywords] of Object.entries(ADS_BRAND_LINK_KEYWORDS)) {
+          if (marca === marcaAtual) continue;
+          if (keywords.some((kw) => alvo.includes(kw))) return marca;
+        }
+        return null;
+      }
+
+      function adsLinkOutraMarcaBadgeHtml(outraMarca) {
+        if (!outraMarca) return "";
+        return `<span title="Este link de destino aponta para ${escapeHtml(outraMarca)}, não para a marca desta campanha - confira a configuração no Gerenciador de Anúncios." style="display:inline-flex;align-items:center;color:#b45309;flex:none;cursor:help"><span class="material-symbols-outlined" style="font-size:16px">warning</span></span>`;
+      }
+
+      // Thumbnail 32x32 do criativo (fallback: icone do formato), clicavel (abre modal em alta
+      // resolucao) + hover com leve zoom pra indicar que e interativa, e botao de link externo pra
+      // URL de destino ao lado - substitui a antiga coluna de texto "Ação / Link".
+      function campaignCreativeCellHtml(r) {
+        const id = `creativo-${creativoModalSeq++}`;
+        creativoRowCache.set(id, r);
+        const thumbInner = r.criativo_thumbnail_url
+          ? `<img src="${escapeHtml(r.criativo_thumbnail_url)}" alt="" loading="lazy" referrerpolicy="no-referrer" class="creativo-thumb" style="width:32px;height:32px;border-radius:6px;object-fit:cover;flex:none;background:#e2e8f0" onerror="this.outerHTML='<span class=&quot;material-symbols-outlined creativo-thumb&quot; style=&quot;width:32px;height:32px;border-radius:6px;background:#f1f5f9;color:#94a3b8;display:flex;align-items:center;justify-content:center;font-size:18px;flex:none&quot;>${campaignFormatoIcon(r.criativo_formato)}</span>'">`
+          : `<span class="material-symbols-outlined creativo-thumb" style="width:32px;height:32px;border-radius:6px;background:#f1f5f9;color:#94a3b8;display:flex;align-items:center;justify-content:center;font-size:18px;flex:none">${campaignFormatoIcon(r.criativo_formato)}</span>`;
+        const thumbButton = `<button type="button" class="creativo-trigger" data-creativo-id="${id}" title="Clique para ver o criativo em alta resolução" aria-label="Ver criativo em alta resolução" style="border:none;background:none;padding:0;line-height:0">${thumbInner}</button>`;
+        const link = r.destino_url && /^https?:\/\//i.test(r.destino_url)
+          ? `<a href="${escapeHtml(r.destino_url)}" target="_blank" rel="noopener noreferrer" title="Abrir link de destino em nova aba" aria-label="Abrir link de destino" style="display:inline-flex;color:#64748b;flex:none"><span class="material-symbols-outlined" style="font-size:16px">open_in_new</span></a>`
+          : "";
+        const alertaOutraMarca = adsLinkOutraMarcaBadgeHtml(adsLinkDeOutraMarca(r.destino_url, r.marca));
+        return `<div style="display:flex;align-items:center;gap:6px">${thumbButton}${link}${alertaOutraMarca}</div>`;
+      }
+
+      // Modal "Pré-visualização do criativo": imagem grande (ou icone do formato se nao houver
+      // thumbnail) + nome amigavel/original + link de destino, no mesmo padrao visual do modal de
+      // Raio-X do post (mesmas classes .modal-panel/.modal-header/.modal-body).
+      function creativoModalPanelHtml(row) {
+        const nomeOriginal = row.campaign_name || row.campaign_id;
+        const formato = row.criativo_formato || "Imagem";
+        const media = row.criativo_thumbnail_url
+          ? `<img src="${escapeHtml(row.criativo_thumbnail_url)}" alt="" referrerpolicy="no-referrer" style="width:100%;max-height:520px;object-fit:contain;border-radius:10px;background:#0f172a">`
+          : `<div style="display:flex;align-items:center;justify-content:center;height:280px;border-radius:10px;background:#f1f5f9;color:#94a3b8"><span class="material-symbols-outlined" style="font-size:64px">${campaignFormatoIcon(formato)}</span></div>`;
+        return `<div class="modal-panel" style="max-width:560px">
+          <div class="modal-header">
+            <div>
+              <p style="margin:0 0 4px;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Pré-visualização do criativo</p>
+              <h3 style="margin:0 0 6px;font-size:17px" title="${escapeHtml(nomeOriginal)}">${escapeHtml(campaignFriendlyLabel(row))}</h3>
+              <p style="margin:0;font-size:13px;color:#64748b;display:flex;align-items:center;gap:6px">${escapeHtml(row.marca)} · ${escapeHtml(formato)} · ${campaignStatusPill(row.status)}</p>
+            </div>
+            <button type="button" class="modal-close" id="creativoModalClose"><span class="material-symbols-outlined">close</span></button>
+          </div>
+          <div class="modal-body">
+            ${media}
+            ${(() => {
+              const outraMarca = adsLinkDeOutraMarca(row.destino_url, row.marca);
+              return outraMarca
+                ? `<div class="alert error" style="margin-top:14px;font-size:12.5px"><span class="material-symbols-outlined" style="font-size:16px;vertical-align:-3px;margin-right:4px">warning</span>Este link de destino aponta para <strong>${escapeHtml(outraMarca)}</strong>, não para ${escapeHtml(row.marca)} — vale confirmar a configuração desta campanha no Gerenciador de Anúncios.</div>`
+                : "";
+            })()}
+            ${row.destino_url && /^https?:\/\//i.test(row.destino_url)
+              ? `<a href="${escapeHtml(row.destino_url)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:6px;margin-top:14px;font-weight:700;color:var(--accent);text-decoration:none">Abrir link de destino <span class="material-symbols-outlined" style="font-size:18px">open_in_new</span></a>`
+              : `<p class="muted" style="margin:14px 0 0">Sem link de destino disponível.</p>`}
+          </div>
+        </div>`;
+      }
+
+      function closeCreativoModal() {
+        const overlay = document.querySelector("#creativoModal");
+        if (overlay) { overlay.hidden = true; overlay.innerHTML = ""; }
+      }
+
+      function openCreativoModal(row) {
+        const overlay = document.querySelector("#creativoModal");
+        if (!overlay) return;
+        overlay.innerHTML = creativoModalPanelHtml(row);
+        overlay.hidden = false;
+        document.querySelector("#creativoModalClose").onclick = closeCreativoModal;
+      }
+
+      let creativoModalBound = false;
+      function bindCreativoModal() {
+        if (creativoModalBound) return;
+        creativoModalBound = true;
+        document.addEventListener("click", (event) => {
+          const trigger = event.target.closest(".creativo-trigger");
+          if (trigger) {
+            const row = creativoRowCache.get(trigger.dataset.creativoId);
+            if (row) openCreativoModal(row);
+            return;
+          }
+          if (event.target.id === "creativoModal") closeCreativoModal();
+        });
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape") closeCreativoModal();
+        });
+      }
+      bindCreativoModal();
+
+      const ADS_SORT_COLUMNS = {
+        investimento: { getValue: (r) => num(r.investimento), primaryDir: "desc" },
+        alcance: { getValue: (r) => num(r.alcance), primaryDir: "desc" },
+        ctr: { getValue: (r) => num(r.ctr), primaryDir: "desc" },
+        cpc: { getValue: (r) => num(r.cpc), primaryDir: "asc" }
+      };
+
+      function sortAdsRows(list, column, direction) {
+        const col = ADS_SORT_COLUMNS[column];
+        if (!col) return list;
+        const sorted = [...list].sort((a, b) => col.getValue(a) - col.getValue(b));
+        return direction === "asc" ? sorted : sorted.reverse();
+      }
+
+      function adsSortableThHtml(column, label) {
+        const active = state.adsSortColumn === column;
+        const arrow = active ? (state.adsSortDirection === "asc" ? "▲" : "▼") : "";
+        return `<th class="sortable-th${active ? " active" : ""}" data-ads-sort="${column}">${label} <span class="sort-indicator">${arrow}</span></th>`;
+      }
+
+      // "Maior Investimento/Alcance/CTR" comeca em desc no primeiro clique (o topo importa mais que
+      // o fundo), "Menor CPC" comeca em asc (custo baixo primeiro) - clicar de novo na mesma coluna
+      // inverte a direcao.
+      function wireAdsSortableHeaders(onSelect) {
+        document.querySelectorAll("th[data-ads-sort]").forEach((th) => {
+          th.onclick = () => {
+            const column = th.dataset.adsSort;
+            if (state.adsSortColumn === column) {
+              state.adsSortDirection = state.adsSortDirection === "desc" ? "asc" : "desc";
+            } else {
+              state.adsSortColumn = column;
+              state.adsSortDirection = ADS_SORT_COLUMNS[column].primaryDir;
+            }
+            onSelect();
+          };
+        });
+      }
+
+      // Totais de Anuncios por marca (Investimento/Impressoes/Alcance/Cliques), a partir das linhas
+      // de campanha ja carregadas para a tela - alimenta os dois graficos e o card de saturacao da
+      // secao "Analise Cruzada e Eficiencia de Midia", que so aparece com o filtro "Todas".
+      function adsTotaisPorMarca(rows) {
+        const porMarca = {};
+        Object.keys(CORES_MARCA).forEach((marca) => {
+          porMarca[marca] = rows.filter((r) => r.marca === marca).reduce((acc, r) => ({
+            investimento: acc.investimento + num(r.investimento),
+            impressoes: acc.impressoes + num(r.impressoes),
+            alcance: acc.alcance + num(r.alcance),
+            cliques: acc.cliques + num(r.cliques)
+          }), { investimento: 0, impressoes: 0, alcance: 0, cliques: 0 });
+        });
+        return porMarca;
+      }
+
+      const ADS_CROSS_METRICS = [
+        ["alcance", "Investimento vs. Alcance"],
+        ["impressoes", "Investimento vs. Impressões"],
+        ["cliques", "Investimento vs. Cliques"]
+      ];
+
+      // Benchmarks de mercado usados no diagnostico automatico de eficiencia (secao "Diagnostico de
+      // Eficiencia por Marca" + badges nos graficos). CPC/CPM/CPR sao "menor e melhor" (custo), CTR e
+      // "maior e melhor" (taxa de conversao do clique) - ver ADS_BENCHMARKS_TOOLTIP pro texto exibido
+      // no icone de ajuda.
+      const ADS_BENCHMARKS = {
+        cpc: { bom: 0.30, regular: 0.45 },
+        cpm: { bom: 5.00, regular: 7.50 },
+        ctr: { bom: 2.5, regular: 1.5 }
+      };
+      const ADS_BENCHMARKS_TOOLTIP = "CPC Ideal: até R$ 0,30 · CPM Ideal: até R$ 5,00 · CTR Ideal: a partir de 2,5%";
+
+      function adsClassificarCusto(valor, { bom, regular }) {
+        if (valor <= bom) return "boa";
+        if (valor <= regular) return "regular";
+        return "ruim";
+      }
+
+      function adsClassificarTaxa(valor, { bom, regular }) {
+        if (valor >= bom) return "boa";
+        if (valor >= regular) return "regular";
+        return "ruim";
+      }
+
+      // Diagnostico completo de uma marca: classifica CPC/CPM/CTR contra o benchmark, soma pontos
+      // (boa=2, regular=1, ruim=0) pra chegar no selo geral (verde >=5, amarelo >=3, vermelho <3) e
+      // monta as recomendacoes textuais de acordo com qual metrica esta puxando o resultado pra baixo.
+      function adsDiagnosticoMarca({ cpc, cpm, cpr, ctr }) {
+        const statusCpc = adsClassificarCusto(cpc, ADS_BENCHMARKS.cpc);
+        const statusCpm = adsClassificarCusto(cpm, ADS_BENCHMARKS.cpm);
+        const statusCpr = adsClassificarCusto(cpr, ADS_BENCHMARKS.cpm);
+        const statusCtr = adsClassificarTaxa(ctr, ADS_BENCHMARKS.ctr);
+
+        const pontos = { boa: 2, regular: 1, ruim: 0 };
+        const total = pontos[statusCpc] + pontos[statusCpm] + pontos[statusCtr];
+        const nivel = total >= 5 ? "boa" : total >= 3 ? "regular" : "ruim";
+        const selo = {
+          boa: { emoji: "🟢", label: "BOM / ALTA EFICIÊNCIA", cor: "#16a34a", bg: "#dcfce7" },
+          regular: { emoji: "🟡", label: "REGULAR / SAUDÁVEL", cor: "#b45309", bg: "#fef3c7" },
+          ruim: { emoji: "🔴", label: "ATENÇÃO / NECESSITA OTIMIZAÇÃO", cor: "#dc2626", bg: "#fee2e2" }
+        }[nivel];
+
+        const recomendacoes = [];
+        if (statusCtr === "ruim") recomendacoes.push("CTR baixo — recomenda-se testar novos criativos para elevar o interesse do público.");
+        else if (statusCtr === "regular") recomendacoes.push("CTR na média — vale testar novos criativos para elevar ainda mais o CTR.");
+        if (statusCpc === "ruim") recomendacoes.push("CPC elevado — ação: trocar as peças publicitárias com urgência para melhorar a conversão do clique.");
+        if (statusCpm === "ruim" || statusCpr === "ruim") recomendacoes.push("CPM/CPR disparado — revise a segmentação de público para reduzir o custo de exibição.");
+        if (!recomendacoes.length) recomendacoes.push("Métricas dentro ou acima do benchmark de mercado — manter a estratégia atual.");
+
+        return { statusCpc, statusCpm, statusCpr, statusCtr, nivel, selo, recomendacoes };
+      }
+
+      // Custos derivados (CPC/CPM/CPR/CTR) de uma marca a partir dos totais brutos ja agregados.
+      function adsCustosPorMarca(t) {
+        const investimento = num(t?.investimento);
+        const impressoes = num(t?.impressoes);
+        const alcance = num(t?.alcance);
+        const cliques = num(t?.cliques);
+        return {
+          cpc: cliques ? investimento / cliques : 0,
+          cpm: impressoes ? (investimento / impressoes) * 1000 : 0,
+          cpr: alcance ? (investimento / alcance) * 1000 : 0,
+          ctr: impressoes ? (cliques / impressoes) * 100 : 0
+        };
+      }
+
+      function adsDiagnosticoPorMarca(porMarca) {
+        const resultado = {};
+        Object.keys(CORES_MARCA).forEach((marca) => {
+          resultado[marca] = adsDiagnosticoMarca(adsCustosPorMarca(porMarca[marca]));
+        });
+        return resultado;
+      }
+
+      // Badge de 3 niveis (boa/regular/ruim) desenhado dentro do proprio SVG do grafico, acima de
+      // cada grupo de barras - a largura e estimada pelo tamanho do texto pra centralizar direito
+      // sem precisar medir o texto de verdade (SVG nao tem "measureText" facil aqui).
+      function adsNivelBadgeTexto(nivel) {
+        return { boa: "Excelente", regular: "Dentro da Média", ruim: "Abaixo do Benchmark" }[nivel] || "Dentro da Média";
+      }
+
+      function adsBadgeSvgHtml(centerX, baseline, nivel) {
+        const cores = {
+          boa: { cor: "#16a34a", bg: "#dcfce7" },
+          regular: { cor: "#b45309", bg: "#fef3c7" },
+          ruim: { cor: "#dc2626", bg: "#fee2e2" }
+        }[nivel] || { cor: "#b45309", bg: "#fef3c7" };
+        const label = adsNivelBadgeTexto(nivel);
+        const w = Math.min(96, label.length * 5.6 + 14);
+        const h = 16;
+        const x = centerX - w / 2;
+        return `<rect x="${x.toFixed(1)}" y="${(baseline - h).toFixed(1)}" width="${w.toFixed(1)}" height="${h}" rx="8" fill="${cores.bg}"></rect>
+          <text x="${centerX.toFixed(1)}" y="${(baseline - h / 2 + 3.5).toFixed(1)}" font-size="9" font-weight="700" fill="${cores.cor}" text-anchor="middle">${escapeHtml(label)}</text>`;
+      }
+
+      // Grafico de barras agrupadas com 2 barras por marca (Investimento em R$ e a metrica
+      // secundaria escolhida) - cada barra normalizada pelo maior valor da sua propria coluna, ja
+      // que Investimento (R$ centenas) e Alcance/Impressoes/Cliques (unidades as centenas de
+      // milhares) nao cabem na mesma escala.
+      function adsGroupedBarChartHtml(porMarca, metric, diagnosticoPorMarca) {
+        const marcasFixas = Object.keys(CORES_MARCA);
+        const metricLabel = (ADS_CROSS_METRICS.find(([key]) => key === metric)?.[1] || "").split(" vs. ")[1] || metric;
+        const dados = marcasFixas.map((marca) => ({
+          marca,
+          investimento: num(porMarca[marca]?.investimento),
+          secundario: num(porMarca[marca]?.[metric])
+        }));
+        const maxInvest = Math.max(1, ...dados.map((d) => d.investimento));
+        const maxSecundario = Math.max(1, ...dados.map((d) => d.secundario));
+
+        const w = 680, h = 280, padL = 20, padR = 20, padT = 44, padB = 46;
+        const groupW = (w - padL - padR) / dados.length;
+        const barW = Math.min(46, groupW * 0.28);
+        const gap = 8;
+
+        const bars = dados.map((d, i) => {
+          const investH = maxInvest ? (d.investimento / maxInvest) * (h - padT - padB) : 0;
+          const secH = maxSecundario ? (d.secundario / maxSecundario) * (h - padT - padB) : 0;
+          const groupX = padL + i * groupW + (groupW - (barW * 2 + gap)) / 2;
+          const secX = groupX + barW + gap;
+          const cor = CORES_MARCA[d.marca] || "#64748b";
+          const tooltipInvest = `<strong>${escapeHtml(d.marca)}</strong><br>Investimento: R$ ${fmt.format(Math.round(d.investimento))}`.replaceAll("\"", "&quot;");
+          const tooltipSec = `<strong>${escapeHtml(d.marca)}</strong><br>${escapeHtml(metricLabel)}: ${fmt.format(Math.round(d.secundario))}`.replaceAll("\"", "&quot;");
+          const nivel = diagnosticoPorMarca?.[d.marca]?.nivel || "regular";
+          return `
+            ${adsBadgeSvgHtml(groupX + barW + gap / 2, padT - 6, nivel)}
+            <rect class="chart-point" x="${groupX.toFixed(1)}" y="${(h - padB - investH).toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(0.5, investH).toFixed(1)}" rx="5" fill="${cor}" data-tooltip="${tooltipInvest}"></rect>
+            <rect class="chart-point" x="${secX.toFixed(1)}" y="${(h - padB - secH).toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(0.5, secH).toFixed(1)}" rx="5" fill="${cor}" fill-opacity="0.4" data-tooltip="${tooltipSec}"></rect>
+            <text x="${(groupX + barW + gap / 2).toFixed(1)}" y="${(h - padB + 20).toFixed(1)}" font-size="11" fill="#64748b" text-anchor="middle">${escapeHtml(d.marca)}</text>`;
+        }).join("");
+
+        return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:300px" role="img" aria-label="Investimento vs. ${escapeHtml(metricLabel)} por marca">
+          <line x1="${padL}" y1="${h - padB}" x2="${w - padR}" y2="${h - padB}" stroke="#e2e8f0" stroke-width="1"/>
+          ${bars}
+        </svg>
+        <div style="display:flex;gap:16px;justify-content:center;margin-top:8px;font-size:12px;color:#64748b">
+          <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#64748b;margin-right:4px"></span>Investimento (R$)</span>
+          <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#64748b;opacity:.4;margin-right:4px"></span>${escapeHtml(metricLabel)}</span>
+        </div>`;
+      }
+
+      const ADS_CROSS_METRIC_EXPLICACAO = {
+        alcance: "💡 Alcance Único: Representa o número total de pessoas distintas que viram os anúncios. Ideal para medir a expansão de marca.",
+        impressoes: "💡 Impressões Totais: O número total de vezes que os anúncios foram exibidos na tela (incluindo repetições para a mesma pessoa).",
+        cliques: "💡 Cliques Totais: Quantidade de interações de clique geradas nos anúncios. Mede a atração e o interesse inicial do público."
+      };
+
+      function adsCrossSectionHtml(porMarca, diagnosticoPorMarca) {
+        const metric = state.adsCrossMetric || "alcance";
+        const metricLabel = (ADS_CROSS_METRICS.find(([key]) => key === metric)?.[1] || "").split(" vs. ")[1] || metric;
+        return `<section class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <h3 style="margin:0">Investimento vs. Entrega de Mídia</h3>
+            <div class="segmented">${ADS_CROSS_METRICS.map(([key, label]) => `<button type="button" class="ads-cross-metric-btn ${metric === key ? "active" : ""}" data-metric="${key}">${label}</button>`).join("")}</div>
+          </div>
+          <p class="muted" style="margin:6px 0 0">Investimento total x ${escapeHtml(metricLabel.toLowerCase())}, por marca.</p>
+          ${adsGroupedBarChartHtml(porMarca, metric, diagnosticoPorMarca)}
+          <p class="muted" style="margin:10px 0 0;font-size:12px">${escapeHtml(ADS_CROSS_METRIC_EXPLICACAO[metric] || "")}</p>
+        </section>`;
+      }
+
+      function wireAdsCrossMetricButtons(onSelect) {
+        document.querySelectorAll(".ads-cross-metric-btn").forEach((button) => {
+          button.onclick = () => {
+            state.adsCrossMetric = button.dataset.metric;
+            onSelect();
+          };
+        });
+      }
+
+      // CPC, CPM e CPR (custo por mil pessoas unicas alcancadas) cabem numa escala em R$ comum -
+      // 3 barras por marca, opacidade decrescente so pra diferenciar visualmente cada serie.
+      function adsCostChartHtml(porMarca, diagnosticoPorMarca) {
+        const marcasFixas = Object.keys(CORES_MARCA);
+        const dados = marcasFixas.map((marca) => {
+          const t = porMarca[marca] || {};
+          const investimento = num(t.investimento);
+          return {
+            marca,
+            cpc: t.cliques ? investimento / t.cliques : 0,
+            cpm: t.impressoes ? (investimento / t.impressoes) * 1000 : 0,
+            cpr: t.alcance ? (investimento / t.alcance) * 1000 : 0
+          };
+        });
+        const maxV = Math.max(1, ...dados.flatMap((d) => [d.cpc, d.cpm, d.cpr]));
+
+        const w = 680, h = 280, padL = 20, padR = 20, padT = 44, padB = 46;
+        const groupW = (w - padL - padR) / dados.length;
+        const barW = Math.min(26, groupW * 0.2);
+        const gap = 6;
+        const series = [["cpc", "CPC", 1], ["cpm", "CPM", 0.65], ["cpr", "CPR", 0.3]];
+        const groupTotalW = barW * series.length + gap * (series.length - 1);
+
+        const bars = dados.map((d) => {
+          return series.map(([key, label, opacity], j) => {
+            const valor = d[key];
+            const barH = maxV ? (valor / maxV) * (h - padT - padB) : 0;
+            const cor = CORES_MARCA[d.marca] || "#64748b";
+            const tooltip = `<strong>${escapeHtml(d.marca)}</strong><br>${label}: R$ ${valor.toFixed(2).replace(".", ",")}`.replaceAll("\"", "&quot;");
+            return { x: j * (barW + gap), y: h - padB - barH, h: Math.max(0.5, barH), cor, opacity, tooltip };
+          });
+        });
+
+        const barsHtml = dados.map((d, i) => {
+          const groupX = padL + i * groupW + (groupW - groupTotalW) / 2;
+          const rects = bars[i].map((b) => `<rect class="chart-point" x="${(groupX + b.x).toFixed(1)}" y="${b.y.toFixed(1)}" width="${barW.toFixed(1)}" height="${b.h.toFixed(1)}" rx="4" fill="${b.cor}" fill-opacity="${b.opacity}" data-tooltip="${b.tooltip}"></rect>`).join("");
+          const nivel = diagnosticoPorMarca?.[d.marca]?.nivel || "regular";
+          return `
+            ${adsBadgeSvgHtml(groupX + groupTotalW / 2, padT - 6, nivel)}
+            ${rects}
+            <text x="${(groupX + groupTotalW / 2).toFixed(1)}" y="${(h - padB + 20).toFixed(1)}" font-size="11" fill="#64748b" text-anchor="middle">${escapeHtml(d.marca)}</text>`;
+        }).join("");
+
+        return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:300px" role="img" aria-label="CPC, CPM e CPR por marca">
+          <line x1="${padL}" y1="${h - padB}" x2="${w - padR}" y2="${h - padB}" stroke="#e2e8f0" stroke-width="1"/>
+          ${barsHtml}
+        </svg>
+        <div style="display:flex;gap:16px;justify-content:center;margin-top:8px;font-size:12px;color:#64748b">
+          <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#64748b;margin-right:4px"></span>CPC</span>
+          <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#64748b;opacity:.65;margin-right:4px"></span>CPM</span>
+          <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#64748b;opacity:.3;margin-right:4px"></span>CPR (por mil alcançados)</span>
+        </div>
+        <p class="muted" style="margin:10px 0 0;font-size:12px">💡 CPC = Custo por Clique · CPM = Custo por 1.000 Exibições · CPR = Custo por 1.000 Pessoas Únicas Alcançadas. Quanto menor o valor, maior a eficiência financeira da marca.</p>`;
+      }
+
+      // Faixas de frequencia (Impressoes / Alcance) definidas pelo negocio: 1,0-2,5 saudavel,
+      // 2,6-3,9 atencao, >=4,0 saturacao de publico (mesmo criativo repetindo demais pra mesma pessoa).
+      function adsFrequenciaStatus(freq) {
+        if (freq >= 4) return { label: "Saturação de público", cor: "#dc2626", bg: "#fee2e2" };
+        if (freq >= 2.6) return { label: "Atenção", cor: "#b45309", bg: "#fef3c7" };
+        return { label: "Saudável", cor: "#16a34a", bg: "#dcfce7" };
+      }
+
+      function adsSaturacaoCardHtml(porMarca) {
+        const marcasFixas = Object.keys(CORES_MARCA);
+        const cards = marcasFixas.map((marca) => {
+          const t = porMarca[marca] || {};
+          const freq = num(t.alcance) ? num(t.impressoes) / num(t.alcance) : 0;
+          const status = adsFrequenciaStatus(freq);
+          return `<div style="flex:1;min-width:160px;border:1px solid #e2e8f0;border-radius:12px;padding:14px">
+            <div style="font-weight:700;color:${CORES_MARCA[marca]}">${escapeHtml(marca)}</div>
+            <div style="font-size:26px;font-weight:800;margin:6px 0">${freq.toFixed(2).replace(".", ",")}x</div>
+            <span style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;color:${status.cor};background:${status.bg}">${status.label}</span>
+          </div>`;
+        }).join("");
+
+        return `<section class="card">
+          <h3 style="margin:0 0 4px">Diagnóstico de Saturação (Frequência)</h3>
+          <p class="muted" style="margin:0 0 14px">Mede quantas vezes em média a mesma pessoa viu os anúncios no período. Frequência acima de 4,0x indica saturação de público e necessidade de novos criativos.</p>
+          <div style="display:flex;gap:14px;flex-wrap:wrap">${cards}</div>
+        </section>`;
+      }
+
+      function adsBenchmarkHelpIconHtml() {
+        return `<span class="muted" style="cursor:help;font-size:12px;font-weight:600;border-bottom:1px dotted #94a3b8" title="${escapeHtml(ADS_BENCHMARKS_TOOLTIP)}">❓ Métrica de Referência</span>`;
+      }
+
+      // Card de sintese: por marca, mostra CPC/CTR/CPR ja classificados (badge por metrica) + o selo
+      // geral (soma dos pontos de CPC/CPM/CTR) + a recomendacao textual gerada em adsDiagnosticoMarca.
+      function adsMetricaBadgeHtml(status) {
+        const cores = {
+          boa: { label: "Ideal", cor: "#16a34a", bg: "#dcfce7" },
+          regular: { label: "Médio", cor: "#b45309", bg: "#fef3c7" },
+          ruim: { label: "Elevado", cor: "#dc2626", bg: "#fee2e2" }
+        }[status] || { label: "Médio", cor: "#b45309", bg: "#fef3c7" };
+        return `<span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;color:${cores.cor};background:${cores.bg}">${cores.label}</span>`;
+      }
+
+      function adsDiagnosticoCardHtml(porMarca, diagnosticoPorMarca) {
+        const marcasFixas = Object.keys(CORES_MARCA);
+        const cards = marcasFixas.map((marca) => {
+          const custos = adsCustosPorMarca(porMarca[marca]);
+          const diag = diagnosticoPorMarca[marca];
+          return `<div style="flex:1;min-width:260px;border:1px solid #e2e8f0;border-radius:12px;padding:16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+              <strong style="color:${CORES_MARCA[marca]}">${escapeHtml(marca)}</strong>
+              <span style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;color:${diag.selo.cor};background:${diag.selo.bg}">${diag.selo.emoji} ${diag.selo.label}</span>
+            </div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin:12px 0 10px;font-size:13px">
+              <span>CPC R$ ${custos.cpc.toFixed(2).replace(".", ",")} ${adsMetricaBadgeHtml(diag.statusCpc)}</span>
+              <span>CTR ${custos.ctr.toFixed(2).replace(".", ",")}% ${adsMetricaBadgeHtml(diag.statusCtr)}</span>
+              <span>CPR R$ ${custos.cpr.toFixed(2).replace(".", ",")} ${adsMetricaBadgeHtml(diag.statusCpr)}</span>
+            </div>
+            <p class="muted" style="margin:0;font-size:12.5px">${diag.recomendacoes.map((texto) => escapeHtml(texto)).join(" ")}</p>
+          </div>`;
+        }).join("");
+
+        return `<section class="card">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <h3 style="margin:0">Diagnóstico de Eficiência por Marca</h3>
+            ${adsBenchmarkHelpIconHtml()}
+          </div>
+          <p class="muted" style="margin:6px 0 14px">Classificação automática vs. benchmark de mercado (CPC, CPM/CPR e CTR).</p>
+          <div style="display:flex;gap:14px;flex-wrap:wrap">${cards}</div>
+        </section>`;
+      }
+
+      // Share de verba x share de cliques por marca (ambos em % do total do grupo, somam 100% cada
+      // um) - "indice" e share de cliques / share de verba: 1x significa que a marca entrega cliques
+      // na exata proporcao do que consome de verba; acima de 1x entrega desproporcionalmente mais
+      // barato (mais eficiente que a media do grupo), abaixo de 1x entrega desproporcionalmente menos.
+      function adsShareDados(porMarca) {
+        const marcasFixas = Object.keys(CORES_MARCA);
+        const totalInvestimento = marcasFixas.reduce((s, m) => s + num(porMarca[m]?.investimento), 0);
+        const totalCliques = marcasFixas.reduce((s, m) => s + num(porMarca[m]?.cliques), 0);
+        return marcasFixas.map((marca) => {
+          const investimento = num(porMarca[marca]?.investimento);
+          const cliques = num(porMarca[marca]?.cliques);
+          const shareInvestimento = totalInvestimento ? (investimento / totalInvestimento) * 100 : 0;
+          const shareCliques = totalCliques ? (cliques / totalCliques) * 100 : 0;
+          return { marca, shareInvestimento, shareCliques, indice: shareInvestimento ? shareCliques / shareInvestimento : 0 };
+        });
+      }
+
+      // Classificacao do indice de eficiencia (cliques/verba) de uma marca: >=1x entrega cliques
+      // desproporcionalmente mais baratos que sua fatia de verba (superavit), 0,7x-1x e considerado
+      // dentro do esperado (equilibrado), abaixo de 0,7x e deficit relevante (merece atencao).
+      function adsShareStatus(indice) {
+        if (indice >= 1) return { emoji: "🟢", label: "Superávit", cor: "#16a34a" };
+        if (indice >= 0.7) return { emoji: "🟡", label: "Equilibrado", cor: "#b45309" };
+        return { emoji: "🔴", label: "Déficit", cor: "#dc2626" };
+      }
+
+      // Mini-grafico de 2 barras (Share de Verba x Share de Cliques) dedicado a uma unica marca,
+      // numa escala 0-100% compartilhada - versao compacta pro card individual, ao contrario de um
+      // grafico agrupado com as 3 marcas juntas.
+      function adsShareMiniChartHtml(d) {
+        const w = 220, h = 150, padL = 10, padR = 10, padT = 16, padB = 26;
+        const maxV = 100;
+        const barW = 46, gap = 24;
+        const groupX = (w - (barW * 2 + gap)) / 2;
+        const investX = groupX;
+        const cliquesX = groupX + barW + gap;
+        const investH = (d.shareInvestimento / maxV) * (h - padT - padB);
+        const cliquesH = (d.shareCliques / maxV) * (h - padT - padB);
+        const cor = CORES_MARCA[d.marca] || "#64748b";
+        const tooltipInvest = `<strong>${escapeHtml(d.marca)}</strong><br>Share de Verba: ${d.shareInvestimento.toFixed(1).replace(".", ",")}%`.replaceAll("\"", "&quot;");
+        const tooltipCliques = `<strong>${escapeHtml(d.marca)}</strong><br>Share de Cliques: ${d.shareCliques.toFixed(1).replace(".", ",")}%`.replaceAll("\"", "&quot;");
+
+        return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:170px" role="img" aria-label="Share de verba vs. share de cliques - ${escapeHtml(d.marca)}">
+          <line x1="${padL}" y1="${h - padB}" x2="${w - padR}" y2="${h - padB}" stroke="#e2e8f0" stroke-width="1"/>
+          <rect class="chart-point" x="${investX.toFixed(1)}" y="${(h - padB - investH).toFixed(1)}" width="${barW}" height="${Math.max(0.5, investH).toFixed(1)}" rx="5" fill="${cor}" data-tooltip="${tooltipInvest}"></rect>
+          <rect class="chart-point" x="${cliquesX.toFixed(1)}" y="${(h - padB - cliquesH).toFixed(1)}" width="${barW}" height="${Math.max(0.5, cliquesH).toFixed(1)}" rx="5" fill="${cor}" fill-opacity="0.4" data-tooltip="${tooltipCliques}"></rect>
+          <text x="${(investX + barW / 2).toFixed(1)}" y="${(h - padB - investH - 6).toFixed(1)}" font-size="11" font-weight="700" fill="${cor}" text-anchor="middle">${d.shareInvestimento.toFixed(0)}%</text>
+          <text x="${(cliquesX + barW / 2).toFixed(1)}" y="${(h - padB - cliquesH - 6).toFixed(1)}" font-size="11" font-weight="700" fill="${cor}" text-anchor="middle">${d.shareCliques.toFixed(0)}%</text>
+          <text x="${(investX + barW / 2).toFixed(1)}" y="${(h - padB + 16).toFixed(1)}" font-size="10" fill="#64748b" text-anchor="middle">Verba</text>
+          <text x="${(cliquesX + barW / 2).toFixed(1)}" y="${(h - padB + 16).toFixed(1)}" font-size="10" fill="#64748b" text-anchor="middle">Cliques</text>
+        </svg>`;
+      }
+
+      // Texto de diagnostico dedicado a UMA marca (nao um comparativo entre elas) - segue o formato
+      // "emoji Indice de Eficiencia Nx (Rotulo): consome X% da verba e entrega Y% dos cliques. Frase."
+      function adsShareCardTextoHtml(d) {
+        const status = adsShareStatus(d.indice);
+        const fmtPct = (v) => v.toFixed(1).replace(".", ",");
+        const fmtIdx = (v) => v.toFixed(2).replace(".", ",");
+        const frase = status.label === "Superávit"
+          ? "Excelente retorno por real investido."
+          : status.label === "Equilibrado"
+          ? "Retorno proporcional ao orçamento."
+          : "Necessita otimização urgente de anúncios.";
+        const apenas = status.label === "Déficit" ? "apenas " : "";
+        return `<p style="margin:10px 0 0;font-size:12px;color:${status.cor};font-weight:600;line-height:1.5">${status.emoji} Índice de Eficiência ${fmtIdx(d.indice)}× (${status.label}): Consome ${fmtPct(d.shareInvestimento)}% da verba e entrega ${apenas}${fmtPct(d.shareCliques)}% dos cliques. ${frase}</p>`;
+      }
+
+      function adsShareMarcaCardHtml(d) {
+        const cor = CORES_MARCA[d.marca] || "#64748b";
+        return `<div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px;display:flex;flex-direction:column;height:100%;background:#fff">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <span style="width:10px;height:10px;border-radius:50%;background:${cor};flex:none"></span>
+            <strong style="font-size:13px;color:#1f2937">${escapeHtml(d.marca)}</strong>
+          </div>
+          ${adsShareMiniChartHtml(d)}
+          ${adsShareCardTextoHtml(d)}
+        </div>`;
+      }
+
+      // Grid responsivo de 1 card por marca: 1 coluna no mobile, 3 lado a lado em telas largas
+      // (auto-fit com minmax evita que os cards fiquem espremidos demais em telas intermediarias).
+      function adsShareSectionHtml(porMarca) {
+        const dados = adsShareDados(porMarca);
+        return `<section class="card">
+          <h3 style="margin:0">Distribuição de Mídia e Retorno</h3>
+          <p class="muted" style="margin:6px 0 14px;font-size:12px">Share de verba consumida x share de cliques entregues, por marca (% do total do grupo).</p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;align-items:stretch">
+            ${dados.map(adsShareMarcaCardHtml).join("")}
+          </div>
+        </section>`;
+      }
+
+      function adsCrossAnalysisSectionHtml(rows) {
+        const porMarca = adsTotaisPorMarca(rows);
+        const diagnosticoPorMarca = adsDiagnosticoPorMarca(porMarca);
+        return `
+          <div class="eyebrow" style="margin:24px 0 8px">Análise Cruzada e Eficiência de Mídia</div>
+          <div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+            ${adsCrossSectionHtml(porMarca, diagnosticoPorMarca)}
+            <section class="card">
+              <h3 style="margin:0">Custo por Resultado Cruzado</h3>
+              <p class="muted" style="margin:6px 0 0">CPC, CPM e CPR (custo por mil alcançados) por marca.</p>
+              ${adsCostChartHtml(porMarca, diagnosticoPorMarca)}
+            </section>
+          </div>
+          <div style="margin-top:18px">${adsShareSectionHtml(porMarca)}</div>
+          <div style="margin-top:18px">${adsDiagnosticoCardHtml(porMarca, diagnosticoPorMarca)}</div>
+          <div style="margin-top:18px">${adsSaturacaoCardHtml(porMarca)}</div>`;
+      }
+
+      // Agrega as linhas diarias (uma por campanha por dia) num total por dia, so pra marca ja
+      // filtrada em `dailyRows` - alimenta o grafico de eixo duplo "Evolucao Diaria da Marca".
+      function adsBrandDailySeries(dailyRows) {
+        const porDia = new Map();
+        for (const row of dailyRows) {
+          const dia = row.data_referencia;
+          if (!dia) continue;
+          if (!porDia.has(dia)) porDia.set(dia, { data: dia, investimento: 0, cliques: 0, alcance: 0 });
+          const acc = porDia.get(dia);
+          acc.investimento += num(row.investimento);
+          acc.cliques += num(row.cliques);
+          acc.alcance += num(row.alcance);
+        }
+        return [...porDia.values()].sort((a, b) => a.data.localeCompare(b.data));
+      }
+
+      // Grafico de eixo duplo: barras de Investimento diario no eixo esquerdo (R$), linhas de
+      // Cliques e Alcance diarios no eixo direito (unidades) - as duas linhas dividem a mesma escala
+      // porque ambas sao contagens do mesmo tipo, ao contrario do investimento que e monetario.
+      // Converte uma lista de pontos {x,y} numa curva suave (spline de Catmull-Rom convertida pra
+      // Bezier cubica) em vez de segmentos retos - deixa a linha de Cliques/Alcance mais legivel e
+      // menos "serrilhada" dia a dia, sem alterar os valores em si (o tooltip por ponto continua
+      // mostrando o numero exato).
+      function smoothPathFromPoints(points) {
+        if (points.length < 2) return "";
+        if (points.length === 2) return `M${points[0].x.toFixed(1)},${points[0].y.toFixed(1)} L${points[1].x.toFixed(1)},${points[1].y.toFixed(1)}`;
+        let d = `M${points[0].x.toFixed(1)},${points[0].y.toFixed(1)} `;
+        for (let i = 0; i < points.length - 1; i++) {
+          const p0 = points[i === 0 ? i : i - 1];
+          const p1 = points[i];
+          const p2 = points[i + 1];
+          const p3 = points[i + 2 < points.length ? i + 2 : i + 1];
+          const cp1x = p1.x + (p2.x - p0.x) / 6;
+          const cp1y = p1.y + (p2.y - p0.y) / 6;
+          const cp2x = p2.x - (p3.x - p1.x) / 6;
+          const cp2y = p2.y - (p3.y - p1.y) / 6;
+          d += `C${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)} `;
+        }
+        return d.trim();
+      }
+
+      function adsBrandDailyChartHtml(serie, marca) {
+        if (serie.length < 2) return `<p class="muted" style="margin:0">Histórico diário insuficiente para desenhar o gráfico (mínimo 2 dias com sincronização).</p>`;
+
+        const cor = CORES_MARCA[marca] || "#64748b";
+        const corCliques = "#2563eb";
+        const corAlcance = "#f59e0b";
+
+        const w = 680, h = 300, padL = 58, padR = 58, padT = 20, padB = 40;
+        const areaW = w - padL - padR;
+        const areaH = h - padT - padB;
+        const maxInvest = Math.max(1, ...serie.map((d) => d.investimento));
+        const maxSecundario = Math.max(1, ...serie.map((d) => d.cliques), ...serie.map((d) => d.alcance));
+        const stepX = areaW / Math.max(1, serie.length - 1);
+        const barW = Math.min(18, (areaW / serie.length) * 0.5);
+
+        const x = (i) => padL + i * stepX;
+        const yInvest = (v) => padT + areaH - (v / maxInvest) * areaH;
+        // Escala em raiz quadrada (nao linear) no eixo secundario: um pico atipico de Alcance
+        // (que costuma ser 10-100x maior que Cliques) comprimiria a linha de Cliques quase a zero
+        // numa escala linear compartilhada - raiz quadrada reduz a distancia visual entre picos
+        // grandes e valores pequenos sem esconder a variacao real (o tooltip sempre mostra o valor
+        // exato, entao nada fica "escondido", so a proporcao visual fica mais legivel).
+        const maxSecundarioSqrt = Math.sqrt(maxSecundario);
+        const ySec = (v) => padT + areaH - (Math.sqrt(Math.max(0, v)) / maxSecundarioSqrt) * areaH;
+
+        const barras = serie.map((d, i) => {
+          const barH = (d.investimento / maxInvest) * areaH;
+          const tooltip = `<strong>${escapeHtml(formatDateOnly(d.data))}</strong><br>Investimento: R$ ${fmt.format(Math.round(d.investimento))}`.replaceAll("\"", "&quot;");
+          return `<rect class="chart-point" x="${(x(i) - barW / 2).toFixed(1)}" y="${yInvest(d.investimento).toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(0.5, barH).toFixed(1)}" rx="3" fill="${cor}" fill-opacity="0.55" data-tooltip="${tooltip}"></rect>`;
+        }).join("");
+
+        const linhaSerie = (campo, corLinha, label) => {
+          const pontosXY = serie.map((d, i) => ({ x: x(i), y: ySec(d[campo]) }));
+          const path = smoothPathFromPoints(pontosXY);
+          const pontos = serie.map((d, i) => {
+            const valor = d[campo];
+            const { x: px, y: py } = pontosXY[i];
+            const tooltip = `<strong>${escapeHtml(formatDateOnly(d.data))}</strong><br>${label}: ${fmt.format(Math.round(valor))}`.replaceAll("\"", "&quot;");
+            return `<circle class="chart-point" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="7" fill="transparent" data-tooltip="${tooltip}"></circle><circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="2.5" fill="${corLinha}"></circle>`;
+          }).join("");
+          return `<path d="${path}" fill="none" stroke="${corLinha}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>${pontos}`;
+        };
+
+        const passo = Math.max(1, Math.ceil(serie.length / 8));
+        const eixoXLabels = serie.map((d, i) => {
+          if (i % passo !== 0 && i !== serie.length - 1) return "";
+          return `<text x="${x(i).toFixed(1)}" y="${(h - padB + 18).toFixed(1)}" font-size="10" fill="#64748b" text-anchor="middle">${escapeHtml(formatDateOnly(d.data).slice(0, 5))}</text>`;
+        }).join("");
+
+        return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:320px" role="img" aria-label="Investimento vs. cliques e alcance diários - ${escapeHtml(marca)}">
+          <line x1="${padL}" y1="${(padT + areaH).toFixed(1)}" x2="${(w - padR).toFixed(1)}" y2="${(padT + areaH).toFixed(1)}" stroke="#e2e8f0" stroke-width="1"/>
+          <text x="${(padL - 8).toFixed(1)}" y="${(padT + 4).toFixed(1)}" font-size="10" fill="${cor}" text-anchor="end">R$ ${fmt.format(Math.round(maxInvest))}</text>
+          <text x="${(padL - 8).toFixed(1)}" y="${(padT + areaH).toFixed(1)}" font-size="10" fill="${cor}" text-anchor="end">R$ 0</text>
+          <text x="${(w - padR + 8).toFixed(1)}" y="${(padT + 4).toFixed(1)}" font-size="10" fill="#64748b" text-anchor="start">${fmt.format(Math.round(maxSecundario))}</text>
+          <text x="${(w - padR + 8).toFixed(1)}" y="${(padT + areaH).toFixed(1)}" font-size="10" fill="#64748b" text-anchor="start">0</text>
+          ${barras}
+          ${linhaSerie("alcance", corAlcance, "Alcance")}
+          ${linhaSerie("cliques", corCliques, "Cliques")}
+          ${eixoXLabels}
+        </svg>
+        <div style="display:flex;gap:20px;justify-content:center;margin-top:12px;font-size:12.5px;color:#334155;flex-wrap:wrap">
+          <span style="display:inline-flex;align-items:center;gap:6px;font-weight:600"><span style="width:12px;height:12px;border-radius:3px;background:${cor};opacity:.55;display:inline-block"></span>Investimento diário <span class="muted" style="font-weight:400">(eixo esq., R$)</span></span>
+          <span style="display:inline-flex;align-items:center;gap:6px;font-weight:600"><span style="width:16px;height:3px;border-radius:2px;background:${corCliques};display:inline-block"></span>Cliques <span class="muted" style="font-weight:400">(eixo dir.)</span></span>
+          <span style="display:inline-flex;align-items:center;gap:6px;font-weight:600"><span style="width:16px;height:3px;border-radius:2px;background:${corAlcance};display:inline-block"></span>Alcance <span class="muted" style="font-weight:400">(eixo dir.)</span></span>
+        </div>
+        <p class="muted" style="margin:6px 0 0;font-size:11px">Eixo direito em escala não linear para evitar que picos de Alcance achatem a linha de Cliques — passe o mouse sobre os pontos para ver o valor exato de cada dia.</p>`;
+      }
+
+      function adsBrandDailySectionHtml(dailyRows, marca) {
+        const serie = adsBrandDailySeries(dailyRows).slice(-30);
+        return `<section class="card">
+          <h3 style="margin:0">Evolução Diária da Marca</h3>
+          <p class="muted" style="margin:6px 0 14px;font-size:12px">Investimento diário (eixo esquerdo) x cliques e alcance diários (eixo direito) — correlação entre orçamento e tráfego gerado, ${escapeHtml(marca)}.</p>
+          ${adsBrandDailyChartHtml(serie, marca)}
+        </section>`;
+      }
+
+      // Quebra de performance por formato de criativo (Carrossel/Video/Imagem), so pra marca
+      // selecionada - campanhas sem criativo_formato identificado (sync antigo ou sem criativo
+      // resolvido) ficam de fora da quebra, mas sao contadas em `semFormato` pra transparencia.
+      function adsFormatoPerformance(rows) {
+        const ordem = ["Carrossel", "Vídeo", "Imagem"];
+        const buckets = {};
+        ordem.forEach((k) => { buckets[k] = { n: 0, investimento: 0, cliques: 0, impressoes: 0 }; });
+        let semFormato = 0;
+        rows.forEach((r) => {
+          const formato = r.criativo_formato;
+          if (!formato || !buckets[formato]) { semFormato += 1; return; }
+          const b = buckets[formato];
+          b.n += 1;
+          b.investimento += num(r.investimento);
+          b.cliques += num(r.cliques);
+          b.impressoes += num(r.impressoes);
+        });
+        const linhas = ordem.map((formato) => {
+          const b = buckets[formato];
+          return {
+            formato,
+            n: b.n,
+            cpcMedio: b.cliques ? b.investimento / b.cliques : 0,
+            ctrMedio: b.impressoes ? (b.cliques / b.impressoes) * 100 : 0
+          };
+        });
+        return { linhas, semFormato };
+      }
+
+      // Card vertical por formato: sempre mostra os 3 formatos (Carrossel/Video/Imagem), mesmo com 0
+      // campanhas - o card de um formato sem entrega fica suavizado (opacidade reduzida) em vez de
+      // sumir, pra deixar claro que a marca simplesmente nao usou aquele formato no periodo.
+      function adsFormatoColunaHtml(l, destaque, cor) {
+        const semDados = l.n === 0;
+        return `<div style="flex:1;min-width:150px;border:1px solid #e2e8f0;border-radius:12px;padding:16px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;${semDados ? "opacity:.55;background:#f8fafc" : "background:#fff"}">
+          <span class="material-symbols-outlined" style="font-size:26px;color:${destaque ? cor : "#94a3b8"}">${campaignFormatoIcon(l.formato)}</span>
+          <strong style="font-size:13px;color:#1f2937">${escapeHtml(l.formato)}</strong>
+          ${destaque ? `<span style="font-size:10.5px;font-weight:700;color:${cor};background:${cor}1a;padding:2px 8px;border-radius:999px">⭐ Formato Mais Eficiente</span>` : ""}
+          <div style="font-size:20px;font-weight:800;color:#1f2937;margin-top:2px">${fmt.format(l.n)}</div>
+          <span class="muted" style="font-size:11.5px;margin-top:-6px">${semDados ? "0 campanhas no período" : `campanha${l.n === 1 ? "" : "s"}`}</span>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:6px">
+            <span style="background:${semDados ? "#f1f5f9" : "#dbeafe"};color:${semDados ? "#94a3b8" : "#1d4ed8"};font-weight:700;font-size:11px;padding:3px 8px;border-radius:999px">CPC ${semDados ? "-" : `R$ ${l.cpcMedio.toFixed(2).replace(".", ",")}`}</span>
+            <span style="background:${semDados ? "#f1f5f9" : "#dcfce7"};color:${semDados ? "#94a3b8" : "#166534"};font-weight:700;font-size:11px;padding:3px 8px;border-radius:999px">CTR ${semDados ? "-" : `${l.ctrMedio.toFixed(2).replace(".", ",")}%`}</span>
+          </div>
+        </div>`;
+      }
+
+      function adsFormatoPerformanceCardHtml(rows, marca) {
+        const { linhas, semFormato } = adsFormatoPerformance(rows);
+        const comDados = linhas.filter((l) => l.n > 0);
+        const melhor = comDados.length ? [...comDados].sort((a, b) => b.ctrMedio - a.ctrMedio || a.cpcMedio - b.cpcMedio)[0] : null;
+        const cor = CORES_MARCA[marca] || "#64748b";
+
+        return `<section class="card">
+          <h3 style="margin:0">Performance por Formato de Anúncio</h3>
+          <p class="muted" style="margin:6px 0 14px;font-size:12px">Contagem de campanhas, CPC médio e CTR médio por formato de criativo, ${escapeHtml(marca)}.${semFormato ? ` ${semFormato} campanha${semFormato === 1 ? "" : "s"} sem formato identificado não entram na quebra.` : ""}</p>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:stretch">
+            ${linhas.map((l) => adsFormatoColunaHtml(l, melhor && l.formato === melhor.formato, cor)).join("")}
+          </div>
+        </section>`;
+      }
+
+      function adsBrandInsightsSectionHtml(dailyRows, rows, marca) {
+        return `
+          <div class="eyebrow" style="margin:24px 0 8px">Inteligência de Mídia — ${escapeHtml(marca)}</div>
+          <div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+            ${adsBrandDailySectionHtml(dailyRows, marca)}
+            ${adsFormatoPerformanceCardHtml(rows, marca)}
+          </div>`;
+      }
+
+      // Top 3 campanhas por CTR (desempate por menor CPC) da marca no periodo - exige impressoes e
+      // cliques > 0 pra CTR/CPC serem numeros reais, nao zeros de campanha sem entrega ainda, e
+      // descarta qualquer campanha cujo link de destino pertenca a OUTRA marca do grupo (ver
+      // adsLinkDeOutraMarca) - o podio de uma marca so pode exibir anuncios 100% dela, mesmo que a
+      // campanha esteja tecnicamente dentro da mesma conta de anuncios.
+      function adsPodiumCandidatos(rows, marca) {
+        return rows.filter((r) => num(r.impressoes) > 0 && num(r.cliques) > 0 && !adsLinkDeOutraMarca(r.destino_url, marca))
+          .sort((a, b) => num(b.ctr) - num(a.ctr) || num(a.cpc) - num(b.cpc))
+          .slice(0, 3);
+      }
+
+      // Mesma thumbnail clicavel (modal + hover-zoom) da tabela de Campanhas, so que no tamanho do
+      // podio - reaproveita o cache/modal de creativoRowCache ja existente.
+      function adsPodiumThumbHtml(r, size) {
+        const id = `creativo-${creativoModalSeq++}`;
+        creativoRowCache.set(id, r);
+        const inner = r.criativo_thumbnail_url
+          ? `<img class="podium-thumb creativo-thumb" src="${escapeHtml(r.criativo_thumbnail_url)}" alt="" loading="lazy" referrerpolicy="no-referrer" style="width:${size}px;height:${size}px" onerror="this.style.display='none'">`
+          : `<span class="podium-thumb creativo-thumb material-symbols-outlined" style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;background:#f1f5f9;color:#94a3b8;font-size:${Math.round(size * 0.4)}px">${campaignFormatoIcon(r.criativo_formato)}</span>`;
+        return `<button type="button" class="creativo-trigger" data-creativo-id="${id}" title="Clique para ver o criativo em alta resolução" aria-label="Ver criativo em alta resolução" style="border:none;background:none;padding:0;line-height:0">${inner}</button>`;
+      }
+
+      function adsPodiumCardHtml(r, rank, size) {
+        const nomeOriginal = r.campaign_name || r.campaign_id;
+        const link = r.destino_url && /^https?:\/\//i.test(r.destino_url)
+          ? `<a href="${escapeHtml(r.destino_url)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:4px;margin-top:10px;font-size:12px;font-weight:700;color:var(--accent);text-decoration:none">Ver anúncio <span class="material-symbols-outlined" style="font-size:15px">open_in_new</span></a>`
+          : "";
+        const outraMarca = adsLinkDeOutraMarca(r.destino_url, r.marca);
+        const alertaOutraMarca = outraMarca
+          ? `<p style="margin:8px 0 0;font-size:11px;font-weight:700;color:#b45309;display:flex;align-items:center;justify-content:center;gap:4px" title="Este link de destino aponta para ${escapeHtml(outraMarca)}, não para ${escapeHtml(r.marca)}."><span class="material-symbols-outlined" style="font-size:14px">warning</span>Link de ${escapeHtml(outraMarca)}</p>`
+          : "";
+        return `<div class="podium-card rank-${rank}">
+          <div class="podium-thumb-wrap">
+            ${adsPodiumThumbHtml(r, size)}
+            <span class="podium-badge">${PODIUM_MEDALS[rank - 1]}</span>
+          </div>
+          <p class="podium-title" title="${escapeHtml(nomeOriginal)}">${escapeHtml(campaignFriendlyLabel(r))}</p>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center">
+            <span style="background:#dcfce7;color:#166534;font-weight:700;font-size:11px;padding:3px 8px;border-radius:999px">CTR ${num(r.ctr).toFixed(2).replace(".", ",")}%</span>
+            <span style="background:#dbeafe;color:#1d4ed8;font-weight:700;font-size:11px;padding:3px 8px;border-radius:999px">CPC R$ ${num(r.cpc).toFixed(2).replace(".", ",")}</span>
+            <span style="background:#fef3c7;color:#92400e;font-weight:700;font-size:11px;padding:3px 8px;border-radius:999px">R$ ${fmt.format(num(r.investimento))}</span>
+          </div>
+          ${alertaOutraMarca}
+          ${link}
+        </div>`;
+      }
+
+      function adsPodiumSectionHtml(rows, marca) {
+        const candidatos = adsPodiumCandidatos(rows, marca);
+        if (candidatos.length < 2) return "";
+        return `<section class="card">
+          <h3 style="margin:0 0 4px">Top 3 Anúncios Campeões</h3>
+          <p class="muted" style="margin:0 0 14px;font-size:12px">Maior CTR (desempate por menor CPC), ${escapeHtml(marca)} — período selecionado. Anúncios com link de outra marca são descartados.</p>
+          <div class="podium">${candidatos.map((r, i) => adsPodiumCardHtml(r, i + 1, PODIUM_SIZES[i])).join("")}</div>
+        </section>`;
       }
 
       async function renderMetaAds() {
@@ -3488,16 +4974,17 @@
         content.innerHTML = `<div class="alert">Carregando campanhas de anúncios Meta...</div>`;
 
         let rows = [];
+        let dailyRows = [];
         try {
-          const dailyRows = await fetchAllRows(
+          dailyRows = await fetchAllRows(
             "stage_meta_ads_metrics",
-            "marca,ad_account_id,campaign_id,campaign_name,objetivo,status,data_referencia,investimento,impressoes,alcance,cliques,cliques_link",
+            "marca,ad_account_id,campaign_id,campaign_name,objetivo,status,destino_url,criativo_thumbnail_url,criativo_formato,data_referencia,investimento,impressoes,alcance,cliques,cliques_link,conversoes",
             state.marca,
             "data_referencia"
           );
           rows = groupAdsByCampaign(dailyRows).sort((a, b) => b.investimento - a.investimento);
         } catch (error) {
-          content.innerHTML = `<div class="alert error">${escapeHtml(error.message)}<br><br>Aplique as migrations <code>supabase/migrations/20260803_013_meta_ads_integration.sql</code>, <code>20260803_014_meta_ads_public_view.sql</code> e <code>20260805_017_meta_ads_daily_history.sql</code>.</div>`;
+          content.innerHTML = `<div class="alert error">${escapeHtml(error.message)}<br><br>Aplique as migrations <code>supabase/migrations/20260803_013_meta_ads_integration.sql</code>, <code>20260803_014_meta_ads_public_view.sql</code>, <code>20260805_017_meta_ads_daily_history.sql</code> e <code>20260807_022_meta_ads_destino_url.sql</code>.</div>`;
           return;
         }
 
@@ -3506,13 +4993,32 @@
           impressoes: acc.impressoes + num(row.impressoes),
           alcance: acc.alcance + num(row.alcance),
           cliques: acc.cliques + num(row.cliques),
-          cliquesLink: acc.cliquesLink + num(row.cliques_link)
-        }), { investimento: 0, impressoes: 0, alcance: 0, cliques: 0, cliquesLink: 0 });
+          cliquesLink: acc.cliquesLink + num(row.cliques_link),
+          conversoes: acc.conversoes + num(row.conversoes)
+        }), { investimento: 0, impressoes: 0, alcance: 0, cliques: 0, cliquesLink: 0, conversoes: 0 });
         const cpmMedio = totals.impressoes ? (totals.investimento / totals.impressoes) * 1000 : 0;
         const cpcMedio = totals.cliques ? totals.investimento / totals.cliques : 0;
         const ctrMedio = totals.impressoes ? (totals.cliques / totals.impressoes) * 100 : 0;
+        const cpaMedio = totals.conversoes ? totals.investimento / totals.conversoes : 0;
+        const taxaConversaoClique = totals.cliques ? (totals.conversoes / totals.cliques) * 100 : 0;
         const melhorCampanha = [...rows].sort((a, b) => num(b.ctr) - num(a.ctr))[0] || null;
         const lastSync = await loadUltimaSincronizacao("vw_integracao_meta_ads_contas_publica", state.marca).catch(() => null);
+
+        // Comparativo com o periodo anterior de mesma duracao (mesma logica das telas de Redes
+        // Sociais) - so calcula quando ha um filtro de data ativo, senao nao ha "anterior" real.
+        let prevTotals = null;
+        const prevRange = rangeBefore(fromDate(), toDate());
+        if (prevRange) {
+          prevTotals = await loadAdsPeriodTotals(state.marca, prevRange.from, prevRange.to).catch(() => null);
+        }
+
+        const filteredRows = rows.filter((r) => {
+          const status = String(r.status || "").toUpperCase();
+          const passaStatus = state.adsStatusFilter === "todas"
+            ? true
+            : state.adsStatusFilter === "ativas" ? status === "ACTIVE" : status === "PAUSED";
+          return passaStatus && campanhaNoBaldeObjetivo(r.objetivo, state.adsObjetivoFilter);
+        });
 
         content.innerHTML = `
           <div class="page-head">
@@ -3527,42 +5033,71 @@
           </div>
           ${rows.length ? "" : `<div class="alert">Nenhuma campanha sincronizada ainda. Confirme uma conta de anúncios em <strong>Conexões</strong> e clique em <strong>Sincronizar anúncios confirmados</strong>.</div>`}
           <div class="grid kpis">
-            ${kpi("Investimento", `R$ ${fmt.format(totals.investimento)}`, "payments")}
-            ${kpi("Alcance", fmt.format(totals.alcance), "sensors")}
-            ${kpi("Impressões", fmt.format(totals.impressoes), "visibility")}
-            ${kpi("Cliques", fmt.format(totals.cliques), "ads_click")}
-            ${kpi("CPM médio", `R$ ${cpmMedio.toFixed(2).replace(".", ",")}`, "monitoring")}
-            ${kpi("CPC médio", `R$ ${cpcMedio.toFixed(2).replace(".", ",")}`, "point_scan")}
-            ${kpi("CTR médio", `${ctrMedio.toFixed(2).replace(".", ",")}%`, "trending_up")}
+            ${kpiWithDelta("Investimento", `R$ ${fmt.format(totals.investimento)}`, "payments", adsDeltaPercentHtml(totals.investimento, prevTotals?.investimento ?? null))}
+            ${kpiWithDelta("Alcance", fmt.format(totals.alcance), "sensors", adsDeltaPercentHtml(totals.alcance, prevTotals?.alcance ?? null))}
+            ${kpiWithDelta("Impressões", fmt.format(totals.impressoes), "visibility", adsDeltaPercentHtml(totals.impressoes, prevTotals?.impressoes ?? null))}
+            ${kpiWithDelta("Cliques", fmt.format(totals.cliques), "ads_click", adsDeltaPercentHtml(totals.cliques, prevTotals?.cliques ?? null))}
+            ${kpiWithDelta("CPM médio", `R$ ${cpmMedio.toFixed(2).replace(".", ",")}`, "monitoring", adsDeltaAbsHtml(cpmMedio, prevTotals?.cpmMedio ?? null, { prefix: "R$ ", invert: true }))}
+            ${kpiWithDelta("CPC médio", `R$ ${cpcMedio.toFixed(2).replace(".", ",")}`, "point_scan", adsDeltaAbsHtml(cpcMedio, prevTotals?.cpcMedio ?? null, { prefix: "R$ ", invert: true }))}
+            ${kpiWithDelta("CTR médio", `${ctrMedio.toFixed(2).replace(".", ",")}%`, "trending_up", adsDeltaAbsHtml(ctrMedio, prevTotals?.ctrMedio ?? null, { suffix: " p.p." }))}
+            ${kpiWithDelta("Conversões / Leads", fmt.format(totals.conversoes), "task_alt", adsDeltaPercentHtml(totals.conversoes, prevTotals?.conversoes ?? null))}
+            ${kpiWithDelta("CPA médio", `R$ ${cpaMedio.toFixed(2).replace(".", ",")}`, "request_quote", adsDeltaAbsHtml(cpaMedio, prevTotals?.cpaMedio ?? null, { prefix: "R$ ", invert: true }))}
+            ${kpiWithDelta("Taxa de Conversão do Clique", `${taxaConversaoClique.toFixed(2).replace(".", ",")}%`, "percent", adsDeltaAbsHtml(taxaConversaoClique, prevTotals?.taxaConversaoClique ?? null, { suffix: " p.p." }))}
           </div>
           ${melhorCampanha ? `<div class="insight-card success">
             <span class="material-symbols-outlined">workspace_premium</span>
             <p><strong>Melhor CTR:</strong> ${escapeHtml(melhorCampanha.campaign_name || melhorCampanha.campaign_id)} (${escapeHtml(melhorCampanha.marca)}) — ${num(melhorCampanha.ctr).toFixed(2).replace(".", ",")}% de CTR, R$ ${fmt.format(num(melhorCampanha.investimento))} investidos.</p>
           </div>` : ""}
+          ${rows.length ? (state.marca === "Todas" ? adsCrossAnalysisSectionHtml(rows) : adsBrandInsightsSectionHtml(dailyRows, rows, state.marca)) : ""}
+          ${state.marca !== "Todas" && rows.length ? `<div style="margin-top:18px">${adsPodiumSectionHtml(rows, state.marca)}</div>` : ""}
           <section class="card">
-            <h3>Campanhas</h3>
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+              <h3>Campanhas</h3>
+              ${adsStatusFilterHtml()}
+            </div>
+            <div style="margin-top:10px">${adsObjetivoFilterHtml()}</div>
             <div class="table-wrap" style="margin-top:16px">
-              <table>
-                <thead><tr><th>Marca</th><th>Campanha</th><th>Objetivo</th><th>Status</th><th>Investimento</th><th>Alcance</th><th>Impressões</th><th>Cliques</th><th>Cliques link</th><th>CPM</th><th>CPC</th><th>CTR</th><th>Frequência</th></tr></thead>
-                <tbody>${rows.map((r) => `<tr>
+              <table class="ads-table">
+                <thead><tr>
+                  <th>Marca</th>
+                  <th>Criativo / Link</th>
+                  <th>Campanha</th>
+                  <th>Objetivo</th>
+                  <th>Status</th>
+                  ${adsSortableThHtml("investimento", "Investimento")}
+                  ${adsSortableThHtml("alcance", "Alcance")}
+                  <th>Impressões</th>
+                  <th>Cliques</th>
+                  ${adsSortableThHtml("ctr", "CTR")}
+                  ${adsSortableThHtml("cpc", "CPC")}
+                  <th>Conversões</th>
+                  <th>CPA</th>
+                  <th>Taxa Conv.</th>
+                </tr></thead>
+                <tbody>${sortAdsRows(filteredRows, state.adsSortColumn, state.adsSortDirection).map((r) => `<tr${campaignEhIneficiente(r) ? " style=\"background:#fef2f2\"" : ""}>
                   <td>${escapeHtml(r.marca)}</td>
-                  <td>${escapeHtml(r.campaign_name || r.campaign_id)}</td>
+                  <td>${campaignCreativeCellHtml(r)}</td>
+                  <td>${campaignNameCellHtml(r)}</td>
                   <td>${escapeHtml(campaignObjectiveLabel(r.objetivo))}</td>
                   <td>${campaignStatusPill(r.status)}</td>
                   <td>R$ ${fmt.format(num(r.investimento))}</td>
                   <td>${fmt.format(num(r.alcance))}</td>
                   <td>${fmt.format(num(r.impressoes))}</td>
                   <td>${fmt.format(num(r.cliques))}</td>
-                  <td>${fmt.format(num(r.cliques_link))}</td>
-                  <td>R$ ${num(r.cpm).toFixed(2).replace(".", ",")}</td>
-                  <td>R$ ${num(r.cpc).toFixed(2).replace(".", ",")}</td>
                   <td>${num(r.ctr).toFixed(2).replace(".", ",")}%</td>
-                  <td>${num(r.frequencia).toFixed(2).replace(".", ",")}</td>
-                </tr>`).join("") || `<tr><td colspan="13">Sem campanhas para este período.</td></tr>`}</tbody>
+                  <td>R$ ${num(r.cpc).toFixed(2).replace(".", ",")}</td>
+                  <td>${fmt.format(num(r.conversoes))}</td>
+                  <td>${r.conversoes ? `R$ ${num(r.cpa).toFixed(2).replace(".", ",")}` : "-"}</td>
+                  <td>${num(r.taxaConversaoClique).toFixed(2).replace(".", ",")}%</td>
+                </tr>`).join("") || `<tr><td colspan="14">Sem campanhas para este período/filtro.</td></tr>`}</tbody>
               </table>
             </div>
           </section>`;
 
+        wireAdsStatusPills(renderMetaAds);
+        wireAdsObjetivoPills(renderMetaAds);
+        wireAdsSortableHeaders(renderMetaAds);
+        wireAdsCrossMetricButtons(renderMetaAds);
         wireMarcaPills(renderMetaAds);
         wirePeriodoDropdown(renderMetaAds);
       }

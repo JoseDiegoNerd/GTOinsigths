@@ -62,13 +62,125 @@ async function fetchCampaignStatuses(integration: AdAccountIntegration, warnings
   return statusByCampaignId;
 }
 
+type MetaCreative = {
+  object_story_spec?: {
+    link_data?: { link?: string };
+    video_data?: { call_to_action?: { value?: { link?: string } } };
+  };
+  asset_feed_spec?: { link_urls?: { website_url?: string }[]; videos?: unknown[]; images?: unknown[] };
+  effective_object_story_id?: string;
+  thumbnail_url?: string;
+};
+
+type CampaignCreativeInfo = { url: string | null; thumbnailUrl: string | null; formato: string | null };
+
+function extractCreativeLink(creative: MetaCreative | null | undefined): string | null {
+  if (!creative) return null;
+
+  const storySpec = creative.object_story_spec;
+  const linkFromStory = storySpec?.link_data?.link || storySpec?.video_data?.call_to_action?.value?.link;
+  if (linkFromStory) return String(linkFromStory);
+
+  const linkFromAssetFeed = creative.asset_feed_spec?.link_urls?.[0]?.website_url;
+  if (linkFromAssetFeed) return String(linkFromAssetFeed);
+
+  const effectiveStoryId = creative.effective_object_story_id;
+  if (effectiveStoryId?.includes("_")) {
+    const [pageId, postId] = effectiveStoryId.split("_");
+    if (pageId && postId) return `https://www.facebook.com/${pageId}/posts/${postId}`;
+  }
+
+  return null;
+}
+
+// Carrossel/dinamico tem mais de uma imagem/video no asset_feed_spec; anuncio de video tem
+// video_data no object_story_spec; o resto (a grande maioria) e imagem estatica.
+function extractCreativeFormato(creative: MetaCreative | null | undefined): string | null {
+  if (!creative) return null;
+  const assetFeed = creative.asset_feed_spec;
+  const totalAssets = (assetFeed?.videos?.length || 0) + (assetFeed?.images?.length || 0);
+  if (totalAssets > 1) return "Carrossel";
+  if (creative.object_story_spec?.video_data || assetFeed?.videos?.length) return "Vídeo";
+  return "Imagem";
+}
+
+async function fetchCampaignCreativeInfo(integration: AdAccountIntegration, warnings: string[]) {
+  const infoByCampaignId = new Map<string, CampaignCreativeInfo>();
+  const isActiveByCampaignId = new Map<string, boolean>();
+
+  let after: string | undefined;
+  for (let page = 0; page < 10; page += 1) {
+    const result = await tryMetaGet(`/${integration.ad_account_id}/ads`, {
+      fields: "campaign_id,effective_status,creative{object_story_spec,asset_feed_spec,effective_object_story_id,thumbnail_url}",
+      limit: 200,
+      after,
+      access_token: integration.access_token,
+    }, warnings);
+
+    if (!result?.data?.length) break;
+
+    for (const ad of result.data) {
+      const campaignId = String(ad.campaign_id || "");
+      if (!campaignId) continue;
+
+      const link = extractCreativeLink(ad.creative);
+      const thumbnailUrl = ad.creative?.thumbnail_url ? String(ad.creative.thumbnail_url) : null;
+      if (!link && !thumbnailUrl) continue;
+
+      const isActive = ad.effective_status === "ACTIVE";
+      const alreadyActive = isActiveByCampaignId.get(campaignId) === true;
+      if (!infoByCampaignId.has(campaignId) || (isActive && !alreadyActive)) {
+        infoByCampaignId.set(campaignId, { url: link, thumbnailUrl, formato: extractCreativeFormato(ad.creative) });
+        isActiveByCampaignId.set(campaignId, isActive);
+      }
+    }
+
+    after = result?.paging?.cursors?.after;
+    if (!after) break;
+  }
+
+  return infoByCampaignId;
+}
+
+// "actions" do Marketing API que contam como conversao/lead de fundo de funil: formulario de
+// lead nativo, conversa de WhatsApp/Messenger iniciada, compra e cadastro completo (via pixel ou
+// on-site). Meta retorna dezenas de action_types por linha (page views, likes, etc.) - so esses
+// entram no total de "Conversoes" usado pro CPA.
+const CONVERSION_ACTION_TYPES = new Set([
+  "lead",
+  "onsite_conversion.lead_grouped",
+  "offsite_conversion.fb_pixel_lead",
+  "onsite_conversion.messaging_conversation_started_7d",
+  "onsite_conversion.total_messaging_connection",
+  "purchase",
+  "offsite_conversion.fb_pixel_purchase",
+  "complete_registration",
+  "offsite_conversion.fb_pixel_complete_registration",
+]);
+
+function extractConversions(actions: unknown): number {
+  if (!Array.isArray(actions)) return 0;
+  let total = 0;
+  for (const action of actions as { action_type?: string; value?: string }[]) {
+    if (action?.action_type && CONVERSION_ACTION_TYPES.has(action.action_type)) {
+      total += Number(action.value || 0);
+    }
+  }
+  return total;
+}
+
 async function fetchDailyInsights(integration: AdAccountIntegration, warnings: string[]) {
   const rows: Record<string, unknown>[] = [];
   const baseParams = {
     level: "campaign",
-    fields: "campaign_id,campaign_name,objective,impressions,reach,clicks,inline_link_clicks,spend,cpm,cpc,ctr,frequency,date_start,date_stop",
+    fields: "campaign_id,campaign_name,objective,impressions,reach,clicks,inline_link_clicks,spend,cpm,cpc,ctr,frequency,actions,date_start,date_stop",
     time_increment: 1,
-    since: daysAgoDate(30),
+    // 60 dias (nao 30): a tela de Anuncios compara "mes atual vs. mes anterior" usando uma janela de
+    // ~30 dias de cada lado, entao uma janela de sync de so 30 dias nunca deixa historico suficiente
+    // pro periodo anterior (fica sempre "sem periodo anterior para comparar", mesmo com a integracao
+    // rodando ha semanas). Meta guarda insights por bem mais que 60 dias, sync incremental via upsert
+    // entao o custo extra e so mais paginas de leitura, nao reprocessamento.
+    since: daysAgoDate(60),
     until: new Date().toISOString().slice(0, 10),
     limit: 200,
     access_token: integration.access_token,
@@ -93,6 +205,7 @@ async function fetchDailyInsights(integration: AdAccountIntegration, warnings: s
 
 async function syncAdAccount(integration: AdAccountIntegration, warnings: string[]) {
   const statusByCampaignId = await fetchCampaignStatuses(integration, warnings);
+  const creativeInfoByCampaignId = await fetchCampaignCreativeInfo(integration, warnings);
   const insightRows = await fetchDailyInsights(integration, warnings);
 
   if (!insightRows.length) return 0;
@@ -102,6 +215,7 @@ async function syncAdAccount(integration: AdAccountIntegration, warnings: string
 
   for (const row of insightRows) {
     const dataReferencia = String(row.date_start || new Date().toISOString().slice(0, 10));
+    const creativeInfo = creativeInfoByCampaignId.get(String(row.campaign_id));
     const { error } = await supabase
       .from("stage_meta_ads_metrics")
       .upsert({
@@ -111,6 +225,9 @@ async function syncAdAccount(integration: AdAccountIntegration, warnings: string
         campaign_name: row.campaign_name || null,
         objetivo: row.objective || null,
         status: statusByCampaignId.get(String(row.campaign_id)) || null,
+        destino_url: creativeInfo?.url || null,
+        criativo_thumbnail_url: creativeInfo?.thumbnailUrl || null,
+        criativo_formato: creativeInfo?.formato || null,
         data_referencia: dataReferencia,
         periodo_inicio: dataReferencia,
         periodo_fim: dataReferencia,
@@ -123,6 +240,7 @@ async function syncAdAccount(integration: AdAccountIntegration, warnings: string
         cpc: numberValue(row.cpc),
         ctr: numberValue(row.ctr),
         frequencia: numberValue(row.frequency),
+        conversoes: extractConversions(row.actions),
         payload_bruto: { insights: row },
         origem_arquivo: "meta_marketing_api",
       }, { onConflict: "marca,ad_account_id,campaign_id,data_referencia" });
