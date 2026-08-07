@@ -24,6 +24,8 @@
       .shell { display: flex; height: 100vh; overflow: hidden; }
       aside { width: 260px; height: 100vh; flex: none; background: #0f172a; color: white; padding: 16px 12px; display: flex; flex-direction: column; justify-content: space-between; gap: 12px; overflow-y: auto; }
       .side-brand { display: flex; align-items: center; gap: 12px; padding: 0 10px; flex: none; }
+      .side-brand-logo { height: 40px; width: 40px; object-fit: contain; flex: none; display: block; }
+      .login-card-logo { height: 56px; width: auto; max-width: 100%; object-fit: contain; display: block; margin: 0 auto 4px; }
       aside h1 { margin: 0; font-size: 18px; }
       aside small, aside span { color: #cbd5e1; }
       nav { display: grid; gap: 2px; }
@@ -1145,6 +1147,7 @@
           ${loginHeroHtml()}
           <div class="login-form-side">
             <section class="login-card">
+              <img src="logo-gto.svg" alt="GTO Insights" class="login-card-logo">
               <h1>Acesse sua conta</h1>
               <p class="muted">Entre com um usuário do Supabase Auth ativo em public.perfis.</p>
               <form id="loginForm" class="grid" style="gap:14px">
@@ -1301,7 +1304,7 @@
         app.className = "shell";
         app.innerHTML = `
           <aside>
-            <div class="side-brand"><div class="brand">G</div><div><h1>GTO Insights</h1><small>BI Platform</small></div></div>
+            <div class="side-brand"><img src="logo-gto-icon.svg" alt="GTO Insights" class="side-brand-logo"><div><h1>GTO Insights</h1><small>BI Platform</small></div></div>
             <nav>
               <button id="navDash" class="${state.page === "dashboard" ? "active" : ""}"><span class="material-symbols-outlined">dashboard</span>Dashboard Geral</button>
               <button id="navCred" class="${state.page === "credsystem" ? "active" : ""}"><span class="material-symbols-outlined">credit_card</span>Cartão Próprio</button>
