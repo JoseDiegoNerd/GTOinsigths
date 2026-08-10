@@ -61,6 +61,7 @@
       .alert.success { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
       .link-btn { color: var(--accent); font-size: 13px; font-weight: 600; text-decoration: none; background: none; border: 0; padding: 0; cursor: pointer; }
       .link-btn:hover { text-decoration: underline; }
+      .module-last-sync { margin: 12px 0 0; font-size: 12px; color: #94a3b8; }
       .status-pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 6px 10px; font-size: 12px; font-weight: 800; }
       .status-pill.active { background: #dcfce7; color: #166534; }
       .status-pill.inactive { background: #fee2e2; color: #991b1b; }
@@ -271,7 +272,7 @@
         social_format_metrics: "stage_social_format_metrics"
       };
 
-      let state = { session: null, perfil: null, page: "dashboard", marca: "Todas", periodo: "30d", periodoDe: "", periodoAte: "", periodoMenuOpen: false, rows: [], rd: [], meta: [], google: null, propostas: [], bi: null, channels: null, email: null, emailSelectedId: null, social: null, socialFormat: null, socialTab: "geral", connections: [], bestTimes: null, socialCompareMetric: "alcance", socialEficienciaTab: "frequencia", compareA: { de: "", ate: "" }, compareB: { de: "", ate: "" }, adsStatusFilter: "todas", adsObjetivoFilter: "todos", adsCrossMetric: "alcance", adsSortColumn: "investimento", adsSortDirection: "desc", topbarMenuOpen: false };
+      let state = { session: null, perfil: null, page: "dashboard", marca: "Todas", periodo: "30d", periodoDe: "", periodoAte: "", periodoMenuOpen: false, rows: [], rd: [], meta: [], ads: [], google: null, propostas: [], bi: null, channels: null, email: null, emailSelectedId: null, social: null, socialFormat: null, socialTab: "geral", connections: [], bestTimes: null, socialCompareMetric: "alcance", socialEficienciaTab: "frequencia", compareA: { de: "", ate: "" }, compareB: { de: "", ate: "" }, adsStatusFilter: "todas", adsObjetivoFilter: "todos", adsCrossMetric: "alcance", adsSortColumn: "investimento", adsSortDirection: "desc", topbarMenuOpen: false };
 
       const fmt = new Intl.NumberFormat("pt-BR");
       const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
@@ -503,12 +504,13 @@
         if (date) q = q.gte("data_emissao", date);
         const until = toDate();
         if (until) q = q.lte("data_emissao", until);
-        const [cards, rd, meta, propostas] = await Promise.all([
+        const [cards, rd, meta, propostas, ads] = await Promise.all([
           q,
           supabase.from("stage_rd_station_marketing").select("marca,enviados,taxa_abertura,taxa_clique,data_referencia").limit(500),
           supabase.from("stage_meta_business_analytics").select("marca,alcance_facebook,engajamento_total,data_referencia").limit(500),
           fetchAllRows("stage_credsystem_propostas", "marca,proposta_aprov,proposta_rejei,motivo,dt_proposta", state.marca),
-          loadGoogleBI().catch(() => {})
+          loadGoogleBI().catch(() => {}),
+          fetchAllRows("stage_meta_ads_metrics", "marca,investimento,impressoes,cliques,data_referencia", state.marca, "data_referencia").catch(() => [])
         ]);
         if (cards.error) throw cards.error;
         if (rd.error) throw rd.error;
@@ -517,6 +519,7 @@
         state.rd = rd.data || [];
         state.meta = meta.data || [];
         state.propostas = propostas || [];
+        state.ads = ads || [];
       }
 
       async function loadCredsystemBI() {
@@ -1407,9 +1410,18 @@
           aprovadas: state.propostas.reduce((s, r) => s + num(r.proposta_aprov), 0),
           rejeitadas: state.propostas.reduce((s, r) => s + num(r.proposta_rejei), 0),
           totalUnidadesGoogle: state.google?.kpis?.totalUnidades || 0,
-          avaliacaoMediaGoogle: state.google?.kpis?.avaliacaoMedia || 0
+          avaliacaoMediaGoogle: state.google?.kpis?.avaliacaoMedia || 0,
+          investimentoAds: state.ads.reduce((s, r) => s + num(r.investimento), 0),
+          impressoesAds: state.ads.reduce((s, r) => s + num(r.impressoes), 0),
+          cliquesAds: state.ads.reduce((s, r) => s + num(r.cliques), 0)
         };
         summary.taxaAprovacao = summary.propostas ? (summary.aprovadas / summary.propostas) * 100 : 0;
+        const [adsLastSync, socialLastSync] = await Promise.all([
+          loadUltimaSincronizacao("vw_integracao_meta_ads_contas_publica", state.marca).catch(() => null),
+          loadUltimaSincronizacao("vw_integracao_meta_contas_publica", state.marca).catch(() => null)
+        ]);
+        const cartaoLastImport = lastImportTimestamp(["dados_cartoes_credsystem", "stage_credsystem_propostas"]);
+        const emailLastImport = lastImportTimestamp(["stage_rd_station_marketing"]);
         const byBrand = {};
         rows.forEach((r) => { byBrand[r.marca] ||= []; byBrand[r.marca].push(r); });
         const max = Math.max(...Object.values(byBrand).map((v) => v.length), 1);
@@ -1427,25 +1439,55 @@
             <div class="filters">
               ${marcaPillsHtml()}
               ${periodoDropdownHtml()}
-              <button id="refresh">Atualizar</button>
             </div>
           </div>
-          <div class="grid kpis">
-            ${kpi("Total de cartões", fmt.format(summary.total), "credit_card")}
-            ${kpi("Cartões ativados", fmt.format(summary.ativos), "verified")}
-            ${kpi("Ticket médio", money.format(summary.ticket), "payments")}
-            ${kpi("Campanhas RD", fmt.format(summary.campanhas), "campaign")}
-            ${kpi("Taxa abertura", `${summary.abertura.toFixed(2).replace(".", ",")}%`, "mail")}
-            ${kpi("Taxa clique", `${summary.clique.toFixed(2).replace(".", ",")}%`, "ads_click")}
-            ${kpi("Alcance Facebook", fmt.format(summary.alcance), "sensors")}
-            ${kpi("Engajamento", fmt.format(summary.engajamento), "favorite")}
-            ${kpi("Unidades Google", fmt.format(summary.totalUnidadesGoogle), "storefront")}
-            ${kpi("Avaliação Google", summary.avaliacaoMediaGoogle ? `${summary.avaliacaoMediaGoogle.toFixed(1)} / 5.0` : "-", "grade")}
-            ${kpi("Propostas", fmt.format(summary.propostas), "assignment")}
-            ${kpi("Aprovadas", fmt.format(summary.aprovadas), "check_circle")}
-            ${kpi("Rejeitadas", fmt.format(summary.rejeitadas), "cancel")}
-            ${kpi("Taxa aprovação", `${summary.taxaAprovacao.toFixed(1).replace(".", ",")}%`, "percent")}
-          </div>
+          <section class="card">
+            <h3>Cartão Próprio</h3>
+            <div class="grid kpis" style="margin-top:16px">
+              ${kpi("Total de cartões", fmt.format(summary.total), "credit_card")}
+              ${kpi("Cartões ativados", fmt.format(summary.ativos), "verified")}
+              ${kpi("Ticket médio", money.format(summary.ticket), "payments")}
+              ${kpi("Propostas", fmt.format(summary.propostas), "assignment")}
+              ${kpi("Aprovadas", fmt.format(summary.aprovadas), "check_circle")}
+              ${kpi("Rejeitadas", fmt.format(summary.rejeitadas), "cancel")}
+              ${kpi("Taxa aprovação", `${summary.taxaAprovacao.toFixed(1).replace(".", ",")}%`, "percent")}
+            </div>
+            <p class="module-last-sync">🕒 Atualizado via planilha: ${escapeHtml(formatDateTime(cartaoLastImport))}</p>
+          </section>
+          <section class="card">
+            <h3>E-mail Marketing</h3>
+            <div class="grid kpis" style="margin-top:16px">
+              ${kpi("Campanhas RD", fmt.format(summary.campanhas), "campaign")}
+              ${kpi("Taxa abertura", `${summary.abertura.toFixed(2).replace(".", ",")}%`, "mail")}
+              ${kpi("Taxa clique", `${summary.clique.toFixed(2).replace(".", ",")}%`, "ads_click")}
+            </div>
+            <p class="module-last-sync">🕒 Sincronizado via RD Station: ${escapeHtml(formatDateTime(emailLastImport))}</p>
+          </section>
+          <section class="card">
+            <h3>Anúncios</h3>
+            <div class="grid kpis" style="margin-top:16px">
+              ${kpi("Investimento", money.format(summary.investimentoAds), "payments")}
+              ${kpi("Impressões", fmt.format(summary.impressoesAds), "visibility")}
+              ${kpi("Cliques", fmt.format(summary.cliquesAds), "ads_click")}
+            </div>
+            <p class="module-last-sync">🕒 Sincronizado via Meta Ads: ${escapeHtml(formatDateTime(adsLastSync))}</p>
+          </section>
+          <section class="card">
+            <h3>Redes Sociais</h3>
+            <div class="grid kpis" style="margin-top:16px">
+              ${kpi("Alcance Facebook", fmt.format(summary.alcance), "sensors")}
+              ${kpi("Engajamento", fmt.format(summary.engajamento), "favorite")}
+            </div>
+            <p class="module-last-sync">🕒 Sincronizado: ${escapeHtml(formatDateTime(socialLastSync))}</p>
+          </section>
+          <section class="card">
+            <h3>Google Meu Negócio</h3>
+            <div class="grid kpis" style="margin-top:16px">
+              ${kpi("Unidades Google", fmt.format(summary.totalUnidadesGoogle), "storefront")}
+              ${kpi("Avaliação Google", summary.avaliacaoMediaGoogle ? `${summary.avaliacaoMediaGoogle.toFixed(1)} / 5.0` : "-", "grade")}
+            </div>
+            <p class="module-last-sync">🕒 Status: Integração API em andamento</p>
+          </section>
           <div class="grid cols">
             <section class="card"><h3>Performance por marca</h3><p class="muted">A policy do banco limita automaticamente o que cada usuário pode ver.</p><div class="bars" style="margin-top:16px">${Object.entries(byBrand).map(([marca, list]) => `<div class="bar-row"><strong>${marca}</strong><div class="track"><div class="fill" style="width:${(list.length / max) * 100}%"></div></div><b>${fmt.format(list.length)}</b></div>`).join("") || `<p class="muted">Sem dados para os filtros atuais.</p>`}</div></section>
             <section class="card"><h3>Controle de acesso</h3><p class="muted">O front filtra por <code>marca</code>, mas a regra definitiva está no PostgreSQL: <code>public.gto_tem_acesso_marca(marca)</code>.</p></section>
@@ -1458,7 +1500,6 @@
           <section class="card"><h3>Últimos registros CredSystem</h3><div class="table-wrap"><table><thead><tr><th>Marca</th><th>Emissão</th><th>Ativação</th><th>Loja</th><th>Cliente</th><th>Valor inicial</th></tr></thead><tbody>${rows.slice(0, 12).map((r) => `<tr><td>${r.marca}</td><td>${r.data_emissao}</td><td>${r.data_ativacao || "-"}</td><td>${r.loja_operacao}</td><td>${r.nome_cliente || "-"}</td><td>${money.format(num(r.valor_compra_inicial))}</td></tr>`).join("")}</tbody></table></div></section>`;
         wireMarcaPills(renderDashboard);
         wirePeriodoDropdown(renderDashboard);
-        document.querySelector("#refresh").onclick = renderDashboard;
       }
 
       function instagramIcon(size = 18) {
@@ -6083,6 +6124,21 @@
         }));
       }
 
+      // Marca a hora da ultima importacao bem-sucedida por tabela (chave separada da
+      // gto_last_import_log, que e um log unico e generico) - usado pelo rodape "Atualizado
+      // via planilha" dos cards do Dashboard Geral que dependem de CSV importado.
+      function saveLastImportTimestamp(table) {
+        localStorage.setItem(`gto_last_import_at:${table}`, new Date().toISOString());
+      }
+
+      function lastImportTimestamp(tables) {
+        return tables
+          .map((table) => localStorage.getItem(`gto_last_import_at:${table}`))
+          .filter(Boolean)
+          .sort()
+          .pop() || null;
+      }
+
       function lastImportLogHtml() {
         const raw = localStorage.getItem("gto_last_import_log");
         if (!raw) return "";
@@ -6142,6 +6198,7 @@
         const finalMessage = `${imported} linhas processadas em ${table}.`;
         status.innerHTML = `<div class="alert success">${finalMessage}</div>`;
         saveImportLog(finalMessage, "success");
+        saveLastImportTimestamp(table);
         button.disabled = false;
       }
 
