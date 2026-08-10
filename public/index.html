@@ -53,6 +53,10 @@
       .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
       .cols { grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr); }
       .channel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .highlight-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .highlight-card h4 { margin: 0 0 10px; display: flex; align-items: center; gap: 8px; font-size: 14px; }
+      .highlight-card .highlight-value { font-size: 22px; font-weight: 800; }
+      .highlight-card .highlight-sub { margin: 4px 0 0; font-size: 12px; color: #64748b; }
       .card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(15,23,42,.08); min-width: 0; }
       .kpi { min-height: 92px; display: grid; align-content: space-between; gap: 10px; }
       .kpi-top { display: flex; justify-content: space-between; color: #64748b; font-size: 12px; font-weight: 800; text-transform: uppercase; }
@@ -214,7 +218,7 @@
       .login-form-side { display: flex; align-items: center; justify-content: center; padding: 24px; }
       @media (max-width: 860px) { .login-split { grid-template-columns: 1fr; } .login-hero { padding: 32px 24px; } }
       @media (max-width: 980px) {
-        .kpis, .cols, .insight-grid, .channel-grid { grid-template-columns: 1fr; }
+        .kpis, .cols, .insight-grid, .channel-grid, .highlight-grid { grid-template-columns: 1fr; }
         .shell { flex-direction: column; height: auto; overflow: visible; }
         aside { width: 100%; height: auto; overflow: visible; }
         main { height: auto; overflow: visible; }
@@ -1468,6 +1472,39 @@
         const topMotivos = Object.entries(motivos)
           .sort((a, b) => b[1] - a[1])
           .slice(0, 8);
+
+        const isTodasMarcas = state.marca === "Todas";
+        let marcaHighlights = null;
+        if (!isTodasMarcas) {
+          // Taxa de aprovacao do grupo inteiro, sem filtro de marca, so pra comparar a marca
+          // selecionada com a media das 3 - precisa de uma busca separada porque `state.propostas`
+          // aqui ja vem filtrado pela marca ativa.
+          const propostasGrupo = await fetchAllRows("stage_credsystem_propostas", "marca,proposta_aprov", "Todas").catch(() => []);
+          const taxaAprovacaoGrupo = propostasGrupo.length
+            ? (propostasGrupo.reduce((s, r) => s + num(r.proposta_aprov), 0) / propostasGrupo.length) * 100
+            : 0;
+
+          // "Canal mais eficiente" e um proxy heuristico (nao ha receita/ROI real disponivel) -
+          // compara a taxa de clique de cada canal: CTR de anuncios, taxa de clique de email e taxa
+          // de engajamento social (engajamento / alcance), todas ja expressas em %.
+          const canais = [
+            { nome: "Tráfego Pago", valor: summary.ctr, icon: "campaign" },
+            { nome: "E-mail", valor: summary.clique, icon: "mail" },
+            { nome: "Rede Social", valor: summary.alcance ? (summary.engajamento / summary.alcance) * 100 : 0, icon: "diversity_3" }
+          ];
+          const canalTop = canais.reduce((best, c) => (c.valor > best.valor ? c : best), canais[0]);
+
+          const motivosRejeicao = {};
+          state.propostas.forEach((row) => {
+            if (num(row.proposta_rejei) > 0) {
+              const motivo = row.motivo || "SEM MOTIVO";
+              motivosRejeicao[motivo] = (motivosRejeicao[motivo] || 0) + num(row.proposta_rejei);
+            }
+          });
+          const topMotivoRejeicao = Object.entries(motivosRejeicao).sort((a, b) => b[1] - a[1])[0] || null;
+
+          marcaHighlights = { taxaAprovacaoGrupo, canalTop, topMotivoRejeicao };
+        }
         content.innerHTML = `
           <div class="page-head">
             <div><div class="eyebrow">Dados reais do Supabase</div><h2>Dashboard Geral</h2><p class="muted">Resumo executivo e saúde dos canais corporativos.</p></div>
@@ -1530,12 +1567,35 @@
                   ${kpi("Ligações", fmt.format(googleKpis.chamadasTelefone), "call")}
                 </div>`}
           </section>
-          ${dashboardConsolidadoSectionHtml(propostasAprovadasPorMarca, investimentoPorMarca)}
-          ${Object.keys(byBrand).length ? `<section class="card"><h3>Performance por marca</h3><div class="bars" style="margin-top:16px">${Object.entries(byBrand).map(([marca, list]) => `<div class="bar-row"><strong>${marca}</strong><div class="track"><div class="fill" style="width:${(list.length / max) * 100}%"></div></div><b>${fmt.format(list.length)}</b></div>`).join("")}</div></section>` : ""}
-          <section class="card">
-            <h3>Principais motivos das propostas</h3>
-            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Motivo</th><th>Total</th><th>Participação</th></tr></thead><tbody>${topMotivos.map(([motivo, total]) => `<tr><td>${motivo}</td><td>${fmt.format(total)}</td><td>${summary.propostas ? ((total / summary.propostas) * 100).toFixed(1).replace(".", ",") : "0,0"}%</td></tr>`).join("") || `<tr><td colspan="3">Sem propostas importadas.</td></tr>`}</tbody></table></div>
-          </section>`;
+          ${isTodasMarcas ? `
+            ${dashboardConsolidadoSectionHtml(propostasAprovadasPorMarca, investimentoPorMarca)}
+            ${Object.keys(byBrand).length ? `<section class="card"><h3>Performance por marca</h3><div class="bars" style="margin-top:16px">${Object.entries(byBrand).map(([marca, list]) => `<div class="bar-row"><strong>${marca}</strong><div class="track"><div class="fill" style="width:${(list.length / max) * 100}%"></div></div><b>${fmt.format(list.length)}</b></div>`).join("")}</div></section>` : ""}
+            <section class="card">
+              <h3>Principais motivos das propostas</h3>
+              <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Motivo</th><th>Total</th><th>Participação</th></tr></thead><tbody>${topMotivos.map(([motivo, total]) => `<tr><td>${motivo}</td><td>${fmt.format(total)}</td><td>${summary.propostas ? ((total / summary.propostas) * 100).toFixed(1).replace(".", ",") : "0,0"}%</td></tr>`).join("") || `<tr><td colspan="3">Sem propostas importadas.</td></tr>`}</tbody></table></div>
+            </section>
+          ` : `
+            <section class="card">
+              <h3 style="margin:0 0 16px">🏅 Destaques e Saúde da Marca ${escapeHtml(state.marca)}</h3>
+              <div class="grid highlight-grid">
+                <article class="card highlight-card">
+                  <h4><span class="material-symbols-outlined" style="font-size:18px">percent</span>Desempenho de Crédito</h4>
+                  <div class="highlight-value">${summary.taxaAprovacao.toFixed(1).replace(".", ",")}%</div>
+                  <p class="highlight-sub">Taxa de aprovação da marca ${summary.taxaAprovacao >= marcaHighlights.taxaAprovacaoGrupo ? "acima" : "abaixo"} da média do grupo (${marcaHighlights.taxaAprovacaoGrupo.toFixed(1).replace(".", ",")}%)</p>
+                </article>
+                <article class="card highlight-card">
+                  <h4><span class="material-symbols-outlined" style="font-size:18px">${marcaHighlights.canalTop.icon}</span>Canal Mais Eficiente</h4>
+                  <div class="highlight-value">${escapeHtml(marcaHighlights.canalTop.nome)}</div>
+                  <p class="highlight-sub">Maior taxa de clique/engajamento do mês: ${marcaHighlights.canalTop.valor.toFixed(2).replace(".", ",")}%</p>
+                </article>
+                <article class="card highlight-card">
+                  <h4><span class="material-symbols-outlined" style="font-size:18px">report</span>Top Motivo de Recusa</h4>
+                  <div class="highlight-value" style="font-size:16px">${marcaHighlights.topMotivoRejeicao ? escapeHtml(marcaHighlights.topMotivoRejeicao[0]) : "Sem recusas no período"}</div>
+                  ${marcaHighlights.topMotivoRejeicao ? `<p class="highlight-sub">${fmt.format(marcaHighlights.topMotivoRejeicao[1])} recusa(s) por esse motivo</p>` : ""}
+                </article>
+              </div>
+            </section>
+          `}`;
         wireMarcaPills(renderDashboard);
         wirePeriodoDropdown(renderDashboard);
         document.querySelectorAll(".consolidado-metric-btn").forEach((button) => {
