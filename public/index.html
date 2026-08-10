@@ -59,6 +59,8 @@
       .alert { border: 1px solid #bfdbfe; background: #eff6ff; color: #1d4ed8; border-radius: 10px; padding: 12px; }
       .alert.error { border-color: #fecaca; background: #fef2f2; color: #b91c1c; }
       .alert.success { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
+      .link-btn { color: var(--accent); font-size: 13px; font-weight: 600; text-decoration: none; background: none; border: 0; padding: 0; cursor: pointer; }
+      .link-btn:hover { text-decoration: underline; }
       .status-pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 6px 10px; font-size: 12px; font-weight: 800; }
       .status-pill.active { background: #dcfce7; color: #166534; }
       .status-pill.inactive { background: #fee2e2; color: #991b1b; }
@@ -365,8 +367,8 @@
           redirectTo: appRedirectUrl()
         });
 
-        if (error) return renderLogin(error.message);
-        renderLogin("Enviamos um novo link de recuperação para o seu email. Use o link mais recente.");
+        if (error) return renderLogin(error.message, "recovery");
+        renderLogin("Enviamos um novo link de recuperação para o seu email. Use o link mais recente.", "login", "success");
       }
 
       async function updatePassword(event) {
@@ -387,7 +389,7 @@
         }
 
         history.replaceState({}, document.title, location.pathname);
-        renderLogin("Senha atualizada com sucesso. Entre novamente.");
+        renderLogin("Senha atualizada com sucesso. Entre novamente.", "login", "success");
       }
 
       async function signOut() {
@@ -1132,38 +1134,53 @@
       function loginHeroHtml() {
         return `
           <div class="login-hero">
-            <div class="side-brand"><div class="brand">GTO</div><div><strong>GTO Insights</strong></div></div>
+            <div class="side-brand"><img src="logo-gto-icon.png" alt="GTO Insights" class="side-brand-logo"><strong>GTO Insights</strong></div>
             <div>
-              <h1>Panorama em tempo real para tomada de decisão</h1>
-              <p>Acesse métricas consolidadas de CredSystem, RD Station, Meta e Google Business Profile das três marcas em uma única interface.</p>
+              <h1>Plataforma de Inteligência e Performance de Mídia</h1>
+              <p>Acompanhe métricas consolidadas em tempo real de tráfego pago, redes sociais e CRM em uma única interface.</p>
             </div>
-            <small class="muted" style="color:#94a3b8">© ${new Date().getFullYear()} GTO Insights</small>
+            <small class="muted" style="color:#94a3b8">© ${new Date().getFullYear()} GTO Insights · Todos os direitos reservados.</small>
           </div>`;
       }
 
-      function renderLogin(error = "") {
+      function renderLogin(message = "", view = "login", type = "error") {
         app.className = "login-split";
+        const messageHtml = message ? `<div class="alert ${type}">${message}</div>` : "";
+        const formHtml = view === "recovery" ? `
+              <h1>Recuperar senha</h1>
+              <p class="muted">Informe seu e-mail corporativo para receber o link de redefinição.</p>
+              <form id="recoveryForm" class="grid" style="gap:14px">
+                <label>Email<input name="email" type="email" placeholder="seu.email@grupo.com.br" required /></label>
+                ${messageHtml}
+                <button>Enviar link de redefinição</button>
+                <button type="button" class="secondary" id="backToLogin">Voltar para o login</button>
+              </form>` : `
+              <h1>Acesse sua conta</h1>
+              <p class="muted">Insira suas credenciais corporativas para acessar o painel.</p>
+              <form id="loginForm" class="grid" style="gap:14px">
+                <label>Email<input name="email" type="email" placeholder="seu.email@grupo.com.br" required /></label>
+                <label>Senha<input name="password" type="password" placeholder="••••••••" required /></label>
+                <div style="text-align:right; margin-top:-10px">
+                  <button type="button" class="link-btn" id="forgotPasswordLink">Esqueceu a senha?</button>
+                </div>
+                ${messageHtml}
+                <button>Entrar</button>
+              </form>`;
         app.innerHTML = `
           ${loginHeroHtml()}
           <div class="login-form-side">
             <section class="login-card">
               <img src="logo-gto.png" alt="GTO Insights" class="login-card-logo">
-              <h1>Acesse sua conta</h1>
-              <p class="muted">Entre com um usuário do Supabase Auth ativo em public.perfis.</p>
-              <form id="loginForm" class="grid" style="gap:14px">
-                <label>Email<input name="email" type="email" required /></label>
-                <label>Senha<input name="password" type="password" required /></label>
-                ${error ? `<div class="alert error">${error}</div>` : ""}
-                <button>Entrar</button>
-              </form>
-              <form id="recoveryForm" class="grid" style="gap:10px">
-                <label>Recuperar senha<input name="email" type="email" placeholder="seu@email.com" required /></label>
-                <button class="secondary" type="submit">Enviar novo link de senha</button>
-              </form>
+              ${formHtml}
             </section>
           </div>`;
-        document.querySelector("#loginForm").addEventListener("submit", signIn);
-        document.querySelector("#recoveryForm").addEventListener("submit", sendRecoveryEmail);
+        if (view === "recovery") {
+          document.querySelector("#recoveryForm").addEventListener("submit", sendRecoveryEmail);
+          document.querySelector("#backToLogin").addEventListener("click", () => renderLogin());
+        } else {
+          document.querySelector("#loginForm").addEventListener("submit", signIn);
+          document.querySelector("#forgotPasswordLink").addEventListener("click", () => renderLogin("", "recovery"));
+        }
       }
 
       function renderResetPassword(error = "") {
