@@ -279,7 +279,7 @@
         social_format_metrics: "stage_social_format_metrics"
       };
 
-      let state = { session: null, perfil: null, page: "dashboard", marca: "Todas", periodo: "30d", periodoDe: "", periodoAte: "", periodoMenuOpen: false, rows: [], rd: [], meta: [], ads: [], google: null, dashboardConsolidadoMetric: "credito", propostas: [], bi: null, channels: null, email: null, emailSelectedId: null, social: null, socialFormat: null, socialTab: "geral", connections: [], bestTimes: null, socialCompareMetric: "alcance", socialEficienciaTab: "frequencia", compareA: { de: "", ate: "" }, compareB: { de: "", ate: "" }, adsStatusFilter: "todas", adsObjetivoFilter: "todos", adsCrossMetric: "alcance", adsSortColumn: "investimento", adsSortDirection: "desc", topbarMenuOpen: false };
+      let state = { session: null, perfil: null, page: "dashboard", marca: "Todas", periodo: "30d", periodoDe: "", periodoAte: "", periodoMenuOpen: false, rows: [], rd: [], meta: [], metaSeguidoresSnapshot: [], ads: [], google: null, dashboardConsolidadoMetric: "credito", propostas: [], bi: null, channels: null, email: null, emailSelectedId: null, social: null, socialFormat: null, socialTab: "geral", connections: [], bestTimes: null, socialCompareMetric: "alcance", socialEficienciaTab: "frequencia", compareA: { de: "", ate: "" }, compareB: { de: "", ate: "" }, adsStatusFilter: "todas", adsObjetivoFilter: "todos", adsCrossMetric: "alcance", adsSortColumn: "investimento", adsSortDirection: "desc", topbarMenuOpen: false };
 
       const fmt = new Intl.NumberFormat("pt-BR");
       const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
@@ -513,24 +513,35 @@
         if (until) q = q.lte("data_emissao", until);
         let rdQuery = supabase.from("stage_rd_station_marketing").select("marca,enviados,taxa_abertura,taxa_clique,data_referencia").limit(500);
         if (state.marca !== "Todas") rdQuery = rdQuery.eq("marca", state.marca);
-        let metaQuery = supabase.from("stage_meta_business_analytics").select("marca,alcance_facebook,engajamento_total,seguidores_instagram,seguidores_facebook,data_referencia").limit(500);
+        if (date) rdQuery = rdQuery.gte("data_referencia", date);
+        if (until) rdQuery = rdQuery.lte("data_referencia", until);
+        let metaQuery = supabase.from("stage_meta_business_analytics").select("marca,alcance_facebook,engajamento_total,data_referencia").limit(500);
         if (state.marca !== "Todas") metaQuery = metaQuery.eq("marca", state.marca);
-        // O array tem 6 promises mas so 5 nomes uteis - o "," no meio pula o resultado do
+        if (date) metaQuery = metaQuery.gte("data_referencia", date);
+        if (until) metaQuery = metaQuery.lte("data_referencia", until);
+        // Seguidores e uma foto do momento, nao um fluxo do periodo - por isso tem sua propria busca
+        // sem filtro de data (so as ultimas linhas por marca), separada da metaQuery acima que agora
+        // respeita o periodo pra alcance/engajamento.
+        let seguidoresQuery = supabase.from("stage_meta_business_analytics").select("marca,seguidores_instagram,seguidores_facebook,data_referencia").order("data_referencia", { ascending: false }).limit(200);
+        if (state.marca !== "Todas") seguidoresQuery = seguidoresQuery.eq("marca", state.marca);
+        // O array tem 7 promises mas so 6 nomes uteis - o "," no meio pula o resultado do
         // loadGoogleBI() (ele grava direto em state.google, o valor de retorno nao serve pra nada)
         // e mantem "ads" apontando pro fetchAllRows de stage_meta_ads_metrics, que antes de corrigir
         // esse desalinhamento estava recebendo o resultado do loadGoogleBI (sempre undefined) e
         // descartando silenciosamente os dados reais de investimento/cliques/etc.
-        const [cards, rd, meta, propostas, , ads] = await Promise.all([
+        const [cards, rd, meta, seguidoresSnapshot, propostas, , ads] = await Promise.all([
           q,
           rdQuery,
           metaQuery,
-          fetchAllRows("stage_credsystem_propostas", "marca,proposta_aprov,proposta_rejei,motivo,dt_proposta", state.marca),
+          seguidoresQuery,
+          fetchAllRows("stage_credsystem_propostas", "marca,proposta_aprov,proposta_rejei,motivo,dt_proposta", state.marca, "dt_proposta"),
           loadGoogleBI().catch(() => {}),
           fetchAllRows("stage_meta_ads_metrics", "marca,investimento,impressoes,cliques,conversoes,data_referencia", state.marca, "data_referencia").catch(() => [])
         ]);
         if (cards.error) throw cards.error;
         if (rd.error) throw rd.error;
         if (meta.error) throw meta.error;
+        state.metaSeguidoresSnapshot = seguidoresSnapshot.data || [];
         state.rows = cards.data || [];
         state.rd = rd.data || [];
         state.meta = meta.data || [];
@@ -1450,7 +1461,7 @@
         // Seguidores e uma foto do momento, nao algo que soma no tempo - por isso usa o registro
         // mais recente de cada marca (nao a soma de todas as linhas do periodo) antes de somar entre marcas.
         const seguidoresMaisRecentePorMarca = new Map();
-        state.meta.forEach((row) => {
+        state.metaSeguidoresSnapshot.forEach((row) => {
           const atual = seguidoresMaisRecentePorMarca.get(row.marca);
           if (!atual || row.data_referencia > atual.data) {
             seguidoresMaisRecentePorMarca.set(row.marca, {
@@ -1506,6 +1517,39 @@
 
           marcaHighlights = { taxaAprovacaoGrupo, canalTop, topMotivoRejeicao };
         }
+
+        // Periodo anterior de mesma duracao, pra alimentar os badges de variacao (MoM) dos 4 canais
+        // e o resumo executivo abaixo do titulo. Sem filtro de data ativo (periodo "all") nao ha
+        // "anterior" real, entao os badges somem em vez de mostrar um numero inventado.
+        const periodoAnterior = previousPeriodRange();
+        const summaryAnterior = periodoAnterior
+          ? await loadDashboardPeriodSummary(state.marca, periodoAnterior.from, periodoAnterior.to)
+          : null;
+
+        // Mesma heuristica de "canal mais eficiente" usada no card de Destaques por marca
+        // (CTR de anuncios vs. taxa de clique de email vs. taxa de engajamento social) - aqui
+        // calculada pro grupo inteiro, so quando a aba "Todas" esta ativa (nas abas por marca o
+        // valor equivalente ja vem em marcaHighlights.canalTop, sem precisar recalcular).
+        const canalMaisEficienteGrupo = isTodasMarcas
+          ? [
+              { nome: "Tráfego Pago", valor: summary.ctr },
+              { nome: "E-mail", valor: summary.clique },
+              { nome: "Rede Social", valor: summary.alcance ? (summary.engajamento / summary.alcance) * 100 : 0 }
+            ].reduce((best, c) => (c.valor > best.valor ? c : best))
+          : marcaHighlights.canalTop;
+
+        const resumoExecutivoHtml = isTodasMarcas
+          ? `<div class="insight-card info"><span class="material-symbols-outlined">insights</span><p>💡 O grupo investiu ${money.format(summary.investimentoAds)} em mídia gerando ${fmt.format(Math.round(summary.alcance))} de alcance. O canal de maior eficiência foi <strong>${escapeHtml(canalMaisEficienteGrupo.nome)}</strong>.</p></div>`
+          : (() => {
+              if (summary.investimentoAds > 0 && summary.propostas === 0) {
+                return `<div class="insight-card warning"><span class="material-symbols-outlined">warning</span><p>⚠️ ${escapeHtml(state.marca)}: Tráfego pago ${summary.cpcMedio ? `com CPC de ${money.format(summary.cpcMedio)}` : "ativo"}, mas sem registros de propostas de cartão próprio no período.</p></div>`;
+              }
+              if (marcaHighlights.topMotivoRejeicao && summary.taxaAprovacao < marcaHighlights.taxaAprovacaoGrupo) {
+                return `<div class="insight-card warning"><span class="material-symbols-outlined">warning</span><p>⚠️ ${escapeHtml(state.marca)}: Taxa de aprovação de crédito (${summary.taxaAprovacao.toFixed(1).replace(".", ",")}%) abaixo da média do grupo — motivo mais comum: <strong>${escapeHtml(marcaHighlights.topMotivoRejeicao[0])}</strong>.</p></div>`;
+              }
+              return `<div class="insight-card success"><span class="material-symbols-outlined">insights</span><p>💡 ${escapeHtml(state.marca)}: canal com melhor desempenho no período foi <strong>${escapeHtml(canalMaisEficienteGrupo.nome)}</strong> (${canalMaisEficienteGrupo.valor.toFixed(2).replace(".", ",")}%).</p></div>`;
+            })();
+
         content.innerHTML = `
           <div class="page-head">
             <div><div class="eyebrow">Dados reais do Supabase</div><h2>Dashboard Geral</h2><p class="muted">Resumo executivo e saúde dos canais corporativos.</p></div>
@@ -1514,41 +1558,42 @@
               ${periodoDropdownHtml()}
             </div>
           </div>
+          ${resumoExecutivoHtml}
           <div class="grid channel-grid">
             <section class="card">
               <h3>💳 Cartão Próprio</h3>
               <div class="grid kpis" style="margin-top:16px">
-                ${kpi("Propostas", fmt.format(summary.propostas), "assignment")}
-                ${kpi("Aprovadas", fmt.format(summary.aprovadas), "check_circle")}
-                ${kpi("Taxa de aprovação", `${summary.taxaAprovacao.toFixed(1).replace(".", ",")}%`, "percent")}
-                ${kpi("Ticket médio", money.format(summary.ticket), "payments")}
+                ${kpiComVariacao("Propostas", fmt.format(summary.propostas), "assignment", badgeMoMHtml(summary.propostas, summaryAnterior?.propostas))}
+                ${kpiComVariacao("Aprovadas", fmt.format(summary.aprovadas), "check_circle", badgeMoMHtml(summary.aprovadas, summaryAnterior?.aprovadas))}
+                ${kpiComVariacao("Taxa de aprovação", `${summary.taxaAprovacao.toFixed(1).replace(".", ",")}%`, "percent", badgeMoMHtml(summary.taxaAprovacao, summaryAnterior?.taxaAprovacao))}
+                ${kpiComVariacao("Ticket médio", money.format(summary.ticket), "payments", badgeMoMHtml(summary.ticket, summaryAnterior?.ticket))}
               </div>
               <p class="module-last-sync">🕒 Atualizado via planilha: ${escapeHtml(formatDateTime(cartaoLastImport))}</p>
             </section>
             <section class="card">
               <h3>📧 E-mail Marketing &amp; CRM</h3>
               <div class="grid kpis" style="margin-top:16px">
-                ${kpi("Disparos", fmt.format(summary.campanhas), "campaign")}
-                ${kpi("Taxa de abertura", `${summary.abertura.toFixed(2).replace(".", ",")}%`, "mail")}
-                ${kpi("Taxa de clique", `${summary.clique.toFixed(2).replace(".", ",")}%`, "ads_click")}
+                ${kpiComVariacao("Disparos", fmt.format(summary.campanhas), "campaign", badgeMoMHtml(summary.campanhas, summaryAnterior?.campanhas))}
+                ${kpiComVariacao("Taxa de abertura", `${summary.abertura.toFixed(2).replace(".", ",")}%`, "mail", badgeMoMHtml(summary.abertura, summaryAnterior?.abertura))}
+                ${kpiComVariacao("Taxa de clique", `${summary.clique.toFixed(2).replace(".", ",")}%`, "ads_click", badgeMoMHtml(summary.clique, summaryAnterior?.clique))}
               </div>
               <p class="module-last-sync">🕒 Sincronizado via RD Station: ${escapeHtml(formatDateTime(emailLastImport))}</p>
             </section>
             <section class="card">
               <h3>📣 Tráfego Pago / Anúncios</h3>
               <div class="grid kpis" style="margin-top:16px">
-                ${kpi("Investimento", money.format(summary.investimentoAds), "payments")}
-                ${kpi("CPC médio", money.format(summary.cpcMedio), "ads_click")}
-                ${kpi("CTR", `${summary.ctr.toFixed(2).replace(".", ",")}%`, "percent")}
-                ${kpi("Conversões", fmt.format(summary.conversoesAds), "task_alt")}
+                ${kpiComVariacao("Investimento", money.format(summary.investimentoAds), "payments", badgeMoMHtml(summary.investimentoAds, summaryAnterior?.investimentoAds))}
+                ${kpiComVariacao("CPC médio", money.format(summary.cpcMedio), "ads_click", badgeMoMHtml(summary.cpcMedio, summaryAnterior?.cpcMedio, true))}
+                ${kpiComVariacao("CTR", `${summary.ctr.toFixed(2).replace(".", ",")}%`, "percent", badgeMoMHtml(summary.ctr, summaryAnterior?.ctr))}
+                ${kpiComVariacao("Conversões", fmt.format(summary.conversoesAds), "task_alt", badgeMoMHtml(summary.conversoesAds, summaryAnterior?.conversoesAds))}
               </div>
               <p class="module-last-sync">🕒 Sincronizado via Meta Ads: ${escapeHtml(formatDateTime(adsLastSync))}</p>
             </section>
             <section class="card">
               <h3>👥 Redes Sociais Orgânico</h3>
               <div class="grid kpis" style="margin-top:16px">
-                ${kpi("Alcance total", fmt.format(summary.alcance), "sensors")}
-                ${kpi("Engajamento total", fmt.format(summary.engajamento), "favorite")}
+                ${kpiComVariacao("Alcance total", fmt.format(summary.alcance), "sensors", badgeMoMHtml(summary.alcance, summaryAnterior?.alcance))}
+                ${kpiComVariacao("Engajamento total", fmt.format(summary.engajamento), "favorite", badgeMoMHtml(summary.engajamento, summaryAnterior?.engajamento))}
                 ${kpi("Seguidores", fmt.format(summary.seguidoresTotal), "group")}
               </div>
               <p class="module-last-sync">🕒 Sincronizado: ${escapeHtml(formatDateTime(socialLastSync))}</p>
@@ -1926,6 +1971,61 @@
           cpaMedio: totals.conversoes ? totals.investimento / totals.conversoes : 0,
           taxaConversaoClique: totals.cliques ? (totals.conversoes / totals.cliques) * 100 : 0
         };
+      }
+
+      // Totais dos 4 canais do Dashboard Geral (Cartao, E-mail, Anuncios, Redes Sociais) num
+      // periodo [from, to] arbitrario - usado tanto pro periodo atual quanto pro anterior, pra
+      // calcular as variacoes % (badges MoM) e o resumo executivo com a mesma logica dos dois lados.
+      async function loadDashboardPeriodSummary(marcaFiltro, from, to) {
+        const [cards, propostas, rd, meta, ads] = await Promise.all([
+          fetchRowsInRange("dados_cartoes_credsystem", "data_ativacao,valor_compra_inicial", marcaFiltro, "data_emissao", from, to),
+          fetchRowsInRange("stage_credsystem_propostas", "proposta_aprov,proposta_rejei", marcaFiltro, "dt_proposta", from, to),
+          fetchRowsInRange("stage_rd_station_marketing", "taxa_abertura,taxa_clique", marcaFiltro, "data_referencia", from, to),
+          fetchRowsInRange("stage_meta_business_analytics", "alcance_facebook,engajamento_total", marcaFiltro, "data_referencia", from, to),
+          loadAdsPeriodTotals(marcaFiltro, from, to)
+        ]);
+        const totalPropostas = propostas.length;
+        const aprovadas = propostas.reduce((s, r) => s + num(r.proposta_aprov), 0);
+        return {
+          ativos: cards.filter((r) => r.data_ativacao).length,
+          ticket: avg(cards.map((r) => num(r.valor_compra_inicial))),
+          propostas: totalPropostas,
+          aprovadas,
+          taxaAprovacao: totalPropostas ? (aprovadas / totalPropostas) * 100 : 0,
+          campanhas: rd.length,
+          abertura: avg(rd.map((r) => num(r.taxa_abertura))),
+          clique: avg(rd.map((r) => num(r.taxa_clique))),
+          alcance: meta.reduce((s, r) => s + num(r.alcance_facebook), 0),
+          engajamento: meta.reduce((s, r) => s + num(r.engajamento_total), 0),
+          investimentoAds: ads.investimento,
+          cpcMedio: ads.cpcMedio,
+          ctr: ads.ctrMedio,
+          conversoesAds: ads.conversoes
+        };
+      }
+
+      // Variacao % entre o valor atual e o anterior. `invertido` marca metricas onde CAIR e bom
+      // (ex: CPC) - nesses casos o sinal da cor (bom/mau) inverte, mas o numero exibido continua
+      // sendo a variacao real (uma queda de CPC aparece como % negativo, so que em verde).
+      function variacaoPct(atual, anterior, invertido = false) {
+        if (!anterior) return null;
+        const delta = ((atual - anterior) / anterior) * 100;
+        const bom = invertido ? delta < 0 : delta > 0;
+        return { delta, bom };
+      }
+
+      function badgeMoMHtml(atual, anterior, invertido = false) {
+        const v = variacaoPct(atual, anterior, invertido);
+        if (!v) return "";
+        const cor = v.bom ? "#16a34a" : "#dc2626";
+        const seta = v.delta > 0 ? "▲" : v.delta < 0 ? "▼" : "▬";
+        return `<span style="font-size:11px;font-weight:700;color:${cor};white-space:nowrap">${seta} ${Math.abs(v.delta).toFixed(1).replace(".", ",")}%</span>`;
+      }
+
+      // Mesma estrutura do kpi() generico, mas com uma segunda linha pro badge de comparacao com o
+      // periodo anterior (MoM) - usado nos 4 blocos de canal do Dashboard Geral.
+      function kpiComVariacao(label, value, icon, badge) {
+        return `<article class="card kpi"><div class="kpi-top"><span>${label}</span><span class="material-symbols-outlined">${icon}</span></div><div><strong>${value}</strong>${badge ? `<div style="margin-top:2px">${badge}</div>` : ""}</div></article>`;
       }
 
       async function loadCommunityDelta(marcaFiltro, from, to) {
