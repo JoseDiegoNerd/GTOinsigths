@@ -56,7 +56,7 @@
       .card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(15,23,42,.08); min-width: 0; }
       .kpi { min-height: 92px; display: grid; align-content: space-between; gap: 10px; }
       .kpi-top { display: flex; justify-content: space-between; color: #64748b; font-size: 12px; font-weight: 800; text-transform: uppercase; }
-      .kpi strong { font-size: 26px; overflow-wrap: anywhere; line-height: 1.15; }
+      .kpi strong { font-size: 26px; white-space: nowrap; line-height: 1.15; }
       .alert { border: 1px solid #bfdbfe; background: #eff6ff; color: #1d4ed8; border-radius: 10px; padding: 12px; }
       .alert.error { border-color: #fecaca; background: #fef2f2; color: #b91c1c; }
       .alert.success { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
@@ -506,10 +506,19 @@
         if (date) q = q.gte("data_emissao", date);
         const until = toDate();
         if (until) q = q.lte("data_emissao", until);
-        const [cards, rd, meta, propostas, ads] = await Promise.all([
+        let rdQuery = supabase.from("stage_rd_station_marketing").select("marca,enviados,taxa_abertura,taxa_clique,data_referencia").limit(500);
+        if (state.marca !== "Todas") rdQuery = rdQuery.eq("marca", state.marca);
+        let metaQuery = supabase.from("stage_meta_business_analytics").select("marca,alcance_facebook,engajamento_total,seguidores_instagram,seguidores_facebook,data_referencia").limit(500);
+        if (state.marca !== "Todas") metaQuery = metaQuery.eq("marca", state.marca);
+        // O array tem 6 promises mas so 5 nomes uteis - o "," no meio pula o resultado do
+        // loadGoogleBI() (ele grava direto em state.google, o valor de retorno nao serve pra nada)
+        // e mantem "ads" apontando pro fetchAllRows de stage_meta_ads_metrics, que antes de corrigir
+        // esse desalinhamento estava recebendo o resultado do loadGoogleBI (sempre undefined) e
+        // descartando silenciosamente os dados reais de investimento/cliques/etc.
+        const [cards, rd, meta, propostas, , ads] = await Promise.all([
           q,
-          supabase.from("stage_rd_station_marketing").select("marca,enviados,taxa_abertura,taxa_clique,data_referencia").limit(500),
-          supabase.from("stage_meta_business_analytics").select("marca,alcance_facebook,engajamento_total,seguidores_instagram,seguidores_facebook,data_referencia").limit(500),
+          rdQuery,
+          metaQuery,
           fetchAllRows("stage_credsystem_propostas", "marca,proposta_aprov,proposta_rejei,motivo,dt_proposta", state.marca),
           loadGoogleBI().catch(() => {}),
           fetchAllRows("stage_meta_ads_metrics", "marca,investimento,impressoes,cliques,conversoes,data_referencia", state.marca, "data_referencia").catch(() => [])
