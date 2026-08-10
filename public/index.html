@@ -54,6 +54,11 @@
       .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
       .cols { grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr); }
       .channel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      /* Os 4 blocos de canal ja dividem a largura da pagina em 2 - um kpis de 4 colunas dentro
+         disso deixa cada numero com menos de 1/8 da largura da tela, e valores grandes (Alcance,
+         Engajamento) acabam truncando ou colando na borda do card. 2 colunas por bloco resolve sem
+         precisar mudar o componente kpi() generico usado em outras paginas. */
+      .channel-grid .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .highlight-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .highlight-card h4 { margin: 0 0 10px; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #0f172a; }
       .highlight-card .highlight-value { font-size: 20px; font-weight: 700; color: #0f172a; }
@@ -61,7 +66,9 @@
       .card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(15,23,42,.08); min-width: 0; }
       .kpi { min-height: 84px; display: grid; align-content: space-between; gap: 8px; }
       .kpi-top { display: flex; justify-content: space-between; color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
-      .kpi strong { font-size: 20px; font-weight: 700; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
+      .kpi strong { font-size: 20px; font-weight: 700; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; display: block; }
+      .mom-badge { font-size: 11px; font-weight: 700; white-space: nowrap; }
+      .mom-badge-neutral { color: #94a3b8; font-weight: 600; }
       .alert { border: 1px solid #bfdbfe; background: #eff6ff; color: #1d4ed8; border-radius: 10px; padding: 12px; }
       .alert.error { border-color: #fecaca; background: #fef2f2; color: #b91c1c; }
       .alert.success { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
@@ -219,7 +226,7 @@
       .login-form-side { display: flex; align-items: center; justify-content: center; padding: 24px; }
       @media (max-width: 860px) { .login-split { grid-template-columns: 1fr; } .login-hero { padding: 32px 24px; } }
       @media (max-width: 980px) {
-        .kpis, .cols, .insight-grid, .channel-grid, .highlight-grid { grid-template-columns: 1fr; }
+        .kpis, .cols, .insight-grid, .channel-grid, .highlight-grid, .channel-grid .kpis { grid-template-columns: 1fr; }
         .shell { flex-direction: column; height: auto; overflow: visible; }
         aside { width: 100%; height: auto; overflow: visible; }
         main { height: auto; overflow: visible; }
@@ -1558,6 +1565,7 @@
               ${periodoDropdownHtml()}
             </div>
           </div>
+          <p class="muted" style="margin:-4px 0 0">💡 Métrica de comparação: intervalo equivalente do mês anterior (MoM).</p>
           ${resumoExecutivoHtml}
           <div class="grid channel-grid">
             <section class="card">
@@ -2008,18 +2016,29 @@
       // (ex: CPC) - nesses casos o sinal da cor (bom/mau) inverte, mas o numero exibido continua
       // sendo a variacao real (uma queda de CPC aparece como % negativo, so que em verde).
       function variacaoPct(atual, anterior, invertido = false) {
-        if (!anterior) return null;
         const delta = ((atual - anterior) / anterior) * 100;
         const bom = invertido ? delta < 0 : delta > 0;
         return { delta, bom };
       }
 
+      // Base zero ou ausente distorce a formula ((atual-anterior)/anterior) pra sempre - de -100%
+      // (quando atual tambem e 0) a percentuais de milhares (qualquer atual > 0 dividido por uma
+      // base perto de zero). Em vez de exibir esse numero sem sentido, a badge fica neutra e diz
+      // *por que* nao ha comparacao: "Sem periodo anterior" quando o periodo selecionado nao tem um
+      // anterior pra comparar (ex: filtro "Todo o periodo"), "Periodo base" quando ha um periodo
+      // anterior mas essa metrica especifica estava zerada nele (ex: primeiro mes de uma campanha).
       function badgeMoMHtml(atual, anterior, invertido = false) {
-        const v = variacaoPct(atual, anterior, invertido);
-        if (!v) return "";
-        const cor = v.bom ? "#16a34a" : "#dc2626";
-        const seta = v.delta > 0 ? "▲" : v.delta < 0 ? "▼" : "▬";
-        return `<span style="font-size:11px;font-weight:700;color:${cor};white-space:nowrap">${seta} ${Math.abs(v.delta).toFixed(1).replace(".", ",")}%</span>`;
+        if (anterior === undefined || anterior === null) {
+          return `<span class="mom-badge mom-badge-neutral">Sem período anterior</span>`;
+        }
+        if (!anterior) {
+          return `<span class="mom-badge mom-badge-neutral">Período base</span>`;
+        }
+        const { delta, bom } = variacaoPct(atual, anterior, invertido);
+        const cor = bom ? "#16a34a" : "#dc2626";
+        const seta = delta > 0 ? "▲" : delta < 0 ? "▼" : "▬";
+        const sinal = delta > 0 ? "+" : "";
+        return `<span class="mom-badge" style="color:${cor}">${seta} ${sinal}${delta.toFixed(1).replace(".", ",")}% vs. mês anterior</span>`;
       }
 
       // Mesma estrutura do kpi() generico, mas com uma segunda linha pro badge de comparacao com o
