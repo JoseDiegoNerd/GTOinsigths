@@ -66,6 +66,7 @@
       .status-pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 6px 10px; font-size: 12px; font-weight: 800; }
       .status-pill.active { background: #dcfce7; color: #166534; }
       .status-pill.inactive { background: #fee2e2; color: #991b1b; }
+      .status-pill.pending { background: #fef3c7; color: #92400e; }
       .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
       .actions button { white-space: nowrap; }
       table { width: 100%; border-collapse: collapse; font-size: 14px; }
@@ -1460,7 +1461,7 @@
           .slice(0, 8);
         content.innerHTML = `
           <div class="page-head">
-            <div><div class="eyebrow">Dados reais do Supabase</div><h2>Dashboard Geral</h2><p class="muted">KPIs calculados a partir das tabelas protegidas por RLS.</p></div>
+            <div><div class="eyebrow">Dados reais do Supabase</div><h2>Dashboard Geral</h2><p class="muted">Resumo executivo e saúde dos canais corporativos.</p></div>
             <div class="filters">
               ${marcaPillsHtml()}
               ${periodoDropdownHtml()}
@@ -1507,9 +1508,12 @@
             </section>
           </div>
           <section class="card">
-            <h3>📍 Google Meu Negócio (SEO Local)</h3>
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+              <h3 style="margin:0">📍 Google Meu Negócio (SEO Local)</h3>
+              ${googleSemDados ? `<span class="status-pill pending">🟡 Integração API em Andamento</span>` : ""}
+            </div>
             ${googleSemDados
-              ? `<p class="muted" style="margin-top:12px">Aguardando sincronização de API.</p>`
+              ? ""
               : `<div class="grid kpis" style="margin-top:16px">
                   ${kpi("Total de unidades", fmt.format(googleKpis.totalUnidades), "storefront")}
                   ${kpi("Avaliação média", googleKpis.avaliacaoMedia ? `${googleKpis.avaliacaoMedia.toFixed(1)} ★` : "-", "grade")}
@@ -1518,16 +1522,11 @@
                 </div>`}
           </section>
           ${dashboardConsolidadoSectionHtml(propostasAprovadasPorMarca, investimentoPorMarca)}
-          <div class="grid cols">
-            <section class="card"><h3>Performance por marca</h3><p class="muted">A policy do banco limita automaticamente o que cada usuário pode ver.</p><div class="bars" style="margin-top:16px">${Object.entries(byBrand).map(([marca, list]) => `<div class="bar-row"><strong>${marca}</strong><div class="track"><div class="fill" style="width:${(list.length / max) * 100}%"></div></div><b>${fmt.format(list.length)}</b></div>`).join("") || `<p class="muted">Sem dados para os filtros atuais.</p>`}</div></section>
-            <section class="card"><h3>Controle de acesso</h3><p class="muted">O front filtra por <code>marca</code>, mas a regra definitiva está no PostgreSQL: <code>public.gto_tem_acesso_marca(marca)</code>.</p></section>
-          </div>
+          ${Object.keys(byBrand).length ? `<section class="card"><h3>Performance por marca</h3><div class="bars" style="margin-top:16px">${Object.entries(byBrand).map(([marca, list]) => `<div class="bar-row"><strong>${marca}</strong><div class="track"><div class="fill" style="width:${(list.length / max) * 100}%"></div></div><b>${fmt.format(list.length)}</b></div>`).join("")}</div></section>` : ""}
           <section class="card">
             <h3>Principais motivos das propostas</h3>
-            <p class="muted">Ranking vindo de <code>stage_credsystem_propostas</code>.</p>
             <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Motivo</th><th>Total</th><th>Participação</th></tr></thead><tbody>${topMotivos.map(([motivo, total]) => `<tr><td>${motivo}</td><td>${fmt.format(total)}</td><td>${summary.propostas ? ((total / summary.propostas) * 100).toFixed(1).replace(".", ",") : "0,0"}%</td></tr>`).join("") || `<tr><td colspan="3">Sem propostas importadas.</td></tr>`}</tbody></table></div>
-          </section>
-          <section class="card"><h3>Últimos registros CredSystem</h3><div class="table-wrap"><table><thead><tr><th>Marca</th><th>Emissão</th><th>Ativação</th><th>Loja</th><th>Cliente</th><th>Valor inicial</th></tr></thead><tbody>${rows.slice(0, 12).map((r) => `<tr><td>${r.marca}</td><td>${r.data_emissao}</td><td>${r.data_ativacao || "-"}</td><td>${r.loja_operacao}</td><td>${r.nome_cliente || "-"}</td><td>${money.format(num(r.valor_compra_inicial))}</td></tr>`).join("")}</tbody></table></div></section>`;
+          </section>`;
         wireMarcaPills(renderDashboard);
         wirePeriodoDropdown(renderDashboard);
         document.querySelectorAll(".consolidado-metric-btn").forEach((button) => {
@@ -2921,6 +2920,19 @@
         totals.taxa_aprovacao = totals.total_propostas ? (totals.propostas_aprovadas / totals.total_propostas) * 100 : 0;
         totals.taxa_ativacao = totals.total_cartoes ? (totals.cartoes_ativados / totals.total_cartoes) * 100 : 0;
 
+        let recentQuery = supabase
+          .from("dados_cartoes_credsystem")
+          .select("marca,data_emissao,data_ativacao,loja_operacao,nome_cliente,valor_compra_inicial")
+          .order("data_emissao", { ascending: false })
+          .limit(12);
+        if (state.marca !== "Todas") recentQuery = recentQuery.eq("marca", state.marca);
+        const recentDe = fromDate();
+        if (recentDe) recentQuery = recentQuery.gte("data_emissao", recentDe);
+        const recentAte = toDate();
+        if (recentAte) recentQuery = recentQuery.lte("data_emissao", recentAte);
+        const { data: recentRows } = await recentQuery;
+        const ultimosRegistros = recentRows || [];
+
         content.innerHTML = `
           <div class="page-head">
             <div><div class="eyebrow">Views BI do Supabase</div><h2>Cartão Próprio</h2><p class="muted">Indicadores consolidados por views SQL com RLS por marca.</p></div>
@@ -2952,6 +2964,10 @@
           <section class="card">
             <h3>Motivos de proposta</h3>
             <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Motivo</th><th>Marca</th><th>Total</th><th>Aprovadas</th><th>Rejeitadas</th><th>Participação</th></tr></thead><tbody>${bi.motivos.slice(0, 12).map((r) => `<tr><td>${r.motivo}</td><td>${r.marca}</td><td>${fmt.format(num(r.total))}</td><td>${fmt.format(num(r.propostas_aprovadas))}</td><td>${fmt.format(num(r.propostas_rejeitadas))}</td><td>${num(r.participacao).toFixed(1).replace(".", ",")}%</td></tr>`).join("") || `<tr><td colspan="6">Sem motivos para o filtro atual.</td></tr>`}</tbody></table></div>
+          </section>
+          <section class="card">
+            <h3>Últimos registros CredSystem</h3>
+            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Emissão</th><th>Ativação</th><th>Loja</th><th>Cliente</th><th>Valor inicial</th></tr></thead><tbody>${ultimosRegistros.map((r) => `<tr><td>${r.marca}</td><td>${r.data_emissao}</td><td>${r.data_ativacao || "-"}</td><td>${r.loja_operacao}</td><td>${r.nome_cliente || "-"}</td><td>${money.format(num(r.valor_compra_inicial))}</td></tr>`).join("") || `<tr><td colspan="6">Sem registros para o filtro atual.</td></tr>`}</tbody></table></div>
           </section>`;
 
         wireMarcaPills(renderCredsystemBI);
