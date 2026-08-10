@@ -1470,9 +1470,9 @@
           const motivo = row.motivo || "SEM MOTIVO";
           motivos[motivo] = (motivos[motivo] || 0) + 1;
         });
-        const topMotivos = Object.entries(motivos)
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 8);
+        const motivosOrdenados = Object.entries(motivos).sort((a, b) => b[1] - a[1]);
+        const topMotivos = motivosOrdenados.slice(0, 4);
+        const outrosMotivosTotal = motivosOrdenados.slice(4).reduce((s, [, total]) => s + total, 0);
 
         const isTodasMarcas = state.marca === "Todas";
         let marcaHighlights = null;
@@ -1573,7 +1573,10 @@
             ${Object.keys(byBrand).length ? `<section class="card"><h3>Performance por marca</h3><div class="bars" style="margin-top:16px">${Object.entries(byBrand).map(([marca, list]) => `<div class="bar-row"><strong>${marca}</strong><div class="track"><div class="fill" style="width:${(list.length / max) * 100}%"></div></div><b>${fmt.format(list.length)}</b></div>`).join("")}</div></section>` : ""}
             <section class="card">
               <h3>Principais motivos das propostas</h3>
-              <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Motivo</th><th>Total</th><th>Participação</th></tr></thead><tbody>${topMotivos.map(([motivo, total]) => `<tr><td>${motivo}</td><td>${fmt.format(total)}</td><td>${summary.propostas ? ((total / summary.propostas) * 100).toFixed(1).replace(".", ",") : "0,0"}%</td></tr>`).join("") || `<tr><td colspan="3">Sem propostas importadas.</td></tr>`}</tbody></table></div>
+              <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Motivo</th><th>Total</th><th>Participação</th></tr></thead><tbody>${[...topMotivos, ...(outrosMotivosTotal > 0 ? [["Outros Motivos", outrosMotivosTotal]] : [])].map(([motivo, total]) => {
+                const pct = summary.propostas ? (total / summary.propostas) * 100 : 0;
+                return `<tr><td>${escapeHtml(motivo)}</td><td>${fmt.format(total)}</td><td><div style="display:flex;align-items:center;gap:8px"><div class="track" style="height:6px;flex:1;min-width:60px"><div class="fill" style="width:${pct.toFixed(1)}%"></div></div><span style="font-size:12px;font-weight:700;color:#0f172a;flex:none;white-space:nowrap">${pct.toFixed(1).replace(".", ",")}%</span></div></td></tr>`;
+              }).join("") || `<tr><td colspan="3">Sem propostas importadas.</td></tr>`}</tbody></table></div>
             </section>
           ` : `
             <section class="card">
@@ -1824,49 +1827,28 @@
         ["midia", "Investimento em Mídia (R$)"]
       ];
 
-      // Mesmo layout de barras do comparativo social (socialCompareBarChartHtml), mas alimentado
-      // pelos totais de Cartao Proprio (credito) e Meta Ads (midia) por marca - usado no grafico
+      // Donut de participacao % por marca (donutGenericHtml, mesmo padrao usado em Redes Sociais)
+      // alimentado pelos totais de Cartao Proprio (credito) ou Meta Ads (midia) - usado no grafico
       // "Visao Consolidada de Midia e Credito" do Dashboard Geral.
-      function dashboardConsolidadoBarChartHtml(propostasAprovadasPorMarca, investimentoPorMarca, metric) {
-        const marcasFixas = Object.keys(CORES_MARCA);
-        const isMoney = metric === "midia";
-        const valores = marcasFixas.map((marca) => ({
-          marca,
-          valor: isMoney ? (investimentoPorMarca.get(marca) || 0) : (propostasAprovadasPorMarca.get(marca) || 0)
-        }));
-        const maxV = Math.max(1, ...valores.map((v) => v.valor));
-        const formatValor = (v) => isMoney ? money.format(v) : fmt.format(Math.round(v));
-
-        const w = 640, h = 260, padL = 20, padR = 20, padT = 28, padB = 46;
-        const groupW = (w - padL - padR) / valores.length;
-        const barW = Math.min(96, groupW * 0.5);
-
-        const bars = valores.map((v, i) => {
-          const barH = maxV ? (v.valor / maxV) * (h - padT - padB) : 0;
-          const x = padL + i * groupW + (groupW - barW) / 2;
-          const y = h - padB - barH;
-          const cor = CORES_MARCA[v.marca] || "#64748b";
-          const tooltip = `<strong>${escapeHtml(v.marca)}</strong><br>${escapeHtml(formatValor(v.valor))}`.replaceAll("\"", "&quot;");
-          return `<rect class="chart-point" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(0.5, barH).toFixed(1)}" rx="6" fill="${cor}" data-tooltip="${tooltip}"></rect>
-            <text x="${(x + barW / 2).toFixed(1)}" y="${(y - 8).toFixed(1)}" font-size="12" font-weight="700" fill="${cor}" text-anchor="middle">${escapeHtml(formatValor(v.valor))}</text>
-            <text x="${(x + barW / 2).toFixed(1)}" y="${(h - padB + 20).toFixed(1)}" font-size="11" fill="#64748b" text-anchor="middle">${escapeHtml(v.marca)}</text>`;
-        }).join("");
-
-        return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:280px" role="img" aria-label="Visão consolidada de mídia e crédito por marca">
-          <line x1="${padL}" y1="${h - padB}" x2="${w - padR}" y2="${h - padB}" stroke="#e2e8f0" stroke-width="1"/>
-          ${bars}
-        </svg>`;
-      }
-
       function dashboardConsolidadoSectionHtml(propostasAprovadasPorMarca, investimentoPorMarca) {
         const metric = state.dashboardConsolidadoMetric || "credito";
+        const isMoney = metric === "midia";
+        const marcasFixas = Object.keys(CORES_MARCA);
+        const itens = marcasFixas.map((marca) => ({
+          label: marca,
+          valor: isMoney ? (investimentoPorMarca.get(marca) || 0) : (propostasAprovadasPorMarca.get(marca) || 0),
+          cor: CORES_MARCA[marca]
+        }));
+        const metricLabel = DASHBOARD_CONSOLIDADO_METRICS.find(([key]) => key === metric)?.[1] || "";
         return `<section class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
             <h3 style="margin:0">📊 Visão Consolidada de Mídia e Crédito</h3>
             <div class="segmented">${DASHBOARD_CONSOLIDADO_METRICS.map(([key, label]) => `<button type="button" class="consolidado-metric-btn ${metric === key ? "active" : ""}" data-metric="${key}">${label}</button>`).join("")}</div>
           </div>
-          <p class="muted" style="margin:6px 0 0">Tesoura de Ouro, Magazine da Economia e Free Center Calçados lado a lado, na métrica selecionada.</p>
-          ${dashboardConsolidadoBarChartHtml(propostasAprovadasPorMarca, investimentoPorMarca, metric)}
+          <p class="muted" style="margin:6px 0 16px">Participação percentual de cada marca no total do grupo.</p>
+          <div style="display:flex;justify-content:center">
+            ${donutGenericHtml(itens, metricLabel, "Participação de cada marca no total do grupo")}
+          </div>
         </section>`;
       }
 
