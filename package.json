@@ -8,7 +8,8 @@
     "build": "node scripts/build-static.mjs",
     "preview": "node scripts/serve-static.mjs",
     "check:env": "node scripts/check-env.mjs",
-    "check:contracts": "node scripts/check-contracts.mjs"
+    "check:contracts": "node scripts/check-contracts.mjs",
+    "sync:netlify": "node scripts/sync-netlify-deploy.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
