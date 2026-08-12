@@ -1,6 +1,5 @@
 ﻿import {
   assertAdminOrGestor,
-  corsHeaders,
   getAuthenticatedUser,
   getGraphVersion,
   getRequiredEnv,
@@ -8,6 +7,7 @@
   resolveAppReturnUrl,
   safeErrorMessage,
   signState,
+  withCors,
 } from "../_shared/meta.ts";
 
 const DEFAULT_SCOPES = [
@@ -20,8 +20,7 @@ const DEFAULT_SCOPES = [
   "ads_read",
 ];
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+Deno.serve(withCors(async (req) => {
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
   try {
@@ -54,7 +53,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     return jsonResponse({ error: safeErrorMessage(error, "Nao foi possivel iniciar a conexao com o Meta.") }, 400);
   }
-});
+}));
 
 
 

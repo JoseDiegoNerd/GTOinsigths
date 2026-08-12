@@ -8,6 +8,7 @@ import {
   jsonResponse,
   resolveAppReturnUrl,
   safeErrorMessage,
+  withCors,
 } from "./meta.ts";
 import type { JsonRecord } from "./meta.ts";
 
@@ -21,6 +22,7 @@ export {
   jsonResponse,
   resolveAppReturnUrl,
   safeErrorMessage,
+  withCors,
 };
 export type { JsonRecord };
 

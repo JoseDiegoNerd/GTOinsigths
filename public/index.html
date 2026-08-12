@@ -356,7 +356,7 @@
         if (query.get("code")) {
           const { error } = await supabase.auth.exchangeCodeForSession(query.get("code"));
           if (error) {
-            renderLogin(error.message);
+            renderLogin(safeErrorMessage(error, "Não foi possível concluir o login."));
             return true;
           }
           if (queryType === "recovery") {
@@ -371,7 +371,7 @@
             refresh_token: hash.get("refresh_token")
           });
           if (error) {
-            renderLogin(error.message);
+            renderLogin(safeErrorMessage(error, "Não foi possível concluir o login."));
             return true;
           }
           renderResetPassword();
@@ -390,7 +390,7 @@
         event.preventDefault();
         const form = new FormData(event.currentTarget);
         const { error } = await supabase.auth.signInWithPassword({ email: form.get("email"), password: form.get("password") });
-        if (error) return renderLogin(error.message);
+        if (error) return renderLogin(safeErrorMessage(error, "Email ou senha inválidos."));
         await init();
       }
 
@@ -402,7 +402,7 @@
           redirectTo: appRedirectUrl()
         });
 
-        if (error) return renderLogin(error.message, "recovery");
+        if (error) return renderLogin(safeErrorMessage(error, "Não foi possível enviar o link de recuperação."), "recovery");
         renderLogin("Enviamos um novo link de recuperação para o seu email. Use o link mais recente.", "login", "success");
       }
 
@@ -419,7 +419,7 @@
 
         const { error } = await supabase.auth.updateUser({ password });
         if (error) {
-          renderResetPassword(error.message);
+          renderResetPassword(safeErrorMessage(error, "Não foi possível atualizar a senha."));
           return;
         }
 
@@ -888,7 +888,7 @@
           campanhas,
           resumo,
           fallback: true,
-          fallbackReason: reason?.message || String(reason || "")
+          fallbackReason: safeErrorMessage(reason, "")
         };
       }
 
@@ -1049,7 +1049,7 @@
           ranking: periodos.slice(0, 20),
           fallback: true,
           usingMetaStage: true,
-          fallbackReason: reason?.message || String(reason || "")
+          fallbackReason: safeErrorMessage(reason, "")
         };
       }
 
@@ -1094,7 +1094,7 @@
           periodos,
           ranking,
           fallback: true,
-          fallbackReason: reason?.message || String(reason || "")
+          fallbackReason: safeErrorMessage(reason, "")
         };
       }
 
@@ -1122,7 +1122,7 @@
           rede,
           rows: aggregateSocialFormatRows(rows.filter((row) => row.rede_social === rede), rede),
           fallback: true,
-          fallbackReason: reason?.message || String(reason || "")
+          fallbackReason: safeErrorMessage(reason, "")
         };
       }
 
@@ -1202,7 +1202,7 @@
 
       function renderLogin(message = "", view = "login", type = "error") {
         app.className = "login-split";
-        const messageHtml = message ? `<div class="alert ${type}">${message}</div>` : "";
+        const messageHtml = message ? `<div class="alert ${type}">${escapeHtml(message)}</div>` : "";
         const formHtml = view === "recovery" ? `
               <h1>Recuperar senha</h1>
               <p class="muted">Informe seu e-mail corporativo para receber o link de redefinição.</p>
@@ -1251,7 +1251,7 @@
               <form id="resetPasswordForm" class="grid" style="gap:14px">
                 <label>Nova senha<input name="password" type="password" minlength="6" required /></label>
                 <label>Confirmar senha<input name="confirmPassword" type="password" minlength="6" required /></label>
-                ${error ? `<div class="alert error">${error}</div>` : ""}
+                ${error ? `<div class="alert error">${escapeHtml(error)}</div>` : ""}
                 <button>Salvar nova senha</button>
               </form>
             </section>
@@ -1753,7 +1753,7 @@
           wireDashboardInteractions();
         } catch (error) {
           if (state.page !== "dashboard" || dashboardCacheKey() !== key) return;
-          if (!cached) content.innerHTML = `<div class="alert error">${error.message}</div>`;
+          if (!cached) content.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
         }
       }
 
@@ -3103,7 +3103,7 @@
           } catch (fallbackError) {
             content.innerHTML = `
               <div class="alert error">
-                ${fallbackError.message}<br><br>
+                ${escapeHtml(safeErrorMessage(fallbackError))}<br><br>
                 Aplique primeiro a migration <code>supabase/migrations/20260706_004_credsystem_bi_views.sql</code> no SQL Editor do Supabase.
               </div>`;
             return;
@@ -3186,7 +3186,7 @@
           try {
             await loadEmailBIFallback(error);
           } catch (fallbackError) {
-            content.innerHTML = `<div class="alert error">${fallbackError.message}</div>`;
+            content.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(fallbackError))}</div>`;
             return;
           }
         }
@@ -3219,7 +3219,7 @@
               <button id="refresh">Atualizar</button>
             </div>
           </div>
-          ${email.fallback ? `<div class="alert">Usando cálculo local temporário. Para ativar as views oficiais, rode <code>supabase/migrations/20260707_006_email_marketing_bi_views.sql</code>. Detalhe: <code>${email.fallbackReason || "sem detalhe retornado"}</code></div>` : ""}
+          ${email.fallback ? `<div class="alert">Usando cálculo local temporário. Para ativar as views oficiais, rode <code>supabase/migrations/20260707_006_email_marketing_bi_views.sql</code>. Detalhe: <code>${escapeHtml(email.fallbackReason || "sem detalhe retornado")}</code></div>` : ""}
           <div class="grid kpis">
             ${kpi("Campanhas", fmt.format(totals.total_campanhas), "campaign")}
             ${kpi("Emails enviados", fmt.format(totals.total_enviados), "outgoing_mail")}
@@ -3233,11 +3233,11 @@
           <section class="card">
             <h3>Campanhas</h3>
             <p class="muted">Abertos e cliques são estimados a partir das taxas recebidas da RD Station.</p>
-            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Campanha</th><th>Enviados</th><th>Recebidos</th><th>Abertos</th><th>Cliques</th><th>Abertura</th><th>Clique</th><th>Copy</th></tr></thead><tbody>${campaigns.map((r) => `<tr><td>${r.marca}</td><td>${r.nome_campanha}</td><td>${fmt.format(num(r.enviados))}</td><td>${fmt.format(num(r.entregues))}</td><td>${fmt.format(num(r.abertos_estimados))}</td><td>${fmt.format(num(r.cliques_estimados))}</td><td>${num(r.taxa_abertura).toFixed(2).replace(".", ",")}%</td><td>${num(r.taxa_clique).toFixed(2).replace(".", ",")}%</td><td>${r.diagnostico_copy || "Sem análise"}</td></tr>`).join("") || `<tr><td colspan="9">Sem campanhas importadas.</td></tr>`}</tbody></table></div>
+            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Campanha</th><th>Enviados</th><th>Recebidos</th><th>Abertos</th><th>Cliques</th><th>Abertura</th><th>Clique</th><th>Copy</th></tr></thead><tbody>${campaigns.map((r) => `<tr><td>${r.marca}</td><td>${escapeHtml(r.nome_campanha)}</td><td>${fmt.format(num(r.enviados))}</td><td>${fmt.format(num(r.entregues))}</td><td>${fmt.format(num(r.abertos_estimados))}</td><td>${fmt.format(num(r.cliques_estimados))}</td><td>${num(r.taxa_abertura).toFixed(2).replace(".", ",")}%</td><td>${num(r.taxa_clique).toFixed(2).replace(".", ",")}%</td><td>${escapeHtml(r.diagnostico_copy || "Sem análise")}</td></tr>`).join("") || `<tr><td colspan="9">Sem campanhas importadas.</td></tr>`}</tbody></table></div>
           </section>
           <section class="card">
             <h3>Analista de copy</h3>
-            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Campanha</th><th>Marca</th><th>Score</th><th>Diagnóstico</th><th>Recomendação</th><th>Assunto</th></tr></thead><tbody>${campaigns.map((r) => `<tr><td>${r.nome_campanha}</td><td>${r.marca}</td><td>${fmt.format(num(r.score_copy))}/100</td><td>${r.diagnostico_copy || "-"}</td><td>${r.recomendacao_copy || "-"}</td><td>${r.assunto_email || "-"}</td></tr>`).join("") || `<tr><td colspan="6">Sem copies para análise.</td></tr>`}</tbody></table></div>
+            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Campanha</th><th>Marca</th><th>Score</th><th>Diagnóstico</th><th>Recomendação</th><th>Assunto</th></tr></thead><tbody>${campaigns.map((r) => `<tr><td>${escapeHtml(r.nome_campanha)}</td><td>${r.marca}</td><td>${fmt.format(num(r.score_copy))}/100</td><td>${escapeHtml(r.diagnostico_copy || "-")}</td><td>${escapeHtml(r.recomendacao_copy || "-")}</td><td>${escapeHtml(r.assunto_email || "-")}</td></tr>`).join("") || `<tr><td colspan="6">Sem copies para análise.</td></tr>`}</tbody></table></div>
           </section>
           <section class="card">
             <div class="page-head" style="align-items:start">
@@ -3246,12 +3246,12 @@
                 <p class="muted">Selecione uma campanha para ver leitura crítica, riscos e sugestões de reescrita.</p>
               </div>
               <div class="filters">
-                <select id="copyCampaign">${campaigns.map((r) => `<option value="${campaignKey(r)}" ${campaignKey(r) === state.emailSelectedId ? "selected" : ""}>${r.nome_campanha} · ${r.marca}</option>`).join("")}</select>
+                <select id="copyCampaign">${campaigns.map((r) => `<option value="${escapeHtml(campaignKey(r))}" ${campaignKey(r) === state.emailSelectedId ? "selected" : ""}>${escapeHtml(r.nome_campanha)} · ${r.marca}</option>`).join("")}</select>
               </div>
             </div>
             ${copyDetail ? `
               <div class="grid kpis" style="margin-top:16px">
-                ${kpi("Campanha", selectedCampaign.nome_campanha, "campaign")}
+                ${kpi("Campanha", escapeHtml(selectedCampaign.nome_campanha), "campaign")}
                 ${kpi("Marca", selectedCampaign.marca, "storefront")}
                 ${kpi("Performance", copyDetail.performance, "monitoring")}
                 ${kpi("Score copy", `${copyDetail.score}/100`, "psychology")}
@@ -3259,7 +3259,7 @@
               <div class="insight-grid">
                 <div class="insight-panel">
                   <h4>Copy atual</h4>
-                  <div class="copy-sample"><strong>Assunto:</strong> ${copyDetail.current.subject}<br><strong>Preheader:</strong> ${copyDetail.current.preheader}<br><strong>Corpo:</strong> ${copyDetail.current.body}</div>
+                  <div class="copy-sample"><strong>Assunto:</strong> ${escapeHtml(copyDetail.current.subject)}<br><strong>Preheader:</strong> ${escapeHtml(copyDetail.current.preheader)}<br><strong>Corpo:</strong> ${escapeHtml(copyDetail.current.body)}</div>
                 </div>
                 <div class="insight-panel">
                   <h4>Sugestões de reescrita</h4>
@@ -3310,7 +3310,7 @@
           try {
             await loadSocialFormatFallback(rede, error);
           } catch (fallbackError) {
-            content.innerHTML = `<div class="alert error">${fallbackError.message}<br><br>Aplique a migration <code>supabase/migrations/20260708_008_social_format_metrics.sql</code> e rode <code>notify pgrst, 'reload schema';</code>.</div>`;
+            content.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(fallbackError))}<br><br>Aplique a migration <code>supabase/migrations/20260708_008_social_format_metrics.sql</code> e rode <code>notify pgrst, 'reload schema';</code>.</div>`;
             return;
           }
         }
@@ -3473,7 +3473,7 @@
         try {
           await loadBestTimesBI();
         } catch (error) {
-          content.innerHTML = `<div class="alert error">${error.message}</div>`;
+          content.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
           return;
         }
 
@@ -3959,7 +3959,7 @@
           if (row) row.querySelector(".profile-avatar").outerHTML = profileAvatarPreviewHtml();
           if (hint) hint.textContent = "Imagem atualizada.";
         } catch (error) {
-          if (hint) hint.textContent = error.message || "Falha ao enviar imagem.";
+          if (hint) hint.textContent = safeErrorMessage(error, "Falha ao enviar imagem.");
         } finally {
           profileModalState.avatarUploading = false;
           if (input) { input.disabled = false; input.value = ""; }
@@ -4030,7 +4030,7 @@
           await render();
         } catch (error) {
           profileModalState.saving = false;
-          profileModalState.error = error.message || "Não foi possível salvar as alterações.";
+          profileModalState.error = safeErrorMessage(error, "Não foi possível salvar as alterações.");
           refreshProfileModal();
         }
       }
@@ -4059,7 +4059,7 @@
           try {
             await loadSocialBIFallback(error);
           } catch (fallbackError) {
-            content.innerHTML = `<div class="alert error">${fallbackError.message}</div>`;
+            content.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(fallbackError))}</div>`;
             return;
           }
         }
@@ -4239,6 +4239,23 @@
           .replaceAll(">", "&gt;")
           .replaceAll("\"", "&quot;")
           .replaceAll("'", "&#039;");
+      }
+
+      // Mensagem segura para mostrar na tela: nunca repassa message/code/details/hint de um erro
+      // com formato de PostgrestError (revelaria nomes de tabela/coluna/constraint). O erro
+      // completo sempre vai pro console (visivel so a quem abrir o devtools), nunca pro HTML puro -
+      // por isso todo lugar que usa isto continua passando o resultado por escapeHtml() tambem.
+      function safeErrorMessage(error, fallback = "Ocorreu um erro ao processar a solicitação.") {
+        console.error(error);
+        const looksLikePostgrestError =
+          error !== null &&
+          typeof error === "object" &&
+          ("code" in error || "details" in error || "hint" in error) &&
+          !(error instanceof Error);
+        if (looksLikePostgrestError) return fallback;
+        if (error instanceof Error) return error.message;
+        if (error && typeof error === "object" && typeof error.message === "string") return error.message;
+        return fallback;
       }
 
       function formatDateTime(value) {
@@ -5334,7 +5351,7 @@
           );
           rows = groupAdsByCampaign(dailyRows).sort((a, b) => b.investimento - a.investimento);
         } catch (error) {
-          content.innerHTML = `<div class="alert error">${escapeHtml(error.message)}<br><br>Aplique as migrations <code>supabase/migrations/20260803_013_meta_ads_integration.sql</code>, <code>20260803_014_meta_ads_public_view.sql</code>, <code>20260805_017_meta_ads_daily_history.sql</code> e <code>20260807_022_meta_ads_destino_url.sql</code>.</div>`;
+          content.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}<br><br>Aplique as migrations <code>supabase/migrations/20260803_013_meta_ads_integration.sql</code>, <code>20260803_014_meta_ads_public_view.sql</code>, <code>20260805_017_meta_ads_daily_history.sql</code> e <code>20260807_022_meta_ads_destino_url.sql</code>.</div>`;
           return;
         }
 
@@ -5574,7 +5591,7 @@
             loadComparativoPeriodo(state.marca, state.compareB.de, state.compareB.ate)
           ]);
         } catch (error) {
-          content.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          content.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
           return;
         }
 
@@ -5644,7 +5661,7 @@
         try {
           await loadConnections();
         } catch (error) {
-          content.innerHTML = `<div class="alert error">${escapeHtml(error.message)}<br><br>Aplique a migration <code>supabase/migrations/20260714_010_meta_account_mapping.sql</code> e depois rode <code>notify pgrst, 'reload schema';</code>.</div>`;
+          content.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}<br><br>Aplique a migration <code>supabase/migrations/20260714_010_meta_account_mapping.sql</code> e depois rode <code>notify pgrst, 'reload schema';</code>.</div>`;
           return;
         }
 
@@ -5771,7 +5788,7 @@
           .eq("id", id);
 
         if (error) {
-          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          status.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
           return;
         }
 
@@ -5798,7 +5815,7 @@
           .eq("id", id);
 
         if (error) {
-          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          status.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
           return;
         }
 
@@ -5818,7 +5835,7 @@
         const { data, error } = await supabase.functions.invoke("meta-ads-sync", { body });
 
         if (error) {
-          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          status.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
           return;
         }
 
@@ -5846,7 +5863,7 @@
         });
 
         if (error) {
-          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          status.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
           return;
         }
 
@@ -5866,7 +5883,7 @@
         const { data, error } = await supabase.functions.invoke("meta-sync-insights", { body });
 
         if (error) {
-          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          status.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
           return;
         }
 
@@ -5991,7 +6008,7 @@
         try {
           await loadGoogleBI();
         } catch (error) {
-          content.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          content.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
           return;
         }
         paintGoogleBusiness(statusMessage);
@@ -6208,7 +6225,7 @@
           .eq("id", id);
 
         if (error) {
-          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          status.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
           return;
         }
 
@@ -6236,7 +6253,7 @@
         });
 
         if (error) {
-          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          status.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
           return;
         }
 
@@ -6256,7 +6273,7 @@
         const { data, error } = await supabase.functions.invoke("google-gbp-sync", { body });
 
         if (error) {
-          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          status.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
           return;
         }
 
@@ -6274,7 +6291,7 @@
           body: { review_id: reviewId, action: "reply", texto }
         });
         if (error) {
-          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          status.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
           return;
         }
         state.google.openReplyReviewId = null;
@@ -6288,7 +6305,7 @@
           body: { review_id: reviewId, action: "delete" }
         });
         if (error) {
-          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          status.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
           return;
         }
         await renderGoogleBusiness("Resposta removida.");
@@ -6301,7 +6318,7 @@
           body: { local_id: localId, campos }
         });
         if (error) {
-          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          status.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
           return;
         }
         state.google.openEditLocalId = null;
@@ -6435,7 +6452,7 @@
         try {
           const log = JSON.parse(raw);
           const alertClass = log.type === "error" ? "alert error" : log.type === "success" ? "alert success" : "alert";
-          return `<div class="${alertClass}" style="margin-top:12px">Último status (${log.at}): ${log.message}</div>`;
+          return `<div class="${alertClass}" style="margin-top:12px">Último status (${log.at}): ${escapeHtml(log.message)}</div>`;
         } catch {
           return "";
         }
@@ -6472,7 +6489,7 @@
           const { error } = await request;
 
           if (error) {
-            const message = `Falha após ${imported} linhas em ${table}: ${error.message}`;
+            const message = `Falha após ${imported} linhas em ${table}: ${escapeHtml(safeErrorMessage(error))}`;
             status.insertAdjacentHTML("beforeend", `<div class="alert error">${message}</div>`);
             saveImportLog(message, "error");
             button.disabled = false;

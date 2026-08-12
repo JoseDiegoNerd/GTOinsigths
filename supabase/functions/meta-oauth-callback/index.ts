@@ -1,5 +1,4 @@
 ﻿import {
-  corsHeaders,
   errorMessage,
   getAdminClient,
   getRequiredEnv,
@@ -8,6 +7,7 @@
   metaGet,
   safeErrorMessage,
   verifyState,
+  withCors,
 } from "../_shared/meta.ts";
 
 const META_SCOPES = [
@@ -26,9 +26,7 @@ function redirectTo(appReturnUrl: string, params: Record<string, string | number
   return Response.redirect(url.toString(), 302);
 }
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-
+Deno.serve(withCors(async (req) => {
   const requestUrl = new URL(req.url);
   const code = requestUrl.searchParams.get("code");
   const state = requestUrl.searchParams.get("state");
@@ -201,7 +199,7 @@ Deno.serve(async (req) => {
 
     return redirectTo(appReturnUrl, { meta_error: safeErrorMessage(callbackError, "Falha no callback OAuth Meta.") });
   }
-});
+}));
 
 
 

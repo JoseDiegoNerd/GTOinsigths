@@ -10,3 +10,10 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
     Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
+    # O app publicado (netlify-deploy/, copia de public/index.html) e um unico HTML com todo o
+    # JS num <script type="module"> inline que importa @supabase/supabase-js direto do esm.sh -
+    # por isso script-src precisa de 'unsafe-inline' (sem nonce/hash, nao ha como restringir mais
+    # sem reestruturar esse arquivo pra um .js externo) e https://esm.sh. style-src 'unsafe-inline'
+    # cobre os varios style="" inline usados no mesmo arquivo. connect-src cobre a API REST/Auth e
+    # o realtime (wss) do projeto Supabase.
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://ysreenjwihmwzockyrls.supabase.co; connect-src 'self' https://ysreenjwihmwzockyrls.supabase.co wss://ysreenjwihmwzockyrls.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"

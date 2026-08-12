@@ -1,5 +1,4 @@
 import {
-  corsHeaders,
   errorMessage,
   getAdminClient,
   GOOGLE_ACCOUNTS_API,
@@ -10,6 +9,7 @@ import {
   logGoogleEvent,
   safeErrorMessage,
   verifyGoogleState,
+  withCors,
 } from "../_shared/google.ts";
 
 // Campos pedidos via readMask na Business Information API. Conferir contra a
@@ -66,8 +66,7 @@ async function exchangeCodeForTokens(code: string) {
   return body;
 }
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+Deno.serve(withCors(async (req) => {
 
   const requestUrl = new URL(req.url);
   const code = requestUrl.searchParams.get("code");
@@ -200,4 +199,4 @@ Deno.serve(async (req) => {
 
     return redirectTo(appReturnUrl, { google_error: safeErrorMessage(callbackError, "Falha no callback OAuth Google.") });
   }
-});
+}));

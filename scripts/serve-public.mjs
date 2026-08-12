@@ -22,7 +22,14 @@ const securityHeaders = {
   'X-Frame-Options': 'DENY',
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+  // Este servidor serve public/index.html direto - o mesmo arquivo publicado em producao (ver
+  // netlify.toml), que tem todo o JS num <script type="module"> inline importando do esm.sh.
+  'Content-Security-Policy':
+    "default-src 'self'; script-src 'self' 'unsafe-inline' https://esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+    "font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://ysreenjwihmwzockyrls.supabase.co; " +
+    "connect-src 'self' https://ysreenjwihmwzockyrls.supabase.co wss://ysreenjwihmwzockyrls.supabase.co; " +
+    "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 };
 
 function resolvePath(url) {

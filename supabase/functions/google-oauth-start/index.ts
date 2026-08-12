@@ -1,6 +1,5 @@
 import {
   assertAdminOrGestor,
-  corsHeaders,
   getAuthenticatedUser,
   getGoogleOAuthScopes,
   getRequiredEnv,
@@ -8,10 +7,10 @@ import {
   resolveAppReturnUrl,
   safeErrorMessage,
   signGoogleState,
+  withCors,
 } from "../_shared/google.ts";
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+Deno.serve(withCors(async (req) => {
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
   try {
@@ -47,4 +46,4 @@ Deno.serve(async (req) => {
   } catch (error) {
     return jsonResponse({ error: safeErrorMessage(error, "Nao foi possivel iniciar a conexao com o Google.") }, 400);
   }
-});
+}));

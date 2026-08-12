@@ -1,6 +1,5 @@
 import {
   assertAdminOrGestor,
-  corsHeaders,
   errorMessage,
   getAdminClient,
   getAuthenticatedUser,
@@ -12,6 +11,7 @@ import {
   jsonResponse,
   logGoogleEvent,
   safeErrorMessage,
+  withCors,
 } from "../_shared/google.ts";
 
 type Integracao = {
@@ -272,8 +272,7 @@ async function refreshStageResumo(marcas: string[]) {
   }
 }
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+Deno.serve(withCors(async (req) => {
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
   try {
@@ -382,4 +381,4 @@ Deno.serve(async (req) => {
   } catch (error) {
     return jsonResponse({ error: safeErrorMessage(error, "Nao foi possivel sincronizar o Google Business Profile.") }, 400);
   }
-});
+}));

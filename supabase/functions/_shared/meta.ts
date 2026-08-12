@@ -1,17 +1,55 @@
 ﻿import { createClient } from "npm:@supabase/supabase-js@2";
 
-export const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-};
-
 export type JsonRecord = Record<string, unknown>;
+
+// Origem(ns) confiavel(is) do frontend - usada tanto pro CORS das Edge Functions quanto pro
+// destino do redirect final do OAuth (resolveAppReturnUrl). Configuravel via APP_ALLOWED_ORIGINS
+// (csv) no ambiente da funcao; sem isso, so os hosts de dev local sao aceitos.
+const DEFAULT_ALLOWED_ORIGINS = ["http://127.0.0.1:5173", "http://localhost:5173", "http://localhost:3000"];
+
+function getAllowedOrigins(): string[] {
+  const configured = (Deno.env.get("APP_ALLOWED_ORIGINS") || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  return configured.length ? configured : DEFAULT_ALLOWED_ORIGINS;
+}
+
+// Access-Control-Allow-Origin nao aceita lista - so um valor exato (ou "*", que nos evitamos aqui
+// porque essas rotas aceitam Authorization: Bearer e um "*" deixa qualquer site ler a resposta se
+// o token ja vazou por outro canal). Reflete a Origin da requisicao so quando ela bate com a
+// allowlist; fora disso cai no primeiro item da lista (bloqueia CORS pra origem nao permitida).
+export function corsHeaders(req: Request) {
+  const allowedOrigins = getAllowedOrigins();
+  const requestOrigin = req.headers.get("origin");
+  const allowOrigin = requestOrigin && allowedOrigins.includes(requestOrigin) ? requestOrigin : allowedOrigins[0];
+
+  return {
+    "Access-Control-Allow-Origin": allowOrigin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    Vary: "Origin",
+  };
+}
+
+// Envolve o handler de um Deno.serve pra aplicar corsHeaders(req) em toda resposta (incluindo o
+// preflight OPTIONS) sem precisar tocar cada chamada de jsonResponse individualmente.
+export function withCors(handler: (req: Request) => Promise<Response>) {
+  return async (req: Request): Promise<Response> => {
+    const cors = corsHeaders(req);
+    if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+
+    const response = await handler(req);
+    const headers = new Headers(response.headers);
+    for (const [key, value] of Object.entries(cors)) headers.set(key, value);
+    return new Response(response.body, { status: response.status, headers });
+  };
+}
 
 export function jsonResponse(body: JsonRecord, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "content-type": "application/json" },
+    headers: { "content-type": "application/json" },
   });
 }
 
@@ -25,19 +63,8 @@ export function getGraphVersion() {
   return Deno.env.get("META_GRAPH_VERSION") || "v25.0";
 }
 
-// Origem para onde os callbacks OAuth (Meta/Google) redirecionam de volta ao final do fluxo.
-// O valor pedido pelo cliente (body.app_return_url) nunca e usado direto: so a origin bate
-// contra uma allowlist (APP_ALLOWED_ORIGINS, csv) - caso contrario o redirect final do
-// callback vira um open redirect (state e assinado, mas o payload dele, incluindo
-// app_return_url, e definido pelo proprio chamador antes da assinatura).
-const DEFAULT_ALLOWED_ORIGINS = ["http://127.0.0.1:5173", "http://localhost:5173", "http://localhost:3000"];
-
 export function resolveAppReturnUrl(req: Request, requestedUrl: string | undefined): string {
-  const configured = (Deno.env.get("APP_ALLOWED_ORIGINS") || "")
-    .split(",")
-    .map((value) => value.trim())
-    .filter(Boolean);
-  const allowedOrigins = configured.length ? configured : DEFAULT_ALLOWED_ORIGINS;
+  const allowedOrigins = getAllowedOrigins();
 
   const requestOrigin = req.headers.get("origin");
   if (requestOrigin && allowedOrigins.includes(requestOrigin)) return requestOrigin;
