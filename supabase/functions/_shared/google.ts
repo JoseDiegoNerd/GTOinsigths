@@ -1,14 +1,27 @@
 import {
   assertAdminOrGestor,
   corsHeaders,
+  errorMessage,
   getAdminClient,
   getAuthenticatedUser,
   getRequiredEnv,
   jsonResponse,
+  resolveAppReturnUrl,
+  safeErrorMessage,
 } from "./meta.ts";
 import type { JsonRecord } from "./meta.ts";
 
-export { assertAdminOrGestor, corsHeaders, getAdminClient, getAuthenticatedUser, getRequiredEnv, jsonResponse };
+export {
+  assertAdminOrGestor,
+  corsHeaders,
+  errorMessage,
+  getAdminClient,
+  getAuthenticatedUser,
+  getRequiredEnv,
+  jsonResponse,
+  resolveAppReturnUrl,
+  safeErrorMessage,
+};
 export type { JsonRecord };
 
 // Base URLs da API do Google Business Profile. A API e fragmentada em varias
@@ -41,18 +54,36 @@ export async function assertCargoPermitido(userId: string, cargosPermitidos: str
 
 // Espelha a funcao SQL gto_tem_acesso_marca em TypeScript, para checagens dentro
 // de Edge Functions que rodam com service_role (onde a RLS nao se aplica sozinha).
+//
+// Consulta perfis_marcas (relacionamento N:N), nao a coluna perfis.marca_vinculada:
+// desde a migration 20260807_021, marca_vinculada e uma coluna legada, congelada no
+// valor que tinha no backfill daquela migration - quem gerencia marcas atribuidas a um
+// perfil (adicionar ou revogar) mexe em perfis_marcas, nunca mais em marca_vinculada.
+// Ler a coluna antiga aqui faria essa checagem divergir da fonte de verdade real: um
+// acesso revogado via perfis_marcas continuaria liberado por esta funcao (BOLA).
 export async function assertAcessoMarca(userId: string, marca: string) {
   const supabase = getAdminClient();
-  const { data, error } = await supabase
+  const { data: perfil, error: perfilError } = await supabase
     .from("perfis")
-    .select("cargo,marca_vinculada,ativo")
+    .select("cargo,ativo")
     .eq("id", userId)
     .maybeSingle();
 
-  if (error) throw error;
-  const ehAdminOuGestor = data?.ativo && ["Admin", "Gestor"].includes(String(data.cargo));
+  if (perfilError) throw perfilError;
+  if (!perfil?.ativo) throw new Error(`Sem acesso a marca "${marca}".`);
+
+  const ehAdminOuGestor = ["Admin", "Gestor"].includes(String(perfil.cargo));
   if (ehAdminOuGestor) return;
-  if (data?.ativo && data.marca_vinculada === marca) return;
+
+  const { data: vinculo, error: vinculoError } = await supabase
+    .from("perfis_marcas")
+    .select("marca")
+    .eq("perfil_id", userId)
+    .eq("marca", marca)
+    .maybeSingle();
+
+  if (vinculoError) throw vinculoError;
+  if (vinculo) return;
 
   throw new Error(`Sem acesso a marca "${marca}".`);
 }

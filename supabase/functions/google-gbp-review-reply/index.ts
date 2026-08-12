@@ -9,6 +9,7 @@ import {
   googleFetch,
   jsonResponse,
   logGoogleEvent,
+  safeErrorMessage,
 } from "../_shared/google.ts";
 
 const CARGOS_PERMITIDOS = ["Admin", "Gestor", "Coordenador", "Analista"];
@@ -120,6 +121,6 @@ Deno.serve(async (req) => {
 
     return jsonResponse({ ok: true, action: "delete" });
   } catch (error) {
-    return jsonResponse({ error: error instanceof Error ? error.message : "Could not process review reply." }, 400);
+    return jsonResponse({ error: safeErrorMessage(error, "Nao foi possivel processar a resposta da avaliacao.") }, 400);
   }
 });

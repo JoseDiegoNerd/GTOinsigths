@@ -25,6 +25,35 @@ export function getGraphVersion() {
   return Deno.env.get("META_GRAPH_VERSION") || "v25.0";
 }
 
+// Origem para onde os callbacks OAuth (Meta/Google) redirecionam de volta ao final do fluxo.
+// O valor pedido pelo cliente (body.app_return_url) nunca e usado direto: so a origin bate
+// contra uma allowlist (APP_ALLOWED_ORIGINS, csv) - caso contrario o redirect final do
+// callback vira um open redirect (state e assinado, mas o payload dele, incluindo
+// app_return_url, e definido pelo proprio chamador antes da assinatura).
+const DEFAULT_ALLOWED_ORIGINS = ["http://127.0.0.1:5173", "http://localhost:5173", "http://localhost:3000"];
+
+export function resolveAppReturnUrl(req: Request, requestedUrl: string | undefined): string {
+  const configured = (Deno.env.get("APP_ALLOWED_ORIGINS") || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const allowedOrigins = configured.length ? configured : DEFAULT_ALLOWED_ORIGINS;
+
+  const requestOrigin = req.headers.get("origin");
+  if (requestOrigin && allowedOrigins.includes(requestOrigin)) return requestOrigin;
+
+  if (requestedUrl) {
+    try {
+      const requestedOrigin = new URL(requestedUrl).origin;
+      if (allowedOrigins.includes(requestedOrigin)) return requestedOrigin;
+    } catch {
+      // URL invalida - ignora e cai no default abaixo.
+    }
+  }
+
+  return allowedOrigins[0];
+}
+
 export function getAdminClient() {
   return createClient(
     getRequiredEnv("SUPABASE_URL"),
@@ -108,6 +137,24 @@ export async function verifyState(state: string) {
   if (!ts || ageMs > 15 * 60 * 1000) throw new Error("OAuth state expired.");
 
   return payload as JsonRecord;
+}
+
+// Mensagem segura para devolver ao chamador da API: nunca repassa message/code/details/hint
+// de um erro com formato de PostgrestError (revelaria nomes de tabela/coluna/constraint).
+// O erro completo sempre vai pro log da Edge Function (console.error, so visivel no
+// dashboard do Supabase) - so a resposta HTTP e generica.
+export function safeErrorMessage(error: unknown, fallback = "Ocorreu um erro ao processar a solicitacao."): string {
+  console.error(error);
+
+  const looksLikePostgrestError =
+    error !== null &&
+    typeof error === "object" &&
+    ("code" in error || "details" in error || "hint" in error) &&
+    !(error instanceof Error);
+
+  if (looksLikePostgrestError) return fallback;
+  if (error instanceof Error) return error.message;
+  return fallback;
 }
 
 export function errorMessage(error: unknown): string {

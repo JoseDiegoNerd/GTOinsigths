@@ -5,6 +5,8 @@
   getGraphVersion,
   getRequiredEnv,
   jsonResponse,
+  resolveAppReturnUrl,
+  safeErrorMessage,
   signState,
 } from "../_shared/meta.ts";
 
@@ -32,7 +34,7 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Informe uma marca para conectar ao Meta Business." }, 400);
     }
 
-    const appReturnUrl = String(body.app_return_url || req.headers.get("origin") || "http://127.0.0.1:5173");
+    const appReturnUrl = resolveAppReturnUrl(req, body.app_return_url);
     const state = await signState({
       uid: user.id,
       marca,
@@ -50,7 +52,7 @@ Deno.serve(async (req) => {
 
     return jsonResponse({ authorizeUrl: url.toString(), scopes: DEFAULT_SCOPES });
   } catch (error) {
-    return jsonResponse({ error: error.message || "Could not start Meta OAuth." }, 400);
+    return jsonResponse({ error: safeErrorMessage(error, "Nao foi possivel iniciar a conexao com o Meta.") }, 400);
   }
 });
 

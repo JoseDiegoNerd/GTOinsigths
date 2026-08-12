@@ -1,6 +1,7 @@
 import {
   assertAdminOrGestor,
   corsHeaders,
+  errorMessage,
   getAdminClient,
   getAuthenticatedUser,
   getValidAccessToken,
@@ -10,6 +11,7 @@ import {
   googleFetch,
   jsonResponse,
   logGoogleEvent,
+  safeErrorMessage,
 } from "../_shared/google.ts";
 
 type Integracao = {
@@ -356,13 +358,13 @@ Deno.serve(async (req) => {
           },
         });
       } catch (syncError) {
-        result.error = syncError instanceof Error ? syncError.message : String(syncError);
+        result.error = safeErrorMessage(syncError, "Falha na sincronizacao Google Business Profile.");
         await logGoogleEvent({
           integracao_id: integracao.id,
           marca: integracao.marca,
           tipo_evento: "sync_gbp",
           status: "erro",
-          mensagem: result.error,
+          mensagem: errorMessage(syncError),
           payload_resumo: { warnings: warnings.slice(0, 5) },
         });
       }
@@ -378,6 +380,6 @@ Deno.serve(async (req) => {
       message: `Sincronizacao concluida para ${results.length} conta(s).`,
     });
   } catch (error) {
-    return jsonResponse({ error: error instanceof Error ? error.message : "Could not sync Google Business Profile." }, 400);
+    return jsonResponse({ error: safeErrorMessage(error, "Nao foi possivel sincronizar o Google Business Profile.") }, 400);
   }
 });

@@ -1,10 +1,12 @@
 ﻿import {
   corsHeaders,
+  errorMessage,
   getAdminClient,
   getRequiredEnv,
   jsonResponse,
   logMetaEvent,
   metaGet,
+  safeErrorMessage,
   verifyState,
 } from "../_shared/meta.ts";
 
@@ -41,7 +43,7 @@ Deno.serve(async (req) => {
     parsedState = await verifyState(state);
     appReturnUrl = String(parsedState.app_return_url || appReturnUrl);
   } catch (stateError) {
-    return jsonResponse({ error: stateError.message || "Invalid OAuth state." }, 400);
+    return jsonResponse({ error: safeErrorMessage(stateError, "OAuth state invalido.") }, 400);
   }
 
   if (oauthError) {
@@ -194,10 +196,10 @@ Deno.serve(async (req) => {
       marca: String(parsedState.marca || "") || null,
       tipo_evento: "oauth_callback",
       status: "erro",
-      mensagem: callbackError.message || "Falha no callback OAuth Meta.",
+      mensagem: errorMessage(callbackError),
     });
 
-    return redirectTo(appReturnUrl, { meta_error: callbackError.message || "Meta OAuth error" });
+    return redirectTo(appReturnUrl, { meta_error: safeErrorMessage(callbackError, "Falha no callback OAuth Meta.") });
   }
 });
 

@@ -5,6 +5,8 @@ import {
   getGoogleOAuthScopes,
   getRequiredEnv,
   jsonResponse,
+  resolveAppReturnUrl,
+  safeErrorMessage,
   signGoogleState,
 } from "../_shared/google.ts";
 
@@ -22,7 +24,7 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Informe uma marca para conectar ao Google Business Profile." }, 400);
     }
 
-    const appReturnUrl = String(body.app_return_url || req.headers.get("origin") || "http://127.0.0.1:5173");
+    const appReturnUrl = resolveAppReturnUrl(req, body.app_return_url);
     const scopes = getGoogleOAuthScopes();
     const state = await signGoogleState({
       uid: user.id,
@@ -43,6 +45,6 @@ Deno.serve(async (req) => {
 
     return jsonResponse({ authorizeUrl: url.toString(), scopes });
   } catch (error) {
-    return jsonResponse({ error: error.message || "Could not start Google OAuth." }, 400);
+    return jsonResponse({ error: safeErrorMessage(error, "Nao foi possivel iniciar a conexao com o Google.") }, 400);
   }
 });

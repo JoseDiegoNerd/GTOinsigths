@@ -9,6 +9,7 @@ import {
   googleFetch,
   jsonResponse,
   logGoogleEvent,
+  safeErrorMessage,
 } from "../_shared/google.ts";
 
 const CARGOS_PERMITIDOS = ["Admin", "Gestor", "Coordenador"];
@@ -121,6 +122,6 @@ Deno.serve(async (req) => {
 
     return jsonResponse({ ok: true, campos_atualizados: camposValidos });
   } catch (error) {
-    return jsonResponse({ error: error instanceof Error ? error.message : "Could not update location." }, 400);
+    return jsonResponse({ error: safeErrorMessage(error, "Nao foi possivel atualizar o local.") }, 400);
   }
 });

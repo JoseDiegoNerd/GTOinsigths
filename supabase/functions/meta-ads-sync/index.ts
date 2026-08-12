@@ -7,6 +7,7 @@ import {
   jsonResponse,
   logMetaEvent,
   metaGet,
+  safeErrorMessage,
 } from "../_shared/meta.ts";
 
 type AdAccountIntegration = {
@@ -322,13 +323,13 @@ Deno.serve(async (req) => {
           payload_resumo: { campaignsImported: result.campaignsImported, warnings: warnings.slice(0, 5) },
         });
       } catch (syncError) {
-        result.error = errorMessage(syncError);
+        result.error = safeErrorMessage(syncError, "Falha na sincronizacao de anuncios Meta.");
         await logMetaEvent({
           integracao_id: integration.id,
           marca: integration.marca,
           tipo_evento: "ads_sync",
           status: "erro",
-          mensagem: result.error,
+          mensagem: errorMessage(syncError),
           payload_resumo: { warnings: warnings.slice(0, 5) },
         });
       }
@@ -346,6 +347,6 @@ Deno.serve(async (req) => {
       message: `Sincronizacao concluida: ${totalCampaigns} campanhas, ${totalWarnings} avisos.`,
     });
   } catch (error) {
-    return jsonResponse({ error: error instanceof Error ? error.message : "Could not sync Meta ads." }, 400);
+    return jsonResponse({ error: safeErrorMessage(error, "Nao foi possivel sincronizar anuncios Meta.") }, 400);
   }
 });

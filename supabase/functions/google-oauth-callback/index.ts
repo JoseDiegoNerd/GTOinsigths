@@ -1,5 +1,6 @@
 import {
   corsHeaders,
+  errorMessage,
   getAdminClient,
   GOOGLE_ACCOUNTS_API,
   GOOGLE_BUSINESS_INFO_API,
@@ -7,6 +8,7 @@ import {
   googleFetch,
   jsonResponse,
   logGoogleEvent,
+  safeErrorMessage,
   verifyGoogleState,
 } from "../_shared/google.ts";
 
@@ -81,7 +83,7 @@ Deno.serve(async (req) => {
     parsedState = await verifyGoogleState(state);
     appReturnUrl = String(parsedState.app_return_url || appReturnUrl);
   } catch (stateError) {
-    return jsonResponse({ error: stateError.message || "Invalid OAuth state." }, 400);
+    return jsonResponse({ error: safeErrorMessage(stateError, "OAuth state invalido.") }, 400);
   }
 
   if (oauthError) {
@@ -193,9 +195,9 @@ Deno.serve(async (req) => {
       marca: String(parsedState.marca || "") || null,
       tipo_evento: "oauth_callback",
       status: "erro",
-      mensagem: callbackError.message || "Falha no callback OAuth Google.",
+      mensagem: errorMessage(callbackError),
     });
 
-    return redirectTo(appReturnUrl, { google_error: callbackError.message || "Google OAuth error" });
+    return redirectTo(appReturnUrl, { google_error: safeErrorMessage(callbackError, "Falha no callback OAuth Google.") });
   }
 });

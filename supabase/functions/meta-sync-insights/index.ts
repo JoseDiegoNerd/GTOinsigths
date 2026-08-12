@@ -7,6 +7,7 @@
   jsonResponse,
   logMetaEvent,
   metaGet,
+  safeErrorMessage,
 } from "../_shared/meta.ts";
 
 type Integration = {
@@ -269,14 +270,13 @@ async function syncInstagram(integration: Integration, warnings: string[]) {
 
     imported += 1;
     } catch (itemError) {
-      const message = errorMessage(itemError);
-      warnings.push(`Post Instagram ${item.id}: ${message}`);
+      warnings.push(`Post Instagram ${item.id}: ${safeErrorMessage(itemError, "erro ao processar.")}`);
       await logMetaEvent({
         integracao_id: integration.id,
         marca: integration.marca,
         tipo_evento: "instagram_media_upsert",
         status: "aviso",
-        mensagem: message,
+        mensagem: errorMessage(itemError),
         payload_resumo: { media_id: item.id },
       });
     }
@@ -635,14 +635,13 @@ async function syncFacebook(integration: Integration, warnings: string[]) {
 
     imported += 1;
    } catch (itemError) {
-      const message = errorMessage(itemError);
-      warnings.push(`Post Facebook ${post.id}: ${message}`);
+      warnings.push(`Post Facebook ${post.id}: ${safeErrorMessage(itemError, "erro ao processar.")}`);
       await logMetaEvent({
         integracao_id: integration.id,
         marca: integration.marca,
         tipo_evento: "facebook_post_upsert",
         status: "aviso",
-        mensagem: message,
+        mensagem: errorMessage(itemError),
         payload_resumo: { post_id: post.id },
       });
    }
@@ -783,13 +782,13 @@ Deno.serve(async (req) => {
           },
         });
       } catch (syncError) {
-        result.error = errorMessage(syncError);
+        result.error = safeErrorMessage(syncError, "Falha na sincronizacao Meta.");
         await logMetaEvent({
           integracao_id: integration.id,
           marca: integration.marca,
           tipo_evento: "sync_insights",
           status: "erro",
-          mensagem: result.error,
+          mensagem: errorMessage(syncError),
           payload_resumo: { warnings: warnings.slice(0, 5) },
         });
       }
@@ -810,7 +809,7 @@ Deno.serve(async (req) => {
       message: `Sincronizacao concluida: ${totalInstagram} Instagram, ${totalFacebook} Facebook, ${totalWarnings} avisos.`,
     });
   } catch (error) {
-    return jsonResponse({ error: error instanceof Error ? error.message : "Could not sync Meta insights." }, 400);
+    return jsonResponse({ error: safeErrorMessage(error, "Nao foi possivel sincronizar dados do Meta.") }, 400);
   }
 });
 
