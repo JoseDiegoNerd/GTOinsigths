@@ -72,6 +72,14 @@
       .mom-pill-good { background: #dcfce7; color: #166534; }
       .mom-pill-bad { background: #fee2e2; color: #991b1b; }
       .mom-pill-neutral { background: #f1f5f9; color: #64748b; font-weight: 600; }
+      .skel { position: relative; display: block; border-radius: 6px; background: #e7ecf5; overflow: hidden; }
+      .skel::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(255,255,255,.75), transparent); animation: skel-shimmer 1.5s ease-in-out infinite; }
+      @media (prefers-reduced-motion: reduce) { .skel::after { animation: none; } }
+      @keyframes skel-shimmer { 100% { transform: translateX(100%); } }
+      .skel-text { display: inline-block; }
+      .skel-circle { width: 18px; height: 18px; border-radius: 50%; flex: none; }
+      .skel-block { border-radius: 12px; }
+      .skel-kpi { min-height: 84px; display: grid; align-content: space-between; gap: 8px; }
       .alert { border: 1px solid #bfdbfe; background: #eff6ff; color: #1d4ed8; border-radius: 10px; padding: 12px; }
       .alert.error { border-color: #fecaca; background: #fef2f2; color: #b91c1c; }
       .alert.success { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
@@ -291,6 +299,15 @@
 
       let state = { session: null, perfil: null, page: "dashboard", marca: "Todas", periodo: "30d", periodoDe: "", periodoAte: "", periodoMenuOpen: false, rows: [], rd: [], meta: [], metaSeguidoresSnapshot: [], ads: [], google: null, dashboardConsolidadoMetric: "credito", propostas: [], bi: null, channels: null, email: null, emailSelectedId: null, social: null, socialFormat: null, socialTab: "geral", connections: [], bestTimes: null, socialCompareMetric: "alcance", socialEficienciaTab: "frequencia", compareA: { de: "", ate: "" }, compareB: { de: "", ate: "" }, adsStatusFilter: "todas", adsObjetivoFilter: "todos", adsCrossMetric: "alcance", adsSortColumn: "investimento", adsSortDirection: "desc", topbarMenuOpen: false };
 
+      // Cache "estilo React Query" para o Dashboard Geral: guarda o ultimo modelo montado por
+      // marca+periodo por 5min (staleTime) e reaproveita na hora ao trocar de aba (keepPreviousData),
+      // so disparando nova busca em segundo plano quando o cache passa da idade "stale".
+      const DASHBOARD_STALE_TIME = 1000 * 60 * 5;
+      const dashboardCache = new Map();
+      function dashboardCacheKey() {
+        return [state.marca, state.periodo, state.periodoDe, state.periodoAte].join("|");
+      }
+
       const fmt = new Intl.NumberFormat("pt-BR");
       const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
       const avg = (arr) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
@@ -339,7 +356,7 @@
         if (query.get("code")) {
           const { error } = await supabase.auth.exchangeCodeForSession(query.get("code"));
           if (error) {
-            renderLogin(error.message);
+            renderLogin(safeErrorMessage(error, "Não foi possível concluir o login."));
             return true;
           }
           if (queryType === "recovery") {
@@ -354,7 +371,7 @@
             refresh_token: hash.get("refresh_token")
           });
           if (error) {
-            renderLogin(error.message);
+            renderLogin(safeErrorMessage(error, "Não foi possível concluir o login."));
             return true;
           }
           renderResetPassword();
@@ -373,7 +390,7 @@
         event.preventDefault();
         const form = new FormData(event.currentTarget);
         const { error } = await supabase.auth.signInWithPassword({ email: form.get("email"), password: form.get("password") });
-        if (error) return renderLogin(error.message);
+        if (error) return renderLogin(safeErrorMessage(error, "Email ou senha inválidos."));
         await init();
       }
 
@@ -385,7 +402,7 @@
           redirectTo: appRedirectUrl()
         });
 
-        if (error) return renderLogin(error.message, "recovery");
+        if (error) return renderLogin(safeErrorMessage(error, "Não foi possível enviar o link de recuperação."), "recovery");
         renderLogin("Enviamos um novo link de recuperação para o seu email. Use o link mais recente.", "login", "success");
       }
 
@@ -402,7 +419,7 @@
 
         const { error } = await supabase.auth.updateUser({ password });
         if (error) {
-          renderResetPassword(error.message);
+          renderResetPassword(safeErrorMessage(error, "Não foi possível atualizar a senha."));
           return;
         }
 
@@ -871,7 +888,7 @@
           campanhas,
           resumo,
           fallback: true,
-          fallbackReason: reason?.message || String(reason || "")
+          fallbackReason: safeErrorMessage(reason, "")
         };
       }
 
@@ -1032,7 +1049,7 @@
           ranking: periodos.slice(0, 20),
           fallback: true,
           usingMetaStage: true,
-          fallbackReason: reason?.message || String(reason || "")
+          fallbackReason: safeErrorMessage(reason, "")
         };
       }
 
@@ -1077,7 +1094,7 @@
           periodos,
           ranking,
           fallback: true,
-          fallbackReason: reason?.message || String(reason || "")
+          fallbackReason: safeErrorMessage(reason, "")
         };
       }
 
@@ -1105,7 +1122,7 @@
           rede,
           rows: aggregateSocialFormatRows(rows.filter((row) => row.rede_social === rede), rede),
           fallback: true,
-          fallbackReason: reason?.message || String(reason || "")
+          fallbackReason: safeErrorMessage(reason, "")
         };
       }
 
@@ -1185,7 +1202,7 @@
 
       function renderLogin(message = "", view = "login", type = "error") {
         app.className = "login-split";
-        const messageHtml = message ? `<div class="alert ${type}">${message}</div>` : "";
+        const messageHtml = message ? `<div class="alert ${type}">${escapeHtml(message)}</div>` : "";
         const formHtml = view === "recovery" ? `
               <h1>Recuperar senha</h1>
               <p class="muted">Informe seu e-mail corporativo para receber o link de redefinição.</p>
@@ -1234,7 +1251,7 @@
               <form id="resetPasswordForm" class="grid" style="gap:14px">
                 <label>Nova senha<input name="password" type="password" minlength="6" required /></label>
                 <label>Confirmar senha<input name="confirmPassword" type="password" minlength="6" required /></label>
-                ${error ? `<div class="alert error">${error}</div>` : ""}
+                ${error ? `<div class="alert error">${escapeHtml(error)}</div>` : ""}
                 <button>Salvar nova senha</button>
               </form>
             </section>
@@ -1429,10 +1446,23 @@
         return "Pipeline de importação";
       }
 
-      async function renderDashboard() {
-        const content = document.querySelector("#content");
-        content.innerHTML = `<div class="alert">Carregando dados reais do Supabase...</div>`;
-        try { await loadDashboard(); } catch (error) { content.innerHTML = `<div class="alert error">${error.message}</div>`; return; }
+      // Monta o modelo do Dashboard Geral: dispara em paralelo (Promise.all) a busca principal
+      // (loadDashboard, que ja junta cards/RD/Meta/propostas/ads/Google BI) junto com as duas buscas
+      // que antes rodavam em sequencia depois dela (resumo do periodo anterior para os badges MoM, e
+      // o total de propostas do grupo inteiro para o card de Destaques por marca) - nenhuma das duas
+      // depende do resultado de loadDashboard(), entao esperar uma terminar pra so entao comecar a
+      // outra so somava latencia sem necessidade.
+      async function fetchDashboardModel() {
+        const isTodasMarcas = state.marca === "Todas";
+        const periodoAnterior = previousPeriodRange();
+        const [, summaryAnterior, propostasGrupo, adsLastSync, socialLastSync] = await Promise.all([
+          loadDashboard(),
+          periodoAnterior ? loadDashboardPeriodSummary(state.marca, periodoAnterior.from, periodoAnterior.to) : Promise.resolve(null),
+          !isTodasMarcas ? fetchAllRows("stage_credsystem_propostas", "marca,proposta_aprov", "Todas").catch(() => []) : Promise.resolve([]),
+          loadUltimaSincronizacao("vw_integracao_meta_ads_contas_publica", state.marca).catch(() => null),
+          loadUltimaSincronizacao("vw_integracao_meta_contas_publica", state.marca).catch(() => null)
+        ]);
+
         const rows = state.rows;
         const summary = {
           total: rows.length,
@@ -1451,10 +1481,6 @@
           cliquesAds: state.ads.reduce((s, r) => s + num(r.cliques), 0)
         };
         summary.taxaAprovacao = summary.propostas ? (summary.aprovadas / summary.propostas) * 100 : 0;
-        const [adsLastSync, socialLastSync] = await Promise.all([
-          loadUltimaSincronizacao("vw_integracao_meta_ads_contas_publica", state.marca).catch(() => null),
-          loadUltimaSincronizacao("vw_integracao_meta_contas_publica", state.marca).catch(() => null)
-        ]);
         const cartaoLastImport = lastImportTimestamp(["dados_cartoes_credsystem", "stage_credsystem_propostas"]);
         const emailLastImport = lastImportTimestamp(["stage_rd_station_marketing"]);
         summary.cpcMedio = summary.cliquesAds ? summary.investimentoAds / summary.cliquesAds : 0;
@@ -1495,13 +1521,11 @@
         const topMotivos = motivosOrdenados.slice(0, 4);
         const outrosMotivosTotal = motivosOrdenados.slice(4).reduce((s, [, total]) => s + total, 0);
 
-        const isTodasMarcas = state.marca === "Todas";
         let marcaHighlights = null;
         if (!isTodasMarcas) {
           // Taxa de aprovacao do grupo inteiro, sem filtro de marca, so pra comparar a marca
-          // selecionada com a media das 3 - precisa de uma busca separada porque `state.propostas`
-          // aqui ja vem filtrado pela marca ativa.
-          const propostasGrupo = await fetchAllRows("stage_credsystem_propostas", "marca,proposta_aprov", "Todas").catch(() => []);
+          // selecionada com a media das 3 - busca disparada em paralelo la em cima porque nao
+          // depende do resultado de loadDashboard() (`state.propostas` ja vem filtrado pela marca ativa).
           const taxaAprovacaoGrupo = propostasGrupo.length
             ? (propostasGrupo.reduce((s, r) => s + num(r.proposta_aprov), 0) / propostasGrupo.length) * 100
             : 0;
@@ -1528,14 +1552,6 @@
           marcaHighlights = { taxaAprovacaoGrupo, canalTop, topMotivoRejeicao };
         }
 
-        // Periodo anterior de mesma duracao, pra alimentar os badges de variacao (MoM) dos 4 canais
-        // e o resumo executivo abaixo do titulo. Sem filtro de data ativo (periodo "all") nao ha
-        // "anterior" real, entao os badges somem em vez de mostrar um numero inventado.
-        const periodoAnterior = previousPeriodRange();
-        const summaryAnterior = periodoAnterior
-          ? await loadDashboardPeriodSummary(state.marca, periodoAnterior.from, periodoAnterior.to)
-          : null;
-
         // Mesma heuristica de "canal mais eficiente" usada no card de Destaques por marca
         // (CTR de anuncios vs. taxa de clique de email vs. taxa de engajamento social) - aqui
         // calculada pro grupo inteiro, so quando a aba "Todas" esta ativa (nas abas por marca o
@@ -1560,7 +1576,18 @@
               return `<div class="insight-card success"><span class="material-symbols-outlined">insights</span><p>💡 ${escapeHtml(state.marca)}: canal com melhor desempenho no período foi <strong>${escapeHtml(canalMaisEficienteGrupo.nome)}</strong> (${canalMaisEficienteGrupo.valor.toFixed(2).replace(".", ",")}%).</p></div>`;
             })();
 
-        content.innerHTML = `
+        return {
+          marca: state.marca, isTodasMarcas, summary, summaryAnterior, cartaoLastImport, emailLastImport,
+          adsLastSync, socialLastSync, googleKpis, googleSemDados, byBrand, max, topMotivos, outrosMotivosTotal,
+          marcaHighlights, propostasAprovadasPorMarca, investimentoPorMarca, resumoExecutivoHtml
+        };
+      }
+
+      function paintDashboardHtml(model) {
+        const { isTodasMarcas, summary, summaryAnterior, cartaoLastImport, emailLastImport, adsLastSync, socialLastSync,
+          googleKpis, googleSemDados, byBrand, max, topMotivos, outrosMotivosTotal, marcaHighlights,
+          propostasAprovadasPorMarca, investimentoPorMarca, resumoExecutivoHtml } = model;
+        return `
           <div class="page-head">
             <div><div class="eyebrow">Dados reais do Supabase</div><h2>Dashboard Geral</h2><p class="muted">Resumo executivo e saúde dos canais corporativos.</p></div>
             <div class="filters">
@@ -1636,7 +1663,7 @@
             </section>
           ` : `
             <section class="card">
-              <h3 style="margin:0 0 16px">🏅 Destaques e Saúde da Marca ${escapeHtml(state.marca)}</h3>
+              <h3 style="margin:0 0 16px">🏅 Destaques e Saúde da Marca ${escapeHtml(model.marca)}</h3>
               <div class="grid highlight-grid">
                 <article class="card highlight-card">
                   <h4><span class="material-symbols-outlined" style="font-size:18px">percent</span>Desempenho de Crédito</h4>
@@ -1656,11 +1683,78 @@
               </div>
             </section>
           `}`;
+      }
+
+      function skeletonKpiHtml() {
+        return `<article class="card skel-kpi"><div class="kpi-top"><span class="skel skel-text" style="width:72px;height:9px"></span><span class="skel skel-circle"></span></div><span class="skel skel-text" style="width:88px;height:20px"></span></article>`;
+      }
+      function skeletonChannelCardHtml(titleWidth) {
+        return `<section class="card"><span class="skel skel-text" style="width:${titleWidth}px;height:15px;margin-bottom:16px"></span><div class="grid kpis" style="margin-top:16px">${[1, 2, 3].map(() => skeletonKpiHtml()).join("")}</div><span class="skel skel-text" style="width:150px;height:11px;margin-top:14px"></span></section>`;
+      }
+      // Skeleton pulsante que espelha o layout real do Dashboard Geral (grid de 4 canais + Google +
+      // secao inferior) para a primeira carga de cada marca/periodo - troca de aba com cache quente
+      // pula isso direto (ver renderDashboard) e mostra os dados anteriores na hora.
+      function dashboardSkeletonHtml() {
+        return `
+          <div class="page-head">
+            <div><div class="eyebrow">Dados reais do Supabase</div><h2>Dashboard Geral</h2><p class="muted">Resumo executivo e saúde dos canais corporativos.</p></div>
+            <div class="filters">${marcaPillsHtml()}${periodoDropdownHtml()}</div>
+          </div>
+          <div class="skel skel-block" style="height:56px"></div>
+          <div class="grid channel-grid">
+            ${skeletonChannelCardHtml(150)}
+            ${skeletonChannelCardHtml(190)}
+            ${skeletonChannelCardHtml(170)}
+            ${skeletonChannelCardHtml(200)}
+          </div>
+          <section class="card">
+            <span class="skel skel-text" style="width:230px;height:15px"></span>
+            <div class="grid kpis" style="margin-top:16px">${[1, 2, 3, 4].map(() => skeletonKpiHtml()).join("")}</div>
+          </section>
+          <section class="card">
+            <span class="skel skel-text" style="width:260px;height:15px;margin-bottom:16px"></span>
+            <div class="skel skel-block" style="height:160px"></div>
+          </section>
+        `;
+      }
+
+      function wireDashboardInteractions() {
         wireMarcaPills(renderDashboard);
         wirePeriodoDropdown(renderDashboard);
         document.querySelectorAll(".consolidado-metric-btn").forEach((button) => {
           button.onclick = () => { state.dashboardConsolidadoMetric = button.dataset.metric; renderDashboard(); };
         });
+      }
+
+      async function renderDashboard() {
+        const content = document.querySelector("#content");
+        const key = dashboardCacheKey();
+        const cached = dashboardCache.get(key);
+
+        // keepPreviousData: se ja existe cache pra essa marca/periodo, pinta na hora em vez do
+        // skeleton - so quando e a primeira vez que essa combinacao e vista o usuario ve o skeleton.
+        if (cached) {
+          content.innerHTML = paintDashboardHtml(cached.model);
+        } else {
+          content.innerHTML = dashboardSkeletonHtml();
+        }
+        wireDashboardInteractions();
+
+        // staleTime de 5min: se o cache ainda esta fresco, nem dispara nova busca - so reaproveita.
+        if (cached && Date.now() - cached.timestamp < DASHBOARD_STALE_TIME) return;
+
+        try {
+          const model = await fetchDashboardModel();
+          dashboardCache.set(key, { model, timestamp: Date.now() });
+          // Usuario pode ter trocado de marca/periodo/pagina enquanto a busca corria - so repinta
+          // se a resposta ainda corresponde ao que esta em tela.
+          if (state.page !== "dashboard" || dashboardCacheKey() !== key) return;
+          content.innerHTML = paintDashboardHtml(model);
+          wireDashboardInteractions();
+        } catch (error) {
+          if (state.page !== "dashboard" || dashboardCacheKey() !== key) return;
+          if (!cached) content.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
+        }
       }
 
       function instagramIcon(size = 18) {
@@ -3009,7 +3103,7 @@
           } catch (fallbackError) {
             content.innerHTML = `
               <div class="alert error">
-                ${fallbackError.message}<br><br>
+                ${escapeHtml(safeErrorMessage(fallbackError))}<br><br>
                 Aplique primeiro a migration <code>supabase/migrations/20260706_004_credsystem_bi_views.sql</code> no SQL Editor do Supabase.
               </div>`;
             return;
@@ -3092,7 +3186,7 @@
           try {
             await loadEmailBIFallback(error);
           } catch (fallbackError) {
-            content.innerHTML = `<div class="alert error">${fallbackError.message}</div>`;
+            content.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(fallbackError))}</div>`;
             return;
           }
         }
@@ -3125,7 +3219,7 @@
               <button id="refresh">Atualizar</button>
             </div>
           </div>
-          ${email.fallback ? `<div class="alert">Usando cálculo local temporário. Para ativar as views oficiais, rode <code>supabase/migrations/20260707_006_email_marketing_bi_views.sql</code>. Detalhe: <code>${email.fallbackReason || "sem detalhe retornado"}</code></div>` : ""}
+          ${email.fallback ? `<div class="alert">Usando cálculo local temporário. Para ativar as views oficiais, rode <code>supabase/migrations/20260707_006_email_marketing_bi_views.sql</code>. Detalhe: <code>${escapeHtml(email.fallbackReason || "sem detalhe retornado")}</code></div>` : ""}
           <div class="grid kpis">
             ${kpi("Campanhas", fmt.format(totals.total_campanhas), "campaign")}
             ${kpi("Emails enviados", fmt.format(totals.total_enviados), "outgoing_mail")}
@@ -3139,11 +3233,11 @@
           <section class="card">
             <h3>Campanhas</h3>
             <p class="muted">Abertos e cliques são estimados a partir das taxas recebidas da RD Station.</p>
-            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Campanha</th><th>Enviados</th><th>Recebidos</th><th>Abertos</th><th>Cliques</th><th>Abertura</th><th>Clique</th><th>Copy</th></tr></thead><tbody>${campaigns.map((r) => `<tr><td>${r.marca}</td><td>${r.nome_campanha}</td><td>${fmt.format(num(r.enviados))}</td><td>${fmt.format(num(r.entregues))}</td><td>${fmt.format(num(r.abertos_estimados))}</td><td>${fmt.format(num(r.cliques_estimados))}</td><td>${num(r.taxa_abertura).toFixed(2).replace(".", ",")}%</td><td>${num(r.taxa_clique).toFixed(2).replace(".", ",")}%</td><td>${r.diagnostico_copy || "Sem análise"}</td></tr>`).join("") || `<tr><td colspan="9">Sem campanhas importadas.</td></tr>`}</tbody></table></div>
+            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Campanha</th><th>Enviados</th><th>Recebidos</th><th>Abertos</th><th>Cliques</th><th>Abertura</th><th>Clique</th><th>Copy</th></tr></thead><tbody>${campaigns.map((r) => `<tr><td>${r.marca}</td><td>${escapeHtml(r.nome_campanha)}</td><td>${fmt.format(num(r.enviados))}</td><td>${fmt.format(num(r.entregues))}</td><td>${fmt.format(num(r.abertos_estimados))}</td><td>${fmt.format(num(r.cliques_estimados))}</td><td>${num(r.taxa_abertura).toFixed(2).replace(".", ",")}%</td><td>${num(r.taxa_clique).toFixed(2).replace(".", ",")}%</td><td>${escapeHtml(r.diagnostico_copy || "Sem análise")}</td></tr>`).join("") || `<tr><td colspan="9">Sem campanhas importadas.</td></tr>`}</tbody></table></div>
           </section>
           <section class="card">
             <h3>Analista de copy</h3>
-            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Campanha</th><th>Marca</th><th>Score</th><th>Diagnóstico</th><th>Recomendação</th><th>Assunto</th></tr></thead><tbody>${campaigns.map((r) => `<tr><td>${r.nome_campanha}</td><td>${r.marca}</td><td>${fmt.format(num(r.score_copy))}/100</td><td>${r.diagnostico_copy || "-"}</td><td>${r.recomendacao_copy || "-"}</td><td>${r.assunto_email || "-"}</td></tr>`).join("") || `<tr><td colspan="6">Sem copies para análise.</td></tr>`}</tbody></table></div>
+            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Campanha</th><th>Marca</th><th>Score</th><th>Diagnóstico</th><th>Recomendação</th><th>Assunto</th></tr></thead><tbody>${campaigns.map((r) => `<tr><td>${escapeHtml(r.nome_campanha)}</td><td>${r.marca}</td><td>${fmt.format(num(r.score_copy))}/100</td><td>${escapeHtml(r.diagnostico_copy || "-")}</td><td>${escapeHtml(r.recomendacao_copy || "-")}</td><td>${escapeHtml(r.assunto_email || "-")}</td></tr>`).join("") || `<tr><td colspan="6">Sem copies para análise.</td></tr>`}</tbody></table></div>
           </section>
           <section class="card">
             <div class="page-head" style="align-items:start">
@@ -3152,12 +3246,12 @@
                 <p class="muted">Selecione uma campanha para ver leitura crítica, riscos e sugestões de reescrita.</p>
               </div>
               <div class="filters">
-                <select id="copyCampaign">${campaigns.map((r) => `<option value="${campaignKey(r)}" ${campaignKey(r) === state.emailSelectedId ? "selected" : ""}>${r.nome_campanha} · ${r.marca}</option>`).join("")}</select>
+                <select id="copyCampaign">${campaigns.map((r) => `<option value="${escapeHtml(campaignKey(r))}" ${campaignKey(r) === state.emailSelectedId ? "selected" : ""}>${escapeHtml(r.nome_campanha)} · ${r.marca}</option>`).join("")}</select>
               </div>
             </div>
             ${copyDetail ? `
               <div class="grid kpis" style="margin-top:16px">
-                ${kpi("Campanha", selectedCampaign.nome_campanha, "campaign")}
+                ${kpi("Campanha", escapeHtml(selectedCampaign.nome_campanha), "campaign")}
                 ${kpi("Marca", selectedCampaign.marca, "storefront")}
                 ${kpi("Performance", copyDetail.performance, "monitoring")}
                 ${kpi("Score copy", `${copyDetail.score}/100`, "psychology")}
@@ -3165,7 +3259,7 @@
               <div class="insight-grid">
                 <div class="insight-panel">
                   <h4>Copy atual</h4>
-                  <div class="copy-sample"><strong>Assunto:</strong> ${copyDetail.current.subject}<br><strong>Preheader:</strong> ${copyDetail.current.preheader}<br><strong>Corpo:</strong> ${copyDetail.current.body}</div>
+                  <div class="copy-sample"><strong>Assunto:</strong> ${escapeHtml(copyDetail.current.subject)}<br><strong>Preheader:</strong> ${escapeHtml(copyDetail.current.preheader)}<br><strong>Corpo:</strong> ${escapeHtml(copyDetail.current.body)}</div>
                 </div>
                 <div class="insight-panel">
                   <h4>Sugestões de reescrita</h4>
@@ -3216,7 +3310,7 @@
           try {
             await loadSocialFormatFallback(rede, error);
           } catch (fallbackError) {
-            content.innerHTML = `<div class="alert error">${fallbackError.message}<br><br>Aplique a migration <code>supabase/migrations/20260708_008_social_format_metrics.sql</code> e rode <code>notify pgrst, 'reload schema';</code>.</div>`;
+            content.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(fallbackError))}<br><br>Aplique a migration <code>supabase/migrations/20260708_008_social_format_metrics.sql</code> e rode <code>notify pgrst, 'reload schema';</code>.</div>`;
             return;
           }
         }
@@ -3379,7 +3473,7 @@
         try {
           await loadBestTimesBI();
         } catch (error) {
-          content.innerHTML = `<div class="alert error">${error.message}</div>`;
+          content.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
           return;
         }
 
@@ -3865,7 +3959,7 @@
           if (row) row.querySelector(".profile-avatar").outerHTML = profileAvatarPreviewHtml();
           if (hint) hint.textContent = "Imagem atualizada.";
         } catch (error) {
-          if (hint) hint.textContent = error.message || "Falha ao enviar imagem.";
+          if (hint) hint.textContent = safeErrorMessage(error, "Falha ao enviar imagem.");
         } finally {
           profileModalState.avatarUploading = false;
           if (input) { input.disabled = false; input.value = ""; }
@@ -3936,7 +4030,7 @@
           await render();
         } catch (error) {
           profileModalState.saving = false;
-          profileModalState.error = error.message || "Não foi possível salvar as alterações.";
+          profileModalState.error = safeErrorMessage(error, "Não foi possível salvar as alterações.");
           refreshProfileModal();
         }
       }
@@ -3965,7 +4059,7 @@
           try {
             await loadSocialBIFallback(error);
           } catch (fallbackError) {
-            content.innerHTML = `<div class="alert error">${fallbackError.message}</div>`;
+            content.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(fallbackError))}</div>`;
             return;
           }
         }
@@ -4145,6 +4239,23 @@
           .replaceAll(">", "&gt;")
           .replaceAll("\"", "&quot;")
           .replaceAll("'", "&#039;");
+      }
+
+      // Mensagem segura para mostrar na tela: nunca repassa message/code/details/hint de um erro
+      // com formato de PostgrestError (revelaria nomes de tabela/coluna/constraint). O erro
+      // completo sempre vai pro console (visivel so a quem abrir o devtools), nunca pro HTML puro -
+      // por isso todo lugar que usa isto continua passando o resultado por escapeHtml() tambem.
+      function safeErrorMessage(error, fallback = "Ocorreu um erro ao processar a solicitação.") {
+        console.error(error);
+        const looksLikePostgrestError =
+          error !== null &&
+          typeof error === "object" &&
+          ("code" in error || "details" in error || "hint" in error) &&
+          !(error instanceof Error);
+        if (looksLikePostgrestError) return fallback;
+        if (error instanceof Error) return error.message;
+        if (error && typeof error === "object" && typeof error.message === "string") return error.message;
+        return fallback;
       }
 
       function formatDateTime(value) {
@@ -5240,7 +5351,7 @@
           );
           rows = groupAdsByCampaign(dailyRows).sort((a, b) => b.investimento - a.investimento);
         } catch (error) {
-          content.innerHTML = `<div class="alert error">${escapeHtml(error.message)}<br><br>Aplique as migrations <code>supabase/migrations/20260803_013_meta_ads_integration.sql</code>, <code>20260803_014_meta_ads_public_view.sql</code>, <code>20260805_017_meta_ads_daily_history.sql</code> e <code>20260807_022_meta_ads_destino_url.sql</code>.</div>`;
+          content.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}<br><br>Aplique as migrations <code>supabase/migrations/20260803_013_meta_ads_integration.sql</code>, <code>20260803_014_meta_ads_public_view.sql</code>, <code>20260805_017_meta_ads_daily_history.sql</code> e <code>20260807_022_meta_ads_destino_url.sql</code>.</div>`;
           return;
         }
 
@@ -5480,7 +5591,7 @@
             loadComparativoPeriodo(state.marca, state.compareB.de, state.compareB.ate)
           ]);
         } catch (error) {
-          content.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          content.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
           return;
         }
 
@@ -5550,7 +5661,7 @@
         try {
           await loadConnections();
         } catch (error) {
-          content.innerHTML = `<div class="alert error">${escapeHtml(error.message)}<br><br>Aplique a migration <code>supabase/migrations/20260714_010_meta_account_mapping.sql</code> e depois rode <code>notify pgrst, 'reload schema';</code>.</div>`;
+          content.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}<br><br>Aplique a migration <code>supabase/migrations/20260714_010_meta_account_mapping.sql</code> e depois rode <code>notify pgrst, 'reload schema';</code>.</div>`;
           return;
         }
 
@@ -5677,7 +5788,7 @@
           .eq("id", id);
 
         if (error) {
-          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          status.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
           return;
         }
 
@@ -5704,7 +5815,7 @@
           .eq("id", id);
 
         if (error) {
-          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          status.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
           return;
         }
 
@@ -5724,7 +5835,7 @@
         const { data, error } = await supabase.functions.invoke("meta-ads-sync", { body });
 
         if (error) {
-          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          status.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
           return;
         }
 
@@ -5752,7 +5863,7 @@
         });
 
         if (error) {
-          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          status.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
           return;
         }
 
@@ -5772,7 +5883,7 @@
         const { data, error } = await supabase.functions.invoke("meta-sync-insights", { body });
 
         if (error) {
-          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          status.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
           return;
         }
 
@@ -5897,7 +6008,7 @@
         try {
           await loadGoogleBI();
         } catch (error) {
-          content.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          content.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
           return;
         }
         paintGoogleBusiness(statusMessage);
@@ -6114,7 +6225,7 @@
           .eq("id", id);
 
         if (error) {
-          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          status.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
           return;
         }
 
@@ -6142,7 +6253,7 @@
         });
 
         if (error) {
-          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          status.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
           return;
         }
 
@@ -6162,7 +6273,7 @@
         const { data, error } = await supabase.functions.invoke("google-gbp-sync", { body });
 
         if (error) {
-          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          status.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
           return;
         }
 
@@ -6180,7 +6291,7 @@
           body: { review_id: reviewId, action: "reply", texto }
         });
         if (error) {
-          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          status.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
           return;
         }
         state.google.openReplyReviewId = null;
@@ -6194,7 +6305,7 @@
           body: { review_id: reviewId, action: "delete" }
         });
         if (error) {
-          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          status.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
           return;
         }
         await renderGoogleBusiness("Resposta removida.");
@@ -6207,7 +6318,7 @@
           body: { local_id: localId, campos }
         });
         if (error) {
-          status.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+          status.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
           return;
         }
         state.google.openEditLocalId = null;
@@ -6341,7 +6452,7 @@
         try {
           const log = JSON.parse(raw);
           const alertClass = log.type === "error" ? "alert error" : log.type === "success" ? "alert success" : "alert";
-          return `<div class="${alertClass}" style="margin-top:12px">Último status (${log.at}): ${log.message}</div>`;
+          return `<div class="${alertClass}" style="margin-top:12px">Último status (${log.at}): ${escapeHtml(log.message)}</div>`;
         } catch {
           return "";
         }
@@ -6378,7 +6489,7 @@
           const { error } = await request;
 
           if (error) {
-            const message = `Falha após ${imported} linhas em ${table}: ${error.message}`;
+            const message = `Falha após ${imported} linhas em ${table}: ${escapeHtml(safeErrorMessage(error))}`;
             status.insertAdjacentHTML("beforeend", `<div class="alert error">${message}</div>`);
             saveImportLog(message, "error");
             button.disabled = false;
