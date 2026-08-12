@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Symbols+Outlined:wght@400&display=swap" rel="stylesheet" />
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
     <style>
       :root { --accent: #2563eb; --accent-rgb: 37,99,235; }
       * { box-sizing: border-box; }
@@ -261,6 +262,45 @@
       const SUPABASE_KEY = "sb_publishable_M2aagozrBrtNnfZhbu9qrw_5Nhz5MN7";
       const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
       const app = document.querySelector("#app");
+
+      // Cloudflare Turnstile (anti-automação no login/recuperação de senha). A site key é publica
+      // por natureza (fica no HTML de qualquer site que usa Turnstile) - a chave que precisa ficar
+      // secreta e a "secret key", configurada so no painel do Supabase (Authentication > Attack
+      // Protection), nunca aqui. TROQUE o valor abaixo pela site key criada em
+      // https://dash.cloudflare.com/?to=/:account/turnstile antes de publicar.
+      const TURNSTILE_SITE_KEY = "0x4AAAAAAA_TROQUE_PELA_SUA_SITE_KEY";
+      let turnstileToken = "";
+      let turnstileWidgetId = null;
+
+      // Renderizacao explicita (nao a implicita por data-sitekey): o script carrega async/defer e
+      // o formulario e recriado via innerHTML a cada renderLogin(), entao um scan automatico de
+      // ".cf-turnstile" rodado uma unica vez no carregamento da pagina nao pegaria o container
+      // recriado depois. mountTurnstile() e chamado toda vez que o form e desenhado; se o script
+      // do Turnstile ainda nao carregou, ele mesmo dispara isso via ?onload= abaixo.
+      function mountTurnstile(attemptsLeft = 20) {
+        const container = document.querySelector("#turnstileWidget");
+        if (!container) return; // form ja trocou de tela antes do script terminar de carregar
+        if (!window.turnstile) {
+          // api.js e async/defer - pode ainda nao ter terminado de carregar quando o form
+          // renderiza pela primeira vez. Tenta de novo por ate ~2s antes de desistir.
+          if (attemptsLeft > 0) setTimeout(() => mountTurnstile(attemptsLeft - 1), 100);
+          return;
+        }
+        turnstileToken = "";
+        turnstileWidgetId = window.turnstile.render(container, {
+          sitekey: TURNSTILE_SITE_KEY,
+          callback: (token) => { turnstileToken = token; },
+          "expired-callback": () => { turnstileToken = ""; },
+          "error-callback": () => { turnstileToken = ""; }
+        });
+      }
+      function resetTurnstile() {
+        turnstileToken = "";
+        if (window.turnstile && turnstileWidgetId !== null) window.turnstile.reset(turnstileWidgetId);
+      }
+      function turnstileWidgetHtml() {
+        return `<div id="turnstileWidget"></div>`;
+      }
       const marcas = ["Todas", "Tesoura de Ouro", "Magazine da Economia", "Free Center Calçados"];
       const brandColors = {
         "Todas": "#2563eb",
@@ -389,7 +429,12 @@
       async function signIn(event) {
         event.preventDefault();
         const form = new FormData(event.currentTarget);
-        const { error } = await supabase.auth.signInWithPassword({ email: form.get("email"), password: form.get("password") });
+        if (!turnstileToken) return renderLogin("Confirme que você não é um robô antes de entrar.");
+        const { error } = await supabase.auth.signInWithPassword({
+          email: form.get("email"),
+          password: form.get("password"),
+          options: { captchaToken: turnstileToken }
+        });
         if (error) return renderLogin(safeErrorMessage(error, "Email ou senha inválidos."));
         await init();
       }
@@ -398,8 +443,10 @@
         event.preventDefault();
         const form = new FormData(event.currentTarget);
         const email = form.get("email");
+        if (!turnstileToken) return renderLogin("Confirme que você não é um robô antes de continuar.", "recovery");
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: appRedirectUrl()
+          redirectTo: appRedirectUrl(),
+          captchaToken: turnstileToken
         });
 
         if (error) return renderLogin(safeErrorMessage(error, "Não foi possível enviar o link de recuperação."), "recovery");
@@ -1208,6 +1255,7 @@
               <p class="muted">Informe seu e-mail corporativo para receber o link de redefinição.</p>
               <form id="recoveryForm" class="grid" style="gap:14px">
                 <label>Email<input name="email" type="email" placeholder="seu.email@grupo.com.br" required /></label>
+                ${turnstileWidgetHtml()}
                 ${messageHtml}
                 <button>Enviar link de redefinição</button>
                 <button type="button" class="secondary" id="backToLogin">Voltar para o login</button>
@@ -1220,6 +1268,7 @@
                 <div style="text-align:right; margin-top:-10px">
                   <button type="button" class="link-btn" id="forgotPasswordLink">Esqueceu a senha?</button>
                 </div>
+                ${turnstileWidgetHtml()}
                 ${messageHtml}
                 <button>Entrar</button>
               </form>`;
@@ -1238,6 +1287,7 @@
           document.querySelector("#loginForm").addEventListener("submit", signIn);
           document.querySelector("#forgotPasswordLink").addEventListener("click", () => renderLogin("", "recovery"));
         }
+        mountTurnstile();
       }
 
       function renderResetPassword(error = "") {
