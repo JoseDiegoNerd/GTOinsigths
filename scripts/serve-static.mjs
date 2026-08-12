@@ -15,6 +15,13 @@ const contentTypes = {
   '.svg': 'image/svg+xml'
 };
 
+const securityHeaders = {
+  'X-Frame-Options': 'DENY',
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
+};
+
 function resolvePath(url) {
   const cleanUrl = decodeURIComponent(url.split('?')[0] ?? '/');
   const relative = cleanUrl === '/' ? 'index.html' : cleanUrl.replace(/^\/+/, '');
@@ -32,7 +39,8 @@ const server = createServer((req, res) => {
   const ext = extname(filePath);
   res.writeHead(200, {
     'Content-Type': contentTypes[ext] ?? 'application/octet-stream',
-    'Cache-Control': 'no-store'
+    'Cache-Control': 'no-store',
+    ...securityHeaders
   });
   res.end(readFileSync(filePath));
 });

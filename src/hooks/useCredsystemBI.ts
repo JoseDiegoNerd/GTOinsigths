@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { getCredsystemBI } from '../services/credsystemService';
+import { toSafeErrorMessage } from '../lib/errorHandling';
 import type { CredsystemBI, Marca } from '../types/gto';
 
 const emptyBI: CredsystemBI = {
@@ -23,7 +24,7 @@ export function useCredsystemBI(filters: {
     try {
       setData(await getCredsystemBI(filters));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao carregar views BI do CredSystem.');
+      setError(toSafeErrorMessage(err, 'Erro ao carregar views BI do CredSystem.'));
     } finally {
       setLoading(false);
     }

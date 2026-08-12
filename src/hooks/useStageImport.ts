@@ -4,6 +4,7 @@ import {
   importRowsToStage,
   parseCsvFile
 } from '../services/importService';
+import { toSafeErrorMessage } from '../lib/errorHandling';
 import type { ImportPreview, Marca, StageSource } from '../types/gto';
 
 export function useStageImport() {
@@ -22,7 +23,7 @@ export function useStageImport() {
       setParsedRows(parsed.rows);
       setPreview(buildImportPreview(file.name, source, marca, parsed));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao ler arquivo.');
+      setError(toSafeErrorMessage(err, 'Erro ao ler arquivo. Verifique o formato do CSV.'));
     } finally {
       setLoading(false);
     }
@@ -46,7 +47,7 @@ export function useStageImport() {
       });
       setResult(`${importResult.insertedRows} linhas importadas em ${importResult.table}.`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao importar dados.');
+      setError(toSafeErrorMessage(err, 'Erro ao importar dados. Verifique os dados e tente novamente.'));
     } finally {
       setLoading(false);
     }

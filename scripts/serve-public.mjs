@@ -18,6 +18,13 @@ const types = {
   '.ico': 'image/x-icon'
 };
 
+const securityHeaders = {
+  'X-Frame-Options': 'DENY',
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
+};
+
 function resolvePath(url) {
   const clean = decodeURIComponent((url ?? '/').split('?')[0]);
   const relative = clean === '/' ? 'index.html' : clean.replace(/^\/+/, '');
@@ -30,7 +37,8 @@ function requestHandler(req, res) {
   if (!existsSync(file) || statSync(file).isDirectory()) file = join(root, 'index.html');
   res.writeHead(200, {
     'Content-Type': types[extname(file)] ?? 'application/octet-stream',
-    'Cache-Control': 'no-store'
+    'Cache-Control': 'no-store',
+    ...securityHeaders
   });
   res.end(readFileSync(file));
 }

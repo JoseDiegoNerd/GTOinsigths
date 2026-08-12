@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
+import { toSafeErrorMessage } from '../lib/errorHandling';
 import type { Perfil } from '../types/gto';
 
 export function useAuth() {
@@ -34,14 +35,16 @@ export function useAuth() {
           await loadPerfil(data.session.user.id);
         }
       })
-      .catch((authError) => setError(authError.message))
+      .catch((authError) => setError(toSafeErrorMessage(authError, 'Não foi possível carregar sua sessão.')))
       .finally(() => setLoading(false));
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
       if (nextSession?.user) {
-        loadPerfil(nextSession.user.id).catch((authError) => setError(authError.message));
+        loadPerfil(nextSession.user.id).catch((authError) =>
+          setError(toSafeErrorMessage(authError, 'Não foi possível carregar seu perfil.'))
+        );
       } else {
         setPerfil(null);
       }
@@ -57,7 +60,7 @@ export function useAuth() {
     setError(null);
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
     if (signInError) {
-      setError(signInError.message);
+      setError(toSafeErrorMessage(signInError, 'Não foi possível entrar. Tente novamente.'));
       throw signInError;
     }
   }

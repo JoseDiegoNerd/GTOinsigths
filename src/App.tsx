@@ -2,6 +2,7 @@ import { FormEvent, useMemo, useState } from 'react';
 import { useAuth } from './hooks/useAuth';
 import { useCredsystemDashboard } from './hooks/useCredsystemDashboard';
 import { useStageImport } from './hooks/useStageImport';
+import { formatZodError, loginSchema } from './lib/validation';
 import type { Marca, PeriodoFiltro, StageSource } from './types/gto';
 
 const marcas: Array<Marca | 'Todas'> = [
@@ -38,12 +39,21 @@ function LoginScreen({ onLogin, error }: { onLogin: (email: string, password: st
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setValidationError(null);
+
+    const parsed = loginSchema.safeParse({ email, password });
+    if (!parsed.success) {
+      setValidationError(formatZodError(parsed.error));
+      return;
+    }
+
     setSubmitting(true);
     try {
-      await onLogin(email, password);
+      await onLogin(parsed.data.email, parsed.data.password);
     } finally {
       setSubmitting(false);
     }
@@ -58,13 +68,28 @@ function LoginScreen({ onLogin, error }: { onLogin: (email: string, password: st
         <form onSubmit={handleSubmit} className="login-form">
           <label>
             Email
-            <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" required />
+            <input
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              type="email"
+              maxLength={254}
+              autoComplete="username"
+              required
+            />
           </label>
           <label>
             Senha
-            <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" required />
+            <input
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              type="password"
+              maxLength={128}
+              autoComplete="current-password"
+              required
+            />
           </label>
-          {error ? <div className="alert error">{error}</div> : null}
+          {validationError ? <div className="alert error">{validationError}</div> : null}
+          {!validationError && error ? <div className="alert error">{error}</div> : null}
           <button type="submit" disabled={submitting}>
             {submitting ? 'Entrando...' : 'Entrar'}
           </button>
