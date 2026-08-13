@@ -230,6 +230,10 @@
       .modal-block.positive { background: #f0fdf4; border: 1px solid #bbf7d0; }
       .modal-block.negative { background: #fef2f2; border: 1px solid #fecaca; }
       .modal-block.neutral { background: #eff6ff; border: 1px solid #bfdbfe; }
+      .mfa-factor-list { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 8px; }
+      .mfa-factor-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 13px; }
+      .mfa-qr-wrap { display: flex; justify-content: center; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; }
+      .mfa-qr-wrap svg, .mfa-qr-wrap img { width: 180px; height: 180px; }
       .login-split { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
       .login-hero { background: linear-gradient(160deg, #0f172a, #1e3a8a); color: white; padding: 48px; display: flex; flex-direction: column; justify-content: space-between; }
       .login-hero h1 { font-size: 34px; line-height: 1.2; margin: 0 0 16px; }
@@ -368,6 +372,22 @@
 
         const { data } = await supabase.auth.getSession();
         state.session = data.session;
+        if (state.session) {
+          // Sessao existe (senha ja validada) mas pode estar em aal1 com um fator TOTP verificado
+          // pendente - o Supabase nao bloqueia isso sozinho, quem tem que exigir o segundo fator
+          // antes de liberar a tela e o proprio app (por isso o cheque explicito aqui, no unico
+          // lugar que decide se mostra o dashboard ou nao: reload de sessao existente e login novo
+          // caem ambos em init(), via signIn() -> init()).
+          const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+          if (aal && aal.nextLevel === "aal2" && aal.currentLevel !== aal.nextLevel) {
+            renderMfaChallenge();
+            return;
+          }
+        }
+        await finishLogin();
+      }
+
+      async function finishLogin() {
         if (state.session) await loadPerfil();
         const queryPage = new URLSearchParams(location.search).get("page");
         if (queryPage === "connections") state.page = "connections";
@@ -1308,6 +1328,45 @@
         document.querySelector("#resetPasswordForm").addEventListener("submit", updatePassword);
       }
 
+      function renderMfaChallenge(error = "") {
+        app.className = "login-split";
+        app.innerHTML = `
+          ${loginHeroHtml()}
+          <div class="login-form-side">
+            <section class="login-card">
+              <img src="logo-gto.png" alt="GTO Insights" class="login-card-logo">
+              <h1>Verificação em duas etapas</h1>
+              <p class="muted">Digite o código de 6 dígitos do seu app autenticador.</p>
+              <form id="mfaChallengeForm" class="grid" style="gap:14px">
+                <label>Código<input name="code" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="000000" required autofocus /></label>
+                ${error ? `<div class="alert error">${escapeHtml(error)}</div>` : ""}
+                <button>Verificar</button>
+                <button type="button" class="secondary" id="mfaChallengeBack">Usar outra conta</button>
+              </form>
+            </section>
+          </div>`;
+        document.querySelector("#mfaChallengeForm").addEventListener("submit", verifyMfaChallenge);
+        document.querySelector("#mfaChallengeBack").addEventListener("click", async () => {
+          await supabase.auth.signOut();
+          state.session = null;
+          renderLogin();
+        });
+      }
+
+      async function verifyMfaChallenge(event) {
+        event.preventDefault();
+        const code = new FormData(event.currentTarget).get("code");
+        const { data: factors, error: factorsError } = await supabase.auth.mfa.listFactors();
+        if (factorsError) return renderMfaChallenge(safeErrorMessage(factorsError, "Não foi possível verificar o código."));
+        const factor = (factors.totp || []).find((f) => f.status === "verified");
+        if (!factor) return renderMfaChallenge("Nenhum fator de autenticação verificado encontrado.");
+        const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: factor.id });
+        if (challengeError) return renderMfaChallenge(safeErrorMessage(challengeError, "Não foi possível verificar o código."));
+        const { error: verifyError } = await supabase.auth.mfa.verify({ factorId: factor.id, challengeId: challenge.id, code });
+        if (verifyError) return renderMfaChallenge(safeErrorMessage(verifyError, "Código inválido. Tente novamente."));
+        await finishLogin();
+      }
+
       // Saudacao dinamica da topbar baseada na hora do sistema (do navegador, nao do servidor) -
       // 05h-11h59 bom dia, 12h-17h59 boa tarde, 18h-04h59 boa noite.
       function saudacaoPorHorario() {
@@ -1354,6 +1413,7 @@
               ${state.topbarMenuOpen ? `
                 <div class="dropdown-menu topbar-dropdown">
                   <button type="button" class="dropdown-item" id="topbarEditProfile"><span class="material-symbols-outlined" style="font-size:18px">edit</span>Editar Perfil</button>
+                  <button type="button" class="dropdown-item" id="topbarSecurity"><span class="material-symbols-outlined" style="font-size:18px">shield</span>Segurança</button>
                   <button type="button" class="dropdown-item" id="topbarLogout"><span class="material-symbols-outlined" style="font-size:18px">logout</span>Sair</button>
                 </div>` : ""}
             </div>
@@ -1387,6 +1447,11 @@
           event.stopPropagation();
           closeTopbarMenu();
           openProfileModal();
+        });
+        document.querySelector("#topbarSecurity")?.addEventListener("click", (event) => {
+          event.stopPropagation();
+          closeTopbarMenu();
+          openSecurityModal();
         });
         document.querySelector("#topbarLogout")?.addEventListener("click", (event) => {
           event.stopPropagation();
@@ -1456,6 +1521,7 @@
           <div class="chart-tooltip" id="chartTooltip"></div>
           <div class="modal-overlay" id="diagnosticoModal" hidden></div>
           <div class="modal-overlay" id="profileModal" hidden></div>
+          <div class="modal-overlay" id="securityModal" hidden></div>
           <div class="modal-overlay" id="creativoModal" hidden></div>`;
         document.querySelector("#logout").onclick = signOut;
         document.querySelector("#editProfile").onclick = openProfileModal;
@@ -4093,6 +4159,185 @@
         });
       }
       bindProfileModalGlobal();
+
+      // Autenticacao de dois fatores (TOTP) via supabase.auth.mfa. O enroll() cria o fator num
+      // estado "unverified" - so vira "verified" (e passa a contar pro desafio no login, ver
+      // renderMfaChallenge) depois que o usuario prova posse do app autenticador via
+      // challenge()+verify() com um codigo valido. Cancelar no meio do fluxo desenroleta o fator
+      // "unverified" pra nao deixar lixo pendurado na conta.
+      let securityModalState = null;
+
+      async function openSecurityModal() {
+        const overlay = document.querySelector("#securityModal");
+        if (!overlay) return;
+        securityModalState = { loading: true, factors: [], enrolling: null, confirmingRemoveId: null, error: "", info: "" };
+        overlay.innerHTML = securityModalPanelHtml();
+        overlay.hidden = false;
+        wireSecurityModal();
+        await loadMfaFactors();
+      }
+
+      function closeSecurityModal() {
+        const overlay = document.querySelector("#securityModal");
+        if (overlay) { overlay.hidden = true; overlay.innerHTML = ""; }
+        securityModalState = null;
+      }
+
+      async function loadMfaFactors() {
+        if (!securityModalState) return;
+        const { data, error } = await supabase.auth.mfa.listFactors();
+        if (error) securityModalState.error = safeErrorMessage(error, "Não foi possível carregar os fatores de autenticação.");
+        else securityModalState.factors = (data.totp || []).filter((f) => f.status === "verified");
+        securityModalState.loading = false;
+        refreshSecurityModal();
+      }
+
+      function securityModalPanelHtml() {
+        const s = securityModalState;
+        const body = s.loading ? `<p class="muted">Carregando fatores de autenticação...</p>` : `
+          <p class="modal-section-title">Autenticação de dois fatores (TOTP)</p>
+          <p class="field-hint" style="margin-top:-4px">Exige um código do seu app autenticador (Google Authenticator, Authy, 1Password...) a cada login, além da senha.</p>
+          ${s.factors.length ? `
+            <ul class="mfa-factor-list">
+              ${s.factors.map((f) => `
+                <li class="mfa-factor-item">
+                  <span><span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle">verified_user</span> ${escapeHtml(f.friendly_name || "App autenticador")}</span>
+                  ${s.confirmingRemoveId === f.id ? `
+                    <span class="actions" style="gap:6px">
+                      <button type="button" class="secondary" data-cancel-remove="${f.id}">Cancelar</button>
+                      <button type="button" style="background:#dc2626" data-confirm-remove="${f.id}">Confirmar remoção</button>
+                    </span>
+                  ` : `<button type="button" class="link-btn" data-remove-factor="${f.id}">Remover</button>`}
+                </li>`).join("")}
+            </ul>
+          ` : `<p class="muted">Nenhum fator ativo. Sua conta usa apenas senha para entrar.</p>`}
+
+          ${s.enrolling ? `
+            <form id="mfaEnrollForm" class="grid" style="gap:12px;margin-top:14px">
+              <p class="field-hint" style="margin:0">Escaneie o QR code com seu app autenticador e digite o código de 6 dígitos gerado.</p>
+              <div class="mfa-qr-wrap"><img src="${s.enrolling.qrCode}" alt="QR code para configurar o autenticador" /></div>
+              <p class="field-hint">Não consegue escanear? Cadastre manualmente: <code>${escapeHtml(s.enrolling.secret)}</code></p>
+              <label>Código do app autenticador
+                <input name="code" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="000000" required />
+              </label>
+              ${s.enrolling.error ? `<div class="alert error">${escapeHtml(s.enrolling.error)}</div>` : ""}
+              <div class="actions" style="justify-content:flex-end">
+                <button type="button" class="secondary" id="mfaEnrollCancel">Cancelar</button>
+                <button type="submit" ${s.enrolling.verifying ? "disabled" : ""}>${s.enrolling.verifying ? "Confirmando..." : "Confirmar ativação"}</button>
+              </div>
+            </form>
+          ` : `<div class="actions" style="justify-content:flex-end;margin-top:14px"><button type="button" id="mfaStartEnroll">Ativar novo fator TOTP</button></div>`}
+
+          ${s.error ? `<div class="alert error">${escapeHtml(s.error)}</div>` : ""}
+          ${s.info ? `<div class="alert success">${escapeHtml(s.info)}</div>` : ""}
+        `;
+        return `<div class="modal-panel">
+          <div class="modal-header">
+            <div>
+              <p style="margin:0 0 4px;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Conta</p>
+              <h3 style="margin:0;font-size:17px">Segurança</h3>
+            </div>
+            <button type="button" class="modal-close" id="securityModalClose"><span class="material-symbols-outlined">close</span></button>
+          </div>
+          <div class="modal-body">${body}</div>
+        </div>`;
+      }
+
+      function refreshSecurityModal() {
+        const overlay = document.querySelector("#securityModal");
+        if (!overlay || overlay.hidden || !securityModalState) return;
+        overlay.innerHTML = securityModalPanelHtml();
+        wireSecurityModal();
+      }
+
+      function wireSecurityModal() {
+        const overlay = document.querySelector("#securityModal");
+        if (!overlay) return;
+        document.querySelector("#securityModalClose").onclick = closeSecurityModal;
+        overlay.onclick = (event) => { if (event.target.id === "securityModal") closeSecurityModal(); };
+        document.querySelector("#mfaStartEnroll")?.addEventListener("click", startMfaEnroll);
+        document.querySelector("#mfaEnrollForm")?.addEventListener("submit", confirmMfaEnroll);
+        document.querySelector("#mfaEnrollCancel")?.addEventListener("click", cancelMfaEnroll);
+        overlay.querySelectorAll("[data-remove-factor]").forEach((btn) => {
+          btn.onclick = () => {
+            securityModalState.confirmingRemoveId = btn.dataset.removeFactor;
+            refreshSecurityModal();
+          };
+        });
+        overlay.querySelectorAll("[data-cancel-remove]").forEach((btn) => {
+          btn.onclick = () => {
+            securityModalState.confirmingRemoveId = null;
+            refreshSecurityModal();
+          };
+        });
+        overlay.querySelectorAll("[data-confirm-remove]").forEach((btn) => {
+          btn.onclick = () => removeMfaFactor(btn.dataset.confirmRemove);
+        });
+      }
+
+      async function startMfaEnroll() {
+        securityModalState.error = "";
+        const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp" });
+        if (error) {
+          securityModalState.error = safeErrorMessage(error, "Não foi possível iniciar a ativação do fator.");
+          refreshSecurityModal();
+          return;
+        }
+        securityModalState.enrolling = { factorId: data.id, qrCode: data.totp.qr_code, secret: data.totp.secret, verifying: false, error: "" };
+        refreshSecurityModal();
+      }
+
+      async function confirmMfaEnroll(event) {
+        event.preventDefault();
+        const { factorId } = securityModalState.enrolling;
+        const code = new FormData(event.currentTarget).get("code");
+        securityModalState.enrolling.verifying = true;
+        securityModalState.enrolling.error = "";
+        refreshSecurityModal();
+        try {
+          const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({ factorId });
+          if (challengeError) throw challengeError;
+          const { error: verifyError } = await supabase.auth.mfa.verify({ factorId, challengeId: challenge.id, code });
+          if (verifyError) throw verifyError;
+          securityModalState.enrolling = null;
+          securityModalState.info = "Autenticação de dois fatores ativada com sucesso.";
+          await loadMfaFactors();
+        } catch (error) {
+          securityModalState.enrolling.verifying = false;
+          securityModalState.enrolling.error = safeErrorMessage(error, "Código inválido. Tente novamente.");
+          refreshSecurityModal();
+        }
+      }
+
+      async function cancelMfaEnroll() {
+        const factorId = securityModalState.enrolling?.factorId;
+        securityModalState.enrolling = null;
+        refreshSecurityModal();
+        if (factorId) await supabase.auth.mfa.unenroll({ factorId }).catch(() => {});
+      }
+
+      async function removeMfaFactor(factorId) {
+        securityModalState.error = "";
+        securityModalState.confirmingRemoveId = null;
+        const { error } = await supabase.auth.mfa.unenroll({ factorId });
+        if (error) {
+          securityModalState.error = safeErrorMessage(error, "Não foi possível remover o fator.");
+          refreshSecurityModal();
+          return;
+        }
+        securityModalState.info = "Fator removido.";
+        await loadMfaFactors();
+      }
+
+      let securityModalBound = false;
+      function bindSecurityModalGlobal() {
+        if (securityModalBound) return;
+        securityModalBound = true;
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape" && securityModalState) closeSecurityModal();
+        });
+      }
+      bindSecurityModalGlobal();
 
       function redeIconSmall(rede) {
         return rede === "Instagram" ? instagramIcon(16) : rede === "Facebook" ? facebookIcon(16) : "-";

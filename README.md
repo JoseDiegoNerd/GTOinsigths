@@ -37,6 +37,8 @@ npm run dev
 
 O front-end envia e filtra a coluna `marca`, mas a autorizacao real acontece no banco via RLS e `public.gto_tem_acesso_marca(marca)`.
 
+MFA (TOTP) e opcional por usuario, com UI de ativacao/desafio em `public/index.html` (menu do usuario → **Seguranca**). A obrigatoriedade tambem e reforcada no banco: `public.gto_aal2_ok()` (migration `20260813_027_enforce_mfa_aal2_rls.sql`) bloqueia `gto_meu_cargo`/`gto_minha_marca`/`gto_tem_acesso_marca` (logo, toda policy RLS do projeto) para sessoes aal1 de usuarios com fator TOTP verificado — sem isso, a tela de desafio no login seria so uma checagem client-side, contornavel com uma requisicao direta a API.
+
 ## Integracao Meta Business (organico: Facebook + Instagram)
 
 As Edge Functions `meta-oauth-start`, `meta-oauth-callback` e `meta-sync-insights` (`supabase/functions/`) implementam a conexao com a Graph API. O app tem uma tela dedicada para isso. Escopos pedidos hoje: `pages_show_list`, `pages_read_engagement`, `business_management`, `read_insights`, `instagram_basic`, `instagram_manage_insights`, `ads_read` (este ultimo cobre a integracao de anuncios, ver secao propria abaixo).
