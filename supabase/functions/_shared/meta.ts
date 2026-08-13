@@ -105,6 +105,38 @@ export async function getAuthenticatedUser(req: Request) {
   return data.user;
 }
 
+// Extrai o claim "aal" do access token ja validado por getAuthenticatedUser(req) (decodifica o
+// payload do JWT sem reverificar assinatura - seguro porque so e chamada depois de
+// supabase.auth.getUser(token) ja ter confirmado que o token e autentico e pertence a userId).
+function decodeJwtAal(token: string): string {
+  const payloadSegment = token.split(".")[1];
+  if (!payloadSegment) return "aal1";
+  const base64 = payloadSegment.replaceAll("-", "+").replaceAll("_", "/").padEnd(Math.ceil(payloadSegment.length / 4) * 4, "=");
+  try {
+    const payload = JSON.parse(atob(base64));
+    return String(payload.aal || "aal1");
+  } catch {
+    return "aal1";
+  }
+}
+
+// Fecha em Edge Functions o mesmo enforcement de MFA que gto_aal2_ok() ja faz em RLS (migration
+// 20260813_027): nega a chamada se o usuario tem fator TOTP verificado mas a sessao ainda esta
+// em aal1 (desafio de 2FA pendente). Chamar sempre logo depois de getAuthenticatedUser(req), na
+// mesma requisicao - o token decodificado aqui precisa ser o mesmo que getAuthenticatedUser ja
+// validou.
+export async function assertAal2(req: Request, userId: string) {
+  const authHeader = req.headers.get("authorization") || "";
+  const token = authHeader.replace(/^Bearer\s+/i, "");
+  const aal = decodeJwtAal(token);
+
+  const supabase = getAdminClient();
+  const { data: ok, error } = await supabase.rpc("gto_aal2_ok_para", { p_user_id: userId, p_aal: aal });
+
+  if (error) throw error;
+  if (!ok) throw new Error("Verificacao em duas etapas pendente. Complete o desafio de MFA antes de continuar.");
+}
+
 export async function assertAdminOrGestor(userId: string) {
   const supabase = getAdminClient();
   const { data, error } = await supabase

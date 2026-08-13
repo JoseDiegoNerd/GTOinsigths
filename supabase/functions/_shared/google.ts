@@ -1,4 +1,5 @@
 import {
+  assertAal2,
   assertAdminOrGestor,
   corsHeaders,
   errorMessage,
@@ -13,6 +14,7 @@ import {
 import type { JsonRecord } from "./meta.ts";
 
 export {
+  assertAal2,
   assertAdminOrGestor,
   corsHeaders,
   errorMessage,

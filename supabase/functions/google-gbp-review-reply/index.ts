@@ -1,4 +1,5 @@
 import {
+  assertAal2,
   assertAcessoMarca,
   assertCargoPermitido,
   getAdminClient,
@@ -19,6 +20,7 @@ Deno.serve(withCors(async (req) => {
 
   try {
     const user = await getAuthenticatedUser(req);
+    await assertAal2(req, user.id);
     await assertCargoPermitido(user.id, CARGOS_PERMITIDOS);
 
     const body = await req.json().catch(() => ({}));
