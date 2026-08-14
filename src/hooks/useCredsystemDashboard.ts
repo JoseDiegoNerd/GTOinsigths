@@ -1,49 +1,27 @@
-import { useCallback, useEffect, useState } from 'react';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { getCredsystemDashboard } from '../services/credsystemService';
 import { toSafeErrorMessage } from '../lib/errorHandling';
-import type { BrandMetric, DashboardSummary, DadosCartoesCredsystem, Marca, MotivoPropostaMetric, PeriodoFiltro } from '../types/gto';
-
-type DashboardState = {
-  summary: DashboardSummary | null;
-  brandMetrics: BrandMetric[];
-  motivosPropostas: MotivoPropostaMetric[];
-  cards: DadosCartoesCredsystem[];
-};
+import type { Marca, PeriodoFiltro } from '../types/gto';
 
 export function useCredsystemDashboard(filters: {
   marca: Marca | 'Todas';
   periodo: PeriodoFiltro;
 }) {
-  const [data, setData] = useState<DashboardState>({
-    summary: null,
-    brandMetrics: [],
-    motivosPropostas: [],
-    cards: []
+  const query = useQuery({
+    queryKey: ['credsystem-dashboard', filters.marca, filters.periodo],
+    queryFn: () => getCredsystemDashboard(filters),
+    staleTime: 1000 * 60 * 5,
+    placeholderData: keepPreviousData
   });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const reload = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const nextData = await getCredsystemDashboard(filters);
-      setData(nextData);
-    } catch (err) {
-      setError(toSafeErrorMessage(err, 'Erro ao carregar dados do dashboard.'));
-    } finally {
-      setLoading(false);
-    }
-  }, [filters]);
-
-  useEffect(() => {
-    reload();
-  }, [reload]);
 
   return {
-    ...data,
-    loading,
-    error,
-    reload
+    summary: query.data?.summary ?? null,
+    brandMetrics: query.data?.brandMetrics ?? [],
+    motivosPropostas: query.data?.motivosPropostas ?? [],
+    cards: query.data?.cards ?? [],
+    loading: query.isLoading,
+    refreshing: query.isFetching && !query.isLoading,
+    error: query.isError ? toSafeErrorMessage(query.error, 'Erro ao carregar dados do dashboard.') : null,
+    reload: () => query.refetch()
   };
 }

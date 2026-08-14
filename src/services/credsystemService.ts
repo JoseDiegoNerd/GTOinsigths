@@ -30,40 +30,62 @@ function average(values: number[]): number {
   return valid.reduce((sum, value) => sum + value, 0) / valid.length;
 }
 
-async function listCredsystemPropostas(params?: {
-  marca?: Marca | 'Todas';
-}) {
-  const pageSize = 1000;
-  let from = 0;
-  let rows: Array<{
-    marca: Marca;
-    proposta_aprov: number;
-    proposta_rejei: number;
-    motivo: string | null;
-    dt_proposta: string;
-  }> = [];
+type PropostaRow = {
+  marca: Marca;
+  proposta_aprov: number;
+  proposta_rejei: number;
+  motivo: string | null;
+  dt_proposta: string;
+};
 
-  while (true) {
-    let query = supabase
-      .from('stage_credsystem_propostas')
-      .select('marca,proposta_aprov,proposta_rejei,motivo,dt_proposta')
-      .range(from, from + pageSize - 1);
+function credsystemPropostasPage(params: { marca?: Marca | 'Todas' }, from: number, pageSize: number) {
+  let query = supabase
+    .from('stage_credsystem_propostas')
+    .select('marca,proposta_aprov,proposta_rejei,motivo,dt_proposta')
+    .range(from, from + pageSize - 1);
 
-    if (params?.marca && params.marca !== 'Todas') {
-      query = query.eq('marca', params.marca);
-    }
-
-    const { data, error } = await query;
-    if (error) throw error;
-
-    const page = data ?? [];
-    rows = rows.concat(page);
-
-    if (page.length < pageSize) break;
-    from += pageSize;
+  if (params.marca && params.marca !== 'Todas') {
+    query = query.eq('marca', params.marca);
   }
 
-  return rows;
+  return query;
+}
+
+// REVERTIDO: a versao anterior pedia count:'exact' na 1a pagina pra saber quantas paginas
+// restantes disparar em paralelo. Isso forca o Postgres a montar um count(*) OVER() (contagem
+// exata via window function) antes de devolver qualquer linha - bem mais caro que LIMIT/OFFSET
+// sozinho, principalmente com RLS avaliando gto_tem_acesso_marca() por linha. Em producao
+// (public/index.html, que usa o mesmo padrao) isso estourou o statement_timeout de 20s do role
+// authenticated (Postgres 57014) no Dashboard Geral, que ja dispara ~15 consultas em paralelo.
+// Busca em lotes de BATCH_SIZE paginas sem pedir count nenhum; para no primeiro lote em que
+// alguma pagina volta com menos que pageSize linhas.
+async function listCredsystemPropostas(params?: { marca?: Marca | 'Todas' }): Promise<PropostaRow[]> {
+  const pageSize = 1000;
+  const batchSize = 10;
+  let allRows: PropostaRow[] = [];
+  let from = 0;
+
+  while (true) {
+    const batch = await Promise.all(
+      Array.from({ length: batchSize }, (_, index) => credsystemPropostasPage(params ?? {}, from + index * pageSize, pageSize))
+    );
+
+    let reachedEnd = false;
+    for (const page of batch) {
+      if (page.error) throw page.error;
+      const rows = (page.data ?? []) as PropostaRow[];
+      allRows = allRows.concat(rows);
+      if (rows.length < pageSize) {
+        reachedEnd = true;
+        break;
+      }
+    }
+
+    if (reachedEnd) break;
+    from += batchSize * pageSize;
+  }
+
+  return allRows;
 }
 
 export async function listCredsystemCards(params?: {
@@ -106,7 +128,12 @@ export async function insertCredsystemCards(rows: CredsystemInsert[]) {
 export async function getCredsystemDashboard(params?: {
   marca?: Marca | 'Todas';
   periodo?: PeriodoFiltro;
-}) {
+}): Promise<{
+  summary: DashboardSummary;
+  brandMetrics: BrandMetric[];
+  motivosPropostas: MotivoPropostaMetric[];
+  cards: DadosCartoesCredsystem[];
+}> {
   const [cardsResult, rdResult, metaResult, propostasResult] = await Promise.all([
     listCredsystemCards(params),
     supabase

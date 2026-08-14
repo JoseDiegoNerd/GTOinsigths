@@ -351,6 +351,61 @@
         return [state.marca, state.periodo, state.periodoDe, state.periodoAte].join("|");
       }
 
+      // Versao generica do cache "estilo React Query" acima, reutilizada pelas paginas por marca
+      // (Cartao Proprio, Google Meu Negocio e demais) - mesma logica (staleTime 5min +
+      // keepPreviousData + skeleton na primeira carga), so parametrizada por pagina em vez de
+      // duplicar o bloco try/cache/skeleton em cada render*() function.
+      const PAGE_STALE_TIME = 1000 * 60 * 5;
+      const pageCaches = new Map();
+      function pageCache(pageName) {
+        if (!pageCaches.has(pageName)) pageCaches.set(pageName, new Map());
+        return pageCaches.get(pageName);
+      }
+      async function renderCachedPage({ pageName, cacheKey, isStillActive, fetchModel, paintHtml, skeletonHtml, wireInteractions, renderError, force = false }) {
+        const content = document.querySelector("#content");
+        const cache = pageCache(pageName);
+        const cached = cache.get(cacheKey);
+
+        content.innerHTML = cached ? cached.html : skeletonHtml();
+        wireInteractions();
+
+        // force=true (botao "Atualizar" manual) ignora o staleTime e busca de novo mesmo com
+        // cache fresco - sem isso o botao de atualizar manual ficaria sem efeito nos 5min de cache.
+        if (!force && cached && Date.now() - cached.timestamp < PAGE_STALE_TIME) return;
+
+        try {
+          const model = await fetchModel();
+          const html = paintHtml(model);
+          cache.set(cacheKey, { html, timestamp: Date.now() });
+          if (!isStillActive()) return;
+          content.innerHTML = html;
+          wireInteractions();
+        } catch (error) {
+          if (!isStillActive()) return;
+          if (!cached) {
+            content.innerHTML = renderError
+              ? renderError(error)
+              : `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
+          }
+        }
+      }
+      function marcaPeriodoCacheKey() {
+        return [state.marca, state.periodo, state.periodoDe, state.periodoAte].join("|");
+      }
+      function genericPageSkeletonHtml(title, kpiCount = 4) {
+        return `
+          <div class="page-head">
+            <div><div class="eyebrow">Dados reais do Supabase</div><h2>${title}</h2></div>
+            <div class="filters">${marcaPillsHtml()}${periodoDropdownHtml()}</div>
+          </div>
+          <div class="grid kpis" style="margin-top:16px">${Array.from({ length: kpiCount }, () => skeletonKpiHtml()).join("")}</div>
+          <section class="card" style="margin-top:16px">
+            <span class="skel skel-text" style="width:220px;height:15px"></span>
+            <div class="skel skel-block" style="height:160px;margin-top:16px"></div>
+          </section>
+        `;
+      }
+
       const fmt = new Intl.NumberFormat("pt-BR");
       const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
       const avg = (arr) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
@@ -1488,6 +1543,14 @@
 
       async function render() {
         if (!state.session) return renderLogin();
+        // Conexoes e Importar Planilhas sao restritas ao cargo Admin: alem de ficarem fora do nav
+        // (abaixo), qualquer state.page setado pra uma delas por um cargo diferente e revertido
+        // aqui, no unico lugar que pinta a tela - cobre clique de nav (ja escondido), ?page= na URL
+        // (ver finishLogin) e qualquer outro caminho futuro que troque state.page.
+        const isAdmin = state.perfil?.cargo === "Admin";
+        if ((state.page === "connections" || state.page === "import") && !isAdmin) {
+          state.page = "dashboard";
+        }
         applyBrandTheme();
         app.className = "shell";
         app.innerHTML = `
@@ -1495,13 +1558,13 @@
             <div class="side-brand"><img src="logo-gto-icon.png" alt="GTO Insights" class="side-brand-logo"><div><h1>GTO Insights</h1><small>BI Platform</small></div></div>
             <nav>
               <button id="navDash" class="${state.page === "dashboard" ? "active" : ""}"><span class="material-symbols-outlined">dashboard</span>Dashboard Geral</button>
-              <button id="navCred" class="${state.page === "credsystem" ? "active" : ""}"><span class="material-symbols-outlined">credit_card</span>Cartão Próprio</button>
-              <button id="navEmail" class="${state.page === "email" ? "active" : ""}"><span class="material-symbols-outlined">mail</span>Email Marketing</button>
               <button id="navSocial" class="${state.page === "social" ? "active" : ""}"><span class="material-symbols-outlined">diversity_3</span>Redes Sociais</button>
               <button id="navAds" class="${state.page === "ads" ? "active" : ""}"><span class="material-symbols-outlined">campaign</span>Anúncios</button>
-              <button id="navConnections" class="${state.page === "connections" ? "active" : ""}"><span class="material-symbols-outlined">link</span>Conexões</button>
+              <button id="navCred" class="${state.page === "credsystem" ? "active" : ""}"><span class="material-symbols-outlined">credit_card</span>Cartão Próprio</button>
+              <button id="navEmail" class="${state.page === "email" ? "active" : ""}"><span class="material-symbols-outlined">mail</span>Email Marketing</button>
               <button id="navGMN" class="${state.page === "google_business" ? "active" : ""}"><span class="material-symbols-outlined">store</span>Google Meu Negócio</button>
-              <button id="navImport" class="${state.page === "import" ? "active" : ""}"><span class="material-symbols-outlined">upload_file</span>Importar Planilhas</button>
+              ${isAdmin ? `<button id="navConnections" class="${state.page === "connections" ? "active" : ""}"><span class="material-symbols-outlined">link</span>Conexões</button>` : ""}
+              ${isAdmin ? `<button id="navImport" class="${state.page === "import" ? "active" : ""}"><span class="material-symbols-outlined">upload_file</span>Importar Planilhas</button>` : ""}
             </nav>
             <div class="profile">
               <div class="profile-info">
@@ -1531,9 +1594,13 @@
         document.querySelector("#navEmail").onclick = () => { state.page = "email"; render(); };
         document.querySelector("#navSocial").onclick = () => { state.page = "social"; render(); };
         document.querySelector("#navAds").onclick = () => { state.page = "ads"; render(); };
-        document.querySelector("#navConnections").onclick = () => { state.page = "connections"; render(); };
         document.querySelector("#navGMN").onclick = () => { state.page = "google_business"; render(); };
-        document.querySelector("#navImport").onclick = () => { state.page = "import"; render(); };
+        // Conexoes e Importar Planilhas so existem no DOM para Admin (ver nav acima) - querySelector
+        // retorna null pros demais cargos, por isso o guard antes de atribuir o onclick.
+        const navConnectionsBtn = document.querySelector("#navConnections");
+        if (navConnectionsBtn) navConnectionsBtn.onclick = () => { state.page = "connections"; render(); };
+        const navImportBtn = document.querySelector("#navImport");
+        if (navImportBtn) navImportBtn.onclick = () => { state.page = "import"; render(); };
         if (state.page === "dashboard") await renderDashboard();
         if (state.page === "credsystem") await renderCredsystemBI();
         if (state.page === "email") await renderEmailBI();
@@ -3204,10 +3271,7 @@
         });
       }
 
-      async function renderCredsystemBI() {
-        const content = document.querySelector("#content");
-        content.innerHTML = `<div class="alert">Carregando views BI do CredSystem...</div>`;
-
+      async function fetchCredsystemModel() {
         try {
           // Calcula a partir das tabelas brutas primeiro (respeita o filtro de periodo); as
           // views agregadas do Supabase nao tem dimensao de data, entao ficam como contingencia.
@@ -3216,12 +3280,8 @@
           try {
             await loadCredsystemBI();
           } catch (fallbackError) {
-            content.innerHTML = `
-              <div class="alert error">
-                ${escapeHtml(safeErrorMessage(fallbackError))}<br><br>
-                Aplique primeiro a migration <code>supabase/migrations/20260706_004_credsystem_bi_views.sql</code> no SQL Editor do Supabase.
-              </div>`;
-            return;
+            fallbackError.gtoMigrationHint = "supabase/migrations/20260706_004_credsystem_bi_views.sql";
+            throw fallbackError;
           }
         }
 
@@ -3249,7 +3309,11 @@
         const { data: recentRows } = await recentQuery;
         const ultimosRegistros = recentRows || [];
 
-        content.innerHTML = `
+        return { bi, totals, ultimosRegistros };
+      }
+
+      function paintCredsystemHtml({ bi, totals, ultimosRegistros }) {
+        return `
           <div class="page-head">
             <div><div class="eyebrow">Views BI do Supabase</div><h2>Cartão Próprio</h2><p class="muted">Indicadores consolidados por views SQL com RLS por marca.</p></div>
             <div class="filters">
@@ -3285,10 +3349,33 @@
             <h3>Últimos registros CredSystem</h3>
             <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Emissão</th><th>Ativação</th><th>Loja</th><th>Cliente</th><th>Valor inicial</th></tr></thead><tbody>${ultimosRegistros.map((r) => `<tr><td>${r.marca}</td><td>${r.data_emissao}</td><td>${r.data_ativacao || "-"}</td><td>${r.loja_operacao}</td><td>${r.nome_cliente || "-"}</td><td>${money.format(num(r.valor_compra_inicial))}</td></tr>`).join("") || `<tr><td colspan="6">Sem registros para o filtro atual.</td></tr>`}</tbody></table></div>
           </section>`;
+      }
 
+      function wireCredsystemInteractions() {
         wireMarcaPills(renderCredsystemBI);
         wirePeriodoDropdown(renderCredsystemBI);
-        document.querySelector("#refresh").onclick = renderCredsystemBI;
+        const refreshBtn = document.querySelector("#refresh");
+        if (refreshBtn) refreshBtn.onclick = () => renderCredsystemBI({ force: true });
+      }
+
+      // keepPreviousData: troca de marca/periodo pinta o cache anterior na hora (staleTime 5min);
+      // so mostra skeleton na primeira vez que essa combinacao marca+periodo e vista.
+      async function renderCredsystemBI({ force = false } = {}) {
+        const key = marcaPeriodoCacheKey();
+        await renderCachedPage({
+          pageName: "credsystem",
+          cacheKey: key,
+          force,
+          isStillActive: () => state.page === "credsystem" && marcaPeriodoCacheKey() === key,
+          fetchModel: fetchCredsystemModel,
+          paintHtml: paintCredsystemHtml,
+          skeletonHtml: () => genericPageSkeletonHtml("Cartão Próprio", 8),
+          wireInteractions: wireCredsystemInteractions,
+          renderError: (error) => `
+            <div class="alert error">
+              ${escapeHtml(safeErrorMessage(error))}${error.gtoMigrationHint ? `<br><br>Aplique primeiro a migration <code>${escapeHtml(error.gtoMigrationHint)}</code> no SQL Editor do Supabase.` : ""}
+            </div>`
+        });
       }
 
       async function renderEmailBI() {
@@ -6296,16 +6383,40 @@
         };
       }
 
-      async function renderGoogleBusiness(statusMessage = "") {
+      // paintGoogleBusiness monta HTML e liga os eventos dos botoes no mesmo passo (nao separa
+      // fetch/paint como o Dashboard e o Cartao Proprio) - por isso o cache aqui guarda os DADOS ja
+      // carregados (state.google) por marca em vez do HTML pronto, e sempre repinta a partir deles.
+      // Isso evita reescrever as ~200 linhas de paintGoogleBusiness so pra encaixar no formato
+      // generico de renderCachedPage, sem abrir mao de staleTime + keepPreviousData + skeleton.
+      const GOOGLE_BUSINESS_STALE_TIME = 1000 * 60 * 5;
+      const googleBusinessCache = new Map();
+      async function renderGoogleBusiness(statusMessage = "", { force = false } = {}) {
         const content = document.querySelector("#content");
-        content.innerHTML = `<div class="alert">Carregando dados do Google Meu Negócio...</div>`;
+        const key = state.marca;
+        const cached = googleBusinessCache.get(key);
+        const serveFromCache = cached && !force;
+
+        if (serveFromCache) {
+          // So restaura o snapshot cacheado quando NAO e um force: apos uma mutacao (responder
+          // avaliacao, sincronizar, etc.) state.google pode ter mudancas locais recentes (ex.:
+          // fechar a caixa de resposta) que um cache antigo sobrescreveria incorretamente.
+          state.google = cached.google;
+          paintGoogleBusiness(statusMessage);
+        } else if (!cached) {
+          content.innerHTML = genericPageSkeletonHtml("Google Meu Negócio", 4);
+        }
+
+        if (serveFromCache && Date.now() - cached.timestamp < GOOGLE_BUSINESS_STALE_TIME) return;
+
         try {
           await loadGoogleBI();
+          googleBusinessCache.set(key, { google: state.google, timestamp: Date.now() });
+          if (state.page !== "google_business" || state.marca !== key) return;
+          paintGoogleBusiness(statusMessage);
         } catch (error) {
-          content.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
-          return;
+          if (state.page !== "google_business" || state.marca !== key) return;
+          if (!cached) content.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
         }
-        paintGoogleBusiness(statusMessage);
       }
 
       function paintGoogleBusiness(statusMessage = "") {
@@ -6464,7 +6575,7 @@
           </div>`;
 
         wireMarcaPills(renderGoogleBusiness);
-        document.querySelector("#refreshGoogle").onclick = () => renderGoogleBusiness();
+        document.querySelector("#refreshGoogle").onclick = () => renderGoogleBusiness("", { force: true });
         document.querySelector("#connectGoogle").onclick = connectGoogleBusiness;
         document.querySelector("#syncAllGoogle").onclick = () => syncGoogleBusiness();
         document.querySelectorAll(".google-sync-one").forEach((button) => { button.onclick = () => syncGoogleBusiness(button.dataset.id); });
@@ -6528,7 +6639,7 @@
           ignore: "Conta ignorada. Ela não será sincronizada nem enviada aos dashboards.",
           reactivate: "Conta reativada para revisão. Confirme se ela pertencer à marca."
         };
-        await renderGoogleBusiness(messages[action]);
+        await renderGoogleBusiness(messages[action], { force: true });
       }
 
       async function connectGoogleBusiness() {
@@ -6575,7 +6686,7 @@
         const totalReviews = results.reduce((sum, row) => sum + num(row.reviewsImported), 0);
         const errors = results.filter((row) => row.error).map((row) => `${row.marca}: ${row.error}`);
         const details = errors.length ? ` Erros: ${errors.slice(0, 2).join(" | ")}` : "";
-        await renderGoogleBusiness(`Sincronização concluída: ${fmt.format(totalReviews)} avaliações processadas.${details}`);
+        await renderGoogleBusiness(`Sincronização concluída: ${fmt.format(totalReviews)} avaliações processadas.${details}`, { force: true });
       }
 
       async function replyGoogleReview(reviewId, texto) {
@@ -6589,7 +6700,7 @@
           return;
         }
         state.google.openReplyReviewId = null;
-        await renderGoogleBusiness("Resposta enviada.");
+        await renderGoogleBusiness("Resposta enviada.", { force: true });
       }
 
       async function deleteGoogleReviewReply(reviewId) {
@@ -6602,7 +6713,7 @@
           status.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
           return;
         }
-        await renderGoogleBusiness("Resposta removida.");
+        await renderGoogleBusiness("Resposta removida.", { force: true });
       }
 
       async function updateGoogleLocation(localId, campos) {
@@ -6616,7 +6727,7 @@
           return;
         }
         state.google.openEditLocalId = null;
-        await renderGoogleBusiness("Cadastro da loja atualizado.");
+        await renderGoogleBusiness("Cadastro da loja atualizado.", { force: true });
       }
 
       function renderImport() {
@@ -6646,14 +6757,24 @@
         document.querySelector("#doImport").onclick = () => importRows(file.name, rows);
       }
 
-      async function fetchAllRows(table, columns, marca = "Todas", dateColumn = null) {
+      // REVERTIDO em 14/08/2026: a versao anterior pedia count:"exact" na 1a pagina pra saber
+      // quantas paginas restantes disparar em paralelo. Isso forcava o Postgres a montar um
+      // count(*) OVER() (contagem exata via window function) ANTES de devolver qualquer linha -
+      // bem mais caro que o LIMIT/OFFSET sozinho, principalmente com RLS avaliando
+      // gto_tem_acesso_marca() por linha. No Dashboard Geral, que ja dispara ~15 consultas em
+      // paralelo (Promise.all aninhado), isso estourou o statement_timeout do role authenticated
+      // (Postgres error 57014) e derrubou a tela com "Ocorreu um erro ao processar a solicitacao.".
+      //
+      // Esta versao busca em lotes de BATCH_SIZE paginas em paralelo SEM pedir count nenhum -
+      // para pelo primeiro lote em que alguma pagina volta com menos que pageSize linhas (fim dos
+      // dados). Ainda paraleliza (a motivacao original), mas sem o custo do count exato: o pior
+      // caso extra e disparar algumas paginas vazias no fim do ultimo lote (range/offset sem
+      // contagem e barato, mesmo sem retornar linhas).
+      async function fetchPaginated(table, columns, marca, dateColumn, de, ate) {
         const pageSize = 1000;
-        let from = 0;
-        let allRows = [];
-        const de = dateColumn ? fromDate() : null;
-        const ate = dateColumn ? toDate() : null;
+        const batchSize = 10;
 
-        while (true) {
+        function buildQuery(from) {
           let query = supabase
             .from(table)
             .select(columns)
@@ -6662,46 +6783,43 @@
           if (marca !== "Todas") query = query.eq("marca", marca);
           if (de) query = query.gte(dateColumn, de);
           if (ate) query = query.lte(dateColumn, ate);
+          return query;
+        }
 
-          const { data, error } = await query;
-          if (error) throw error;
+        let allRows = [];
+        let from = 0;
 
-          const rows = data || [];
-          allRows = allRows.concat(rows);
+        while (true) {
+          const batch = await Promise.all(
+            Array.from({ length: batchSize }, (_, index) => buildQuery(from + index * pageSize))
+          );
 
-          if (rows.length < pageSize) break;
-          from += pageSize;
+          let reachedEnd = false;
+          for (const page of batch) {
+            if (page.error) throw page.error;
+            const rows = page.data || [];
+            allRows = allRows.concat(rows);
+            if (rows.length < pageSize) {
+              reachedEnd = true;
+              break;
+            }
+          }
+
+          if (reachedEnd) break;
+          from += batchSize * pageSize;
         }
 
         return allRows;
       }
 
+      async function fetchAllRows(table, columns, marca = "Todas", dateColumn = null) {
+        const de = dateColumn ? fromDate() : null;
+        const ate = dateColumn ? toDate() : null;
+        return fetchPaginated(table, columns, marca, dateColumn, de, ate);
+      }
+
       async function fetchRowsInRange(table, columns, marca, dateColumn, de, ate) {
-        const pageSize = 1000;
-        let from = 0;
-        let allRows = [];
-
-        while (true) {
-          let query = supabase
-            .from(table)
-            .select(columns)
-            .range(from, from + pageSize - 1);
-
-          if (marca !== "Todas") query = query.eq("marca", marca);
-          if (de) query = query.gte(dateColumn, de);
-          if (ate) query = query.lte(dateColumn, ate);
-
-          const { data, error } = await query;
-          if (error) throw error;
-
-          const rows = data || [];
-          allRows = allRows.concat(rows);
-
-          if (rows.length < pageSize) break;
-          from += pageSize;
-        }
-
-        return allRows;
+        return fetchPaginated(table, columns, marca, dateColumn, de, ate);
       }
 
       async function readCsvText(file) {

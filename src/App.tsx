@@ -1,9 +1,72 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { CSSProperties, FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from './hooks/useAuth';
 import { useCredsystemDashboard } from './hooks/useCredsystemDashboard';
 import { useStageImport } from './hooks/useStageImport';
 import { formatZodError, loginSchema } from './lib/validation';
-import type { Marca, PeriodoFiltro, StageSource } from './types/gto';
+import type { CargoUsuario, Marca, PeriodoFiltro, StageSource } from './types/gto';
+
+type PageKey =
+  | 'dashboard'
+  | 'redes-sociais'
+  | 'anuncios'
+  | 'cartao-proprio'
+  | 'email-marketing'
+  | 'google-meu-negocio'
+  | 'conexoes'
+  | 'importar-planilhas';
+
+type NavItem = {
+  key: PageKey;
+  label: string;
+  icon: string;
+  adminOnly?: boolean;
+};
+
+// Ordem exigida pelo produto: navegação operacional primeiro, itens administrativos por último.
+const NAV_ITEMS: NavItem[] = [
+  { key: 'dashboard', label: 'Dashboard Geral', icon: 'dashboard' },
+  { key: 'redes-sociais', label: 'Redes Sociais', icon: 'share' },
+  { key: 'anuncios', label: 'Anúncios', icon: 'ads_click' },
+  { key: 'cartao-proprio', label: 'Cartão Próprio', icon: 'credit_card' },
+  { key: 'email-marketing', label: 'Email Marketing', icon: 'mail' },
+  { key: 'google-meu-negocio', label: 'Google Meu Negócio', icon: 'store' },
+  { key: 'conexoes', label: 'Conexões', icon: 'cable', adminOnly: true },
+  { key: 'importar-planilhas', label: 'Importar Planilhas', icon: 'upload_file', adminOnly: true }
+];
+
+const DEFAULT_PAGE: PageKey = 'dashboard';
+
+function isAdminCargo(cargo: CargoUsuario | undefined): boolean {
+  return cargo === 'Admin';
+}
+
+function pageFromHash(hash: string): PageKey {
+  const key = hash.replace(/^#\/?/, '');
+  return NAV_ITEMS.some((item) => item.key === key) ? (key as PageKey) : DEFAULT_PAGE;
+}
+
+function useHashPage(): [PageKey, (page: PageKey) => void] {
+  const [page, setPage] = useState<PageKey>(() => pageFromHash(window.location.hash));
+
+  useEffect(() => {
+    function handleHashChange() {
+      setPage(pageFromHash(window.location.hash));
+    }
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  const navigate = useCallback((next: PageKey) => {
+    const nextHash = `#/${next}`;
+    if (window.location.hash === nextHash) {
+      setPage(next);
+    } else {
+      window.location.hash = nextHash;
+    }
+  }, []);
+
+  return [page, navigate];
+}
 
 const marcas: Array<Marca | 'Todas'> = [
   'Todas',
@@ -112,6 +175,99 @@ function KpiCard(props: { label: string; value: string; hint: string; icon: stri
   );
 }
 
+function Skeleton({ className, style }: { className?: string; style?: CSSProperties }) {
+  return <div className={`skeleton ${className ?? ''}`.trim()} style={style} />;
+}
+
+function SkeletonKpiCard() {
+  return (
+    <article className="card kpi-card skeleton-card" aria-hidden="true">
+      <div className="kpi-top">
+        <Skeleton className="skeleton-text skeleton-text-sm" />
+        <Skeleton className="skeleton-icon" />
+      </div>
+      <Skeleton className="skeleton-text skeleton-text-lg" />
+      <Skeleton className="skeleton-text skeleton-text-sm" />
+    </article>
+  );
+}
+
+function SkeletonTableRows({ rows, cols }: { rows: number; cols: number }) {
+  return (
+    <>
+      {Array.from({ length: rows }).map((_, rowIndex) => (
+        <tr key={rowIndex}>
+          {Array.from({ length: cols }).map((__, colIndex) => (
+            <td key={colIndex}>
+              <Skeleton className="skeleton-text" />
+            </td>
+          ))}
+        </tr>
+      ))}
+    </>
+  );
+}
+
+// Reproduz a estrutura exata do dashboard real (kpi-grid, dashboard-grid, tabelas) para que a
+// transição do skeleton para os dados não "pule" o layout.
+function DashboardSkeleton() {
+  return (
+    <>
+      <div className="kpi-grid">
+        {Array.from({ length: 12 }).map((_, index) => (
+          <SkeletonKpiCard key={index} />
+        ))}
+      </div>
+
+      <div className="dashboard-grid">
+        <article className="card wide-card skeleton-card" aria-hidden="true">
+          <Skeleton className="skeleton-text skeleton-text-sm" style={{ width: '40%' }} />
+          <div className="brand-bars">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div className="brand-row" key={index}>
+                <div>
+                  <Skeleton className="skeleton-text skeleton-text-sm" />
+                  <Skeleton className="skeleton-text skeleton-text-sm" style={{ width: '70%' }} />
+                </div>
+                <Skeleton className="skeleton-bar" />
+                <Skeleton className="skeleton-text skeleton-text-sm" />
+              </div>
+            ))}
+          </div>
+        </article>
+
+        <article className="card skeleton-card" aria-hidden="true">
+          <Skeleton className="skeleton-text skeleton-text-sm" style={{ width: '50%' }} />
+          <Skeleton className="skeleton-text" />
+          <Skeleton className="skeleton-text" style={{ width: '85%' }} />
+        </article>
+      </div>
+
+      <article className="card skeleton-card" aria-hidden="true">
+        <Skeleton className="skeleton-text skeleton-text-sm" style={{ width: '30%' }} />
+        <div className="table-wrap">
+          <table>
+            <tbody>
+              <SkeletonTableRows rows={5} cols={3} />
+            </tbody>
+          </table>
+        </div>
+      </article>
+
+      <article className="card skeleton-card" aria-hidden="true">
+        <Skeleton className="skeleton-text skeleton-text-sm" style={{ width: '30%' }} />
+        <div className="table-wrap">
+          <table>
+            <tbody>
+              <SkeletonTableRows rows={6} cols={6} />
+            </tbody>
+          </table>
+        </div>
+      </article>
+    </>
+  );
+}
+
 function Dashboard() {
   const [marca, setMarca] = useState<Marca | 'Todas'>('Todas');
   const [periodo, setPeriodo] = useState<PeriodoFiltro>('30d');
@@ -147,129 +303,135 @@ function Dashboard() {
       </div>
 
       {dashboard.error ? <div className="alert error">{dashboard.error}</div> : null}
-      {dashboard.loading ? <div className="alert">Carregando dados do Supabase...</div> : null}
+      {dashboard.refreshing ? <div className="alert refreshing">Atualizando dados...</div> : null}
 
-      <div className="kpi-grid">
-        <KpiCard label="Total de cartões" value={formatNumber(dashboard.summary?.totalCartoes ?? 0)} hint="Registros visíveis pelo seu perfil" icon="credit_card" />
-        <KpiCard label="Cartões ativados" value={formatNumber(dashboard.summary?.cartoesAtivos ?? 0)} hint="Com data de ativação preenchida" icon="verified" />
-        <KpiCard label="Ticket médio" value={formatCurrency(dashboard.summary?.ticketMedio ?? 0)} hint="Valor de compra inicial" icon="payments" />
-        <KpiCard label="Campanhas RD" value={formatNumber(dashboard.summary?.totalCampanhas ?? 0)} hint="Registros de stage visíveis" icon="campaign" />
-        <KpiCard label="Taxa abertura" value={formatPercent(dashboard.summary?.taxaAberturaMedia ?? 0)} hint="Média RD Station" icon="mail" />
-        <KpiCard label="Taxa clique" value={formatPercent(dashboard.summary?.taxaCliqueMedia ?? 0)} hint="Média RD Station" icon="ads_click" />
-        <KpiCard label="Alcance Facebook" value={formatNumber(dashboard.summary?.alcanceFacebook ?? 0)} hint="Meta Business" icon="sensors" />
-        <KpiCard label="Engajamento" value={formatNumber(dashboard.summary?.engajamentoTotal ?? 0)} hint="Meta Business" icon="favorite" />
-        <KpiCard label="Propostas" value={formatNumber(dashboard.summary?.totalPropostas ?? 0)} hint="CredSystem propostas" icon="assignment" />
-        <KpiCard label="Aprovadas" value={formatNumber(dashboard.summary?.propostasAprovadas ?? 0)} hint="Propostas aprovadas" icon="check_circle" />
-        <KpiCard label="Rejeitadas" value={formatNumber(dashboard.summary?.propostasRejeitadas ?? 0)} hint="Propostas rejeitadas" icon="cancel" />
-        <KpiCard label="Taxa aprovação" value={formatPercent(dashboard.summary?.taxaAprovacao ?? 0)} hint="Aprovadas / total" icon="percent" />
-      </div>
-
-      <div className="dashboard-grid">
-        <article className="card wide-card">
-          <div className="section-title">
-            <div>
-              <h3>Performance por marca</h3>
-              <p>A policy do banco limita automaticamente o que cada usuário pode ver.</p>
-            </div>
+      {dashboard.loading ? (
+        <DashboardSkeleton />
+      ) : (
+        <>
+          <div className="kpi-grid">
+            <KpiCard label="Total de cartões" value={formatNumber(dashboard.summary?.totalCartoes ?? 0)} hint="Registros visíveis pelo seu perfil" icon="credit_card" />
+            <KpiCard label="Cartões ativados" value={formatNumber(dashboard.summary?.cartoesAtivos ?? 0)} hint="Com data de ativação preenchida" icon="verified" />
+            <KpiCard label="Ticket médio" value={formatCurrency(dashboard.summary?.ticketMedio ?? 0)} hint="Valor de compra inicial" icon="payments" />
+            <KpiCard label="Campanhas RD" value={formatNumber(dashboard.summary?.totalCampanhas ?? 0)} hint="Registros de stage visíveis" icon="campaign" />
+            <KpiCard label="Taxa abertura" value={formatPercent(dashboard.summary?.taxaAberturaMedia ?? 0)} hint="Média RD Station" icon="mail" />
+            <KpiCard label="Taxa clique" value={formatPercent(dashboard.summary?.taxaCliqueMedia ?? 0)} hint="Média RD Station" icon="ads_click" />
+            <KpiCard label="Alcance Facebook" value={formatNumber(dashboard.summary?.alcanceFacebook ?? 0)} hint="Meta Business" icon="sensors" />
+            <KpiCard label="Engajamento" value={formatNumber(dashboard.summary?.engajamentoTotal ?? 0)} hint="Meta Business" icon="favorite" />
+            <KpiCard label="Propostas" value={formatNumber(dashboard.summary?.totalPropostas ?? 0)} hint="CredSystem propostas" icon="assignment" />
+            <KpiCard label="Aprovadas" value={formatNumber(dashboard.summary?.propostasAprovadas ?? 0)} hint="Propostas aprovadas" icon="check_circle" />
+            <KpiCard label="Rejeitadas" value={formatNumber(dashboard.summary?.propostasRejeitadas ?? 0)} hint="Propostas rejeitadas" icon="cancel" />
+            <KpiCard label="Taxa aprovação" value={formatPercent(dashboard.summary?.taxaAprovacao ?? 0)} hint="Aprovadas / total" icon="percent" />
           </div>
-          <div className="brand-bars">
-            {dashboard.brandMetrics.length === 0 ? (
-              <p className="empty">Nenhum dado de cartão disponível para os filtros atuais.</p>
-            ) : (
-              dashboard.brandMetrics.map((item) => (
-                <div className="brand-row" key={item.marca}>
-                  <div>
-                    <strong>{item.marca}</strong>
-                    <span>{formatCurrency(item.ticketMedio)} ticket médio</span>
-                  </div>
-                  <div className="bar-track">
-                    <div className="bar-fill" style={{ width: `${(item.totalCartoes / brandMax) * 100}%` }} />
-                  </div>
-                  <b>{formatNumber(item.totalCartoes)}</b>
+
+          <div className="dashboard-grid">
+            <article className="card wide-card">
+              <div className="section-title">
+                <div>
+                  <h3>Performance por marca</h3>
+                  <p>A policy do banco limita automaticamente o que cada usuário pode ver.</p>
                 </div>
-              ))
-            )}
-          </div>
-        </article>
+              </div>
+              <div className="brand-bars">
+                {dashboard.brandMetrics.length === 0 ? (
+                  <p className="empty">Nenhum dado de cartão disponível para os filtros atuais.</p>
+                ) : (
+                  dashboard.brandMetrics.map((item) => (
+                    <div className="brand-row" key={item.marca}>
+                      <div>
+                        <strong>{item.marca}</strong>
+                        <span>{formatCurrency(item.ticketMedio)} ticket médio</span>
+                      </div>
+                      <div className="bar-track">
+                        <div className="bar-fill" style={{ width: `${(item.totalCartoes / brandMax) * 100}%` }} />
+                      </div>
+                      <b>{formatNumber(item.totalCartoes)}</b>
+                    </div>
+                  ))
+                )}
+              </div>
+            </article>
 
-        <article className="card">
-          <h3>Controle de acesso</h3>
-          <p className="security-copy">
-            O front envia e filtra por <code>marca</code>, mas a regra definitiva fica no PostgreSQL:
-            <code> public.gto_tem_acesso_marca(marca)</code>.
-          </p>
-        </article>
-      </div>
-
-      <article className="card">
-        <div className="section-title">
-          <div>
-            <h3>Principais motivos das propostas</h3>
-            <p>Ranking vindo de <code>stage_credsystem_propostas</code>.</p>
+            <article className="card">
+              <h3>Controle de acesso</h3>
+              <p className="security-copy">
+                O front envia e filtra por <code>marca</code>, mas a regra definitiva fica no PostgreSQL:
+                <code> public.gto_tem_acesso_marca(marca)</code>.
+              </p>
+            </article>
           </div>
-        </div>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Motivo</th>
-                <th>Total</th>
-                <th>Participação</th>
-              </tr>
-            </thead>
-            <tbody>
-              {dashboard.motivosPropostas.length === 0 ? (
-                <tr>
-                  <td colSpan={3}>Sem propostas importadas.</td>
-                </tr>
-              ) : (
-                dashboard.motivosPropostas.map((item) => (
-                  <tr key={item.motivo}>
-                    <td>{item.motivo}</td>
-                    <td>{formatNumber(item.total)}</td>
-                    <td>{formatPercent(item.participacao)}</td>
+
+          <article className="card">
+            <div className="section-title">
+              <div>
+                <h3>Principais motivos das propostas</h3>
+                <p>Ranking vindo de <code>stage_credsystem_propostas</code>.</p>
+              </div>
+            </div>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Motivo</th>
+                    <th>Total</th>
+                    <th>Participação</th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </article>
+                </thead>
+                <tbody>
+                  {dashboard.motivosPropostas.length === 0 ? (
+                    <tr>
+                      <td colSpan={3}>Sem propostas importadas.</td>
+                    </tr>
+                  ) : (
+                    dashboard.motivosPropostas.map((item) => (
+                      <tr key={item.motivo}>
+                        <td>{item.motivo}</td>
+                        <td>{formatNumber(item.total)}</td>
+                        <td>{formatPercent(item.participacao)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </article>
 
-      <article className="card">
-        <div className="section-title">
-          <div>
-            <h3>Últimos registros CredSystem</h3>
-            <p>Consulta direta em <code>dados_cartoes_credsystem</code>.</p>
-          </div>
-        </div>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Marca</th>
-                <th>Emissão</th>
-                <th>Ativação</th>
-                <th>Loja</th>
-                <th>Cliente</th>
-                <th>Valor inicial</th>
-              </tr>
-            </thead>
-            <tbody>
-              {dashboard.cards.slice(0, 12).map((card) => (
-                <tr key={card.id}>
-                  <td>{card.marca}</td>
-                  <td>{card.data_emissao}</td>
-                  <td>{card.data_ativacao ?? '-'}</td>
-                  <td>{card.loja_operacao}</td>
-                  <td>{card.nome_cliente ?? '-'}</td>
-                  <td>{formatCurrency(card.valor_compra_inicial ?? 0)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </article>
+          <article className="card">
+            <div className="section-title">
+              <div>
+                <h3>Últimos registros CredSystem</h3>
+                <p>Consulta direta em <code>dados_cartoes_credsystem</code>.</p>
+              </div>
+            </div>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Marca</th>
+                    <th>Emissão</th>
+                    <th>Ativação</th>
+                    <th>Loja</th>
+                    <th>Cliente</th>
+                    <th>Valor inicial</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dashboard.cards.slice(0, 12).map((card) => (
+                    <tr key={card.id}>
+                      <td>{card.marca}</td>
+                      <td>{card.data_emissao}</td>
+                      <td>{card.data_ativacao ?? '-'}</td>
+                      <td>{card.loja_operacao}</td>
+                      <td>{card.nome_cliente ?? '-'}</td>
+                      <td>{formatCurrency(card.valor_compra_inicial ?? 0)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </article>
+        </>
+      )}
     </section>
   );
 }
@@ -375,9 +537,47 @@ function ImportPage() {
   );
 }
 
+function ComingSoon({ item }: { item: NavItem }) {
+  return (
+    <section className="content-stack">
+      <div className="page-header">
+        <div>
+          <p className="eyebrow">Em desenvolvimento</p>
+          <h2>{item.label}</h2>
+          <p>Este módulo ainda está sendo construído e chega em breve.</p>
+        </div>
+      </div>
+      <article className="card">
+        <div className="section-title">
+          <div>
+            <h3>
+              <span className="material-symbols-outlined" aria-hidden="true">
+                {item.icon}
+              </span>{' '}
+              {item.label}
+            </h3>
+            <p>Assim que os conectores de dados estiverem prontos, os indicadores aparecerão aqui.</p>
+          </div>
+        </div>
+        <p className="empty">Nenhum dado disponível ainda para este módulo.</p>
+      </article>
+    </section>
+  );
+}
+
 export default function App() {
   const auth = useAuth();
-  const [page, setPage] = useState<'dashboard' | 'import'>('dashboard');
+  const [page, navigate] = useHashPage();
+  const isAdmin = isAdminCargo(auth.perfil?.cargo);
+  const activeItem = NAV_ITEMS.find((item) => item.key === page) ?? NAV_ITEMS[0];
+  const blockedByRole = Boolean(activeItem.adminOnly) && !isAdmin;
+
+  useEffect(() => {
+    if (auth.loading || !auth.session) return;
+    if (blockedByRole) {
+      navigate(DEFAULT_PAGE);
+    }
+  }, [auth.loading, auth.session, blockedByRole, navigate]);
 
   if (auth.loading) {
     return <main className="center-page">Carregando sessão...</main>;
@@ -385,6 +585,20 @@ export default function App() {
 
   if (!auth.session) {
     return <LoginScreen onLogin={auth.signIn} error={auth.error} />;
+  }
+
+  const visibleNavItems = NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin);
+
+  function renderPage() {
+    if (blockedByRole) return null;
+    switch (page) {
+      case 'dashboard':
+        return <Dashboard />;
+      case 'importar-planilhas':
+        return <ImportPage />;
+      default:
+        return <ComingSoon item={activeItem} />;
+    }
   }
 
   return (
@@ -398,14 +612,12 @@ export default function App() {
           </div>
         </div>
         <nav>
-          <button className={page === 'dashboard' ? 'active' : ''} onClick={() => setPage('dashboard')}>
-            <span className="material-symbols-outlined">dashboard</span>
-            Dashboard Geral
-          </button>
-          <button className={page === 'import' ? 'active' : ''} onClick={() => setPage('import')}>
-            <span className="material-symbols-outlined">upload_file</span>
-            Importar Planilhas
-          </button>
+          {visibleNavItems.map((item) => (
+            <button key={item.key} className={page === item.key ? 'active' : ''} onClick={() => navigate(item.key)}>
+              <span className="material-symbols-outlined">{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
         </nav>
         <div className="profile-box">
           <strong>{auth.perfil?.nome ?? auth.user?.email}</strong>
@@ -416,14 +628,12 @@ export default function App() {
       <main className="main-canvas">
         <header className="topbar">
           <div>
-            <strong>{page === 'dashboard' ? 'Visão consolidada' : 'Pipeline de importação'}</strong>
+            <strong>{blockedByRole ? 'Redirecionando...' : activeItem.label}</strong>
             <span>Supabase conectado com RLS por marca</span>
           </div>
-          <span className="status-pill">Authenticated</span>
+          <span className="status-pill">Autenticado</span>
         </header>
-        <div className="canvas-scroll">
-          {page === 'dashboard' ? <Dashboard /> : <ImportPage />}
-        </div>
+        <div className="canvas-scroll">{renderPage()}</div>
       </main>
     </div>
   );
