@@ -1,8 +1,10 @@
 import { CSSProperties, FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from './hooks/useAuth';
 import { useCredsystemDashboard } from './hooks/useCredsystemDashboard';
+import { usePresenceHeartbeat } from './hooks/usePresence';
 import { useStageImport } from './hooks/useStageImport';
 import { formatZodError, loginSchema } from './lib/validation';
+import UsuariosPage from './pages/UsuariosPage';
 import type { CargoUsuario, Marca, PeriodoFiltro, StageSource } from './types/gto';
 
 type PageKey =
@@ -13,7 +15,8 @@ type PageKey =
   | 'email-marketing'
   | 'google-meu-negocio'
   | 'conexoes'
-  | 'importar-planilhas';
+  | 'importar-planilhas'
+  | 'usuarios';
 
 type NavItem = {
   key: PageKey;
@@ -31,7 +34,8 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'email-marketing', label: 'Email Marketing', icon: 'mail' },
   { key: 'google-meu-negocio', label: 'Google Meu Negócio', icon: 'store' },
   { key: 'conexoes', label: 'Conexões', icon: 'cable', adminOnly: true },
-  { key: 'importar-planilhas', label: 'Importar Planilhas', icon: 'upload_file', adminOnly: true }
+  { key: 'importar-planilhas', label: 'Importar Planilhas', icon: 'upload_file', adminOnly: true },
+  { key: 'usuarios', label: 'Gestão de Usuários', icon: 'manage_accounts', adminOnly: true }
 ];
 
 const DEFAULT_PAGE: PageKey = 'dashboard';
@@ -572,6 +576,13 @@ export default function App() {
   const activeItem = NAV_ITEMS.find((item) => item.key === page) ?? NAV_ITEMS[0];
   const blockedByRole = Boolean(activeItem.adminOnly) && !isAdmin;
 
+  usePresenceHeartbeat({
+    userId: auth.session ? (auth.user?.id ?? null) : null,
+    nome: auth.perfil?.nome ?? auth.user?.email ?? 'Usuário',
+    email: auth.user?.email ?? '',
+    cargo: auth.perfil?.cargo ?? null
+  });
+
   useEffect(() => {
     if (auth.loading || !auth.session) return;
     if (blockedByRole) {
@@ -596,6 +607,8 @@ export default function App() {
         return <Dashboard />;
       case 'importar-planilhas':
         return <ImportPage />;
+      case 'usuarios':
+        return <UsuariosPage />;
       default:
         return <ComingSoon item={activeItem} />;
     }

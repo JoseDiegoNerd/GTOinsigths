@@ -205,6 +205,27 @@
       .marca-check { display: flex; align-items: center; gap: 10px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; font-size: 13px; font-weight: 600; color: #334155; text-transform: none; cursor: pointer; }
       .marca-check input { width: 16px; height: 16px; accent-color: var(--accent); }
       .marca-check.disabled { opacity: .6; cursor: not-allowed; }
+      .cargo-pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 4px 10px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .02em; white-space: nowrap; }
+      .cargo-pill.cargo-admin { background: #ede9fe; color: #6d28d9; }
+      .cargo-pill.cargo-gestor { background: #dbeafe; color: #1d4ed8; }
+      .cargo-pill.cargo-coordenador { background: #ccfbf1; color: #0f766e; }
+      .cargo-pill.cargo-analista { background: #e2e8f0; color: #475569; }
+      .marca-chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+      .marca-chip { display: inline-block; border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+      .marca-chip.marca-ouro { background: #fef3c7; color: #92400e; }
+      .marca-chip.marca-economia { background: #dcfce7; color: #166534; }
+      .marca-chip.marca-calcados { background: #dbeafe; color: #1e40af; }
+      .user-cell { display: flex; align-items: center; gap: 12px; }
+      .user-avatar { position: relative; flex: none; width: 34px; height: 34px; border-radius: 50%; background: #e2e8f0; color: #334155; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; }
+      .user-avatar::after { content: ""; position: absolute; right: -1px; bottom: -1px; width: 10px; height: 10px; border-radius: 50%; background: #cbd5e1; border: 2px solid #fff; }
+      .user-avatar.is-online::after { background: #34d399; }
+      .user-cell-info { display: grid; gap: 1px; min-width: 0; }
+      .user-cell-info span { color: #94a3b8; font-size: 12px; }
+      .online-avatar-stack { display: flex; margin-top: 6px; }
+      .online-avatar-stack .user-avatar { margin-left: -8px; border: 2px solid #fff; width: 28px; height: 28px; background: #16a34a; color: #fff; }
+      .online-avatar-stack .user-avatar::after { display: none; }
+      .online-avatar-stack .user-avatar:first-child { margin-left: 0; }
+      .online-avatar-stack .user-avatar.more { background: #475569; }
       .switch { position: relative; display: inline-block; width: 42px; height: 24px; flex: none; }
       .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
       .switch .slider { position: absolute; inset: 0; background: #cbd5e1; border-radius: 999px; cursor: pointer; transition: background .15s; }
@@ -444,6 +465,7 @@
 
       async function finishLogin() {
         if (state.session) await loadPerfil();
+        if (state.session) ensurePresenceHeartbeat();
         const queryPage = new URLSearchParams(location.search).get("page");
         if (queryPage === "connections") state.page = "connections";
         if (queryPage === "google_business") state.page = "google_business";
@@ -549,8 +571,9 @@
       }
 
       async function signOut() {
+        stopPresenceHeartbeat();
         await supabase.auth.signOut();
-        state = { ...state, session: null, perfil: null, rows: [], rd: [], meta: [] };
+        state = { ...state, session: null, perfil: null, rows: [], rd: [], meta: [], usuarios: null };
         render();
       }
 
@@ -1548,7 +1571,7 @@
         // aqui, no unico lugar que pinta a tela - cobre clique de nav (ja escondido), ?page= na URL
         // (ver finishLogin) e qualquer outro caminho futuro que troque state.page.
         const isAdmin = state.perfil?.cargo === "Admin";
-        if ((state.page === "connections" || state.page === "import") && !isAdmin) {
+        if ((state.page === "connections" || state.page === "import" || state.page === "usuarios") && !isAdmin) {
           state.page = "dashboard";
         }
         applyBrandTheme();
@@ -1565,6 +1588,7 @@
               <button id="navGMN" class="${state.page === "google_business" ? "active" : ""}"><span class="material-symbols-outlined">store</span>Google Meu Negócio</button>
               ${isAdmin ? `<button id="navConnections" class="${state.page === "connections" ? "active" : ""}"><span class="material-symbols-outlined">link</span>Conexões</button>` : ""}
               ${isAdmin ? `<button id="navImport" class="${state.page === "import" ? "active" : ""}"><span class="material-symbols-outlined">upload_file</span>Importar Planilhas</button>` : ""}
+              ${isAdmin ? `<button id="navUsuarios" class="${state.page === "usuarios" ? "active" : ""}"><span class="material-symbols-outlined">manage_accounts</span>Gestão de Usuários</button>` : ""}
             </nav>
             <div class="profile">
               <div class="profile-info">
@@ -1585,7 +1609,9 @@
           <div class="modal-overlay" id="diagnosticoModal" hidden></div>
           <div class="modal-overlay" id="profileModal" hidden></div>
           <div class="modal-overlay" id="securityModal" hidden></div>
-          <div class="modal-overlay" id="creativoModal" hidden></div>`;
+          <div class="modal-overlay" id="creativoModal" hidden></div>
+          <div class="modal-overlay" id="inviteUserModal" hidden></div>
+          <div class="modal-overlay" id="editAccessModal" hidden></div>`;
         document.querySelector("#logout").onclick = signOut;
         document.querySelector("#editProfile").onclick = openProfileModal;
         wireTopbarProfileMenu();
@@ -1601,6 +1627,8 @@
         if (navConnectionsBtn) navConnectionsBtn.onclick = () => { state.page = "connections"; render(); };
         const navImportBtn = document.querySelector("#navImport");
         if (navImportBtn) navImportBtn.onclick = () => { state.page = "import"; render(); };
+        const navUsuariosBtn = document.querySelector("#navUsuarios");
+        if (navUsuariosBtn) navUsuariosBtn.onclick = () => { state.page = "usuarios"; render(); };
         if (state.page === "dashboard") await renderDashboard();
         if (state.page === "credsystem") await renderCredsystemBI();
         if (state.page === "email") await renderEmailBI();
@@ -1615,6 +1643,7 @@
         if (state.page === "connections") await renderConnections();
         if (state.page === "google_business") await renderGoogleBusiness();
         if (state.page === "import") renderImport();
+        if (state.page === "usuarios") await renderUsuarios();
       }
 
       function pageTitle() {
@@ -1625,6 +1654,7 @@
         if (state.page === "ads") return "Anúncios Meta";
         if (state.page === "connections") return "Conexões";
         if (state.page === "google_business") return "Google Meu Negócio";
+        if (state.page === "usuarios") return "Gestão de Usuários";
         return "Pipeline de importação";
       }
 
@@ -7060,6 +7090,455 @@
         const cleanPhone = String(phone || "").replace(/\D/g, "");
         if (!cleanDdd && !cleanPhone) return "";
         return `${cleanDdd}${cleanPhone}`;
+      }
+
+      // Gestao de Usuarios (Admin only) ----------------------------------------------------------
+      // Presenca em tempo real via Supabase Realtime Presence, canal "online-users": toda sessao
+      // logada se marca online nesse canal (heartbeat abaixo, iniciado em finishLogin/parado em
+      // signOut, igual ao ciclo de vida da sessao). A tela de Gestao de Usuarios so LE o estado
+      // agregado (onlineUsersList/presenceState) - nao abre um canal proprio.
+      const CARGOS_QUE_EXIGEM_MARCA = ["Coordenador", "Analista"];
+
+      function cargoPillClass(cargo) {
+        return { Admin: "cargo-admin", Gestor: "cargo-gestor", Coordenador: "cargo-coordenador", Analista: "cargo-analista" }[cargo] || "cargo-analista";
+      }
+      function marcaChipClass(marca) {
+        return { "Tesoura de Ouro": "marca-ouro", "Magazine da Economia": "marca-economia", "Free Center Calçados": "marca-calcados" }[marca] || "";
+      }
+      function userInitials(name) {
+        const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+        if (!parts.length) return "?";
+        if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+        return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+      }
+
+      let presenceChannel = null;
+
+      function ensurePresenceHeartbeat() {
+        if (presenceChannel || !state.session) return;
+        presenceChannel = supabase.channel("online-users", { config: { presence: { key: state.session.user.id } } });
+        presenceChannel.on("presence", { event: "sync" }, () => {
+          if (state.page === "usuarios") refreshUsuariosOnlineCard();
+        });
+        presenceChannel.subscribe(async (status) => {
+          if (status === "SUBSCRIBED" && presenceChannel) {
+            await presenceChannel.track({
+              nome: state.perfil?.nome || state.session.user.email,
+              email: state.session.user.email,
+              cargo: state.perfil?.cargo || null,
+              online_at: new Date().toISOString()
+            });
+          }
+        });
+      }
+
+      function stopPresenceHeartbeat() {
+        if (presenceChannel) {
+          presenceChannel.untrack();
+          supabase.removeChannel(presenceChannel);
+        }
+        presenceChannel = null;
+      }
+
+      function onlineUsersList() {
+        if (!presenceChannel) return [];
+        const map = presenceChannel.presenceState();
+        return Object.entries(map).map(([userId, presences]) => {
+          const latest = presences[0] || {};
+          return { userId, nome: latest.nome || "Usuário", email: latest.email || "", cargo: latest.cargo || null, onlineAt: latest.online_at || null };
+        });
+      }
+
+      function refreshUsuariosOnlineCard() {
+        const card = document.querySelector("#usuariosOnlineCard");
+        if (!card) return;
+        card.outerHTML = usuariosOnlineCardHtml();
+      }
+
+      async function loadUsuarios() {
+        const { data, error } = await supabase.functions.invoke("admin-users-list", { body: {} });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        state.usuarios = data?.usuarios || [];
+      }
+
+      function usuariosOnlineCardHtml() {
+        const online = onlineUsersList();
+        return `<article class="card kpi" id="usuariosOnlineCard">
+          <div class="kpi-top"><span>Usuários online agora</span><span class="status-online-dot"><span class="status-online-ping"></span></span></div>
+          <strong>${fmt.format(online.length)}</strong>
+          ${online.length
+            ? `<div class="online-avatar-stack" title="${escapeHtml(online.map((u) => u.nome).join(", "))}">
+                ${online.slice(0, 6).map((u) => `<span class="user-avatar">${escapeHtml(userInitials(u.nome))}</span>`).join("")}
+                ${online.length > 6 ? `<span class="user-avatar more">+${online.length - 6}</span>` : ""}
+              </div>`
+            : `<span class="muted">Ninguém conectado agora.</span>`}
+        </article>`;
+      }
+
+      async function renderUsuarios(statusMessage = "") {
+        const content = document.querySelector("#content");
+        ensurePresenceHeartbeat();
+        content.innerHTML = `<div class="alert">Carregando usuários...</div>`;
+
+        try {
+          await loadUsuarios();
+        } catch (error) {
+          content.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}<br><br>Se a função ainda não foi publicada, rode <code>supabase functions deploy admin-users-list</code>.</div>`;
+          return;
+        }
+
+        const usuarios = state.usuarios || [];
+        const totalAtivos = usuarios.filter((u) => u.ativo).length;
+        const ultimosAcessos = usuarios.map((u) => u.last_sign_in_at).filter(Boolean).sort();
+        const ultimoAcessoGeral = ultimosAcessos.length ? ultimosAcessos[ultimosAcessos.length - 1] : null;
+        const onlineIds = new Set(onlineUsersList().map((u) => u.userId));
+        const statusHtml = statusMessage ? `<div class="alert success">${escapeHtml(statusMessage)}</div>` : "";
+
+        content.innerHTML = `
+          <div class="page-head">
+            <div><div class="eyebrow">Admin · RBAC</div><h2>Gestão de Usuários</h2><p class="muted">Convites, cargos, marcas permitidas e presença em tempo real de quem acessa o GTO Insights.</p></div>
+            <div class="filters">
+              <button id="refreshUsuarios" class="secondary"><span class="material-symbols-outlined" style="vertical-align:middle">refresh</span> Atualizar</button>
+              <button id="inviteUsuario"><span class="material-symbols-outlined" style="vertical-align:middle">person_add</span> Convidar usuário</button>
+            </div>
+          </div>
+          ${statusHtml}
+          <div class="grid kpis">
+            ${usuariosOnlineCardHtml()}
+            ${kpi("Total de cadastrados", fmt.format(usuarios.length), "group")}
+            ${kpi("Ativos", fmt.format(totalAtivos), "check_circle")}
+            ${kpi("Último acesso registrado", escapeHtml(formatDateTime(ultimoAcessoGeral)), "history")}
+          </div>
+          <section class="card">
+            <h3>Controle de acessos</h3>
+            <p class="muted">Alterar cargo/marcas, ativar ou bloquear, e disparar redefinição de senha ou reset de MFA.</p>
+            <div class="table-wrap" style="margin-top:16px">
+              <table>
+                <thead><tr><th>Usuário</th><th>Cargo</th><th>Marcas permitidas</th><th>Status</th><th>Último acesso</th><th>Ações</th></tr></thead>
+                <tbody>${usuarios.length ? usuarios.map((u) => usuarioRowHtml(u, onlineIds)).join("") : `<tr><td colspan="6">Nenhum usuário cadastrado ainda.</td></tr>`}</tbody>
+              </table>
+            </div>
+          </section>`;
+
+        wireUsuariosPage();
+      }
+
+      function usuarioRowHtml(usuario, onlineIds) {
+        const isOnline = onlineIds.has(usuario.id);
+        const marcasHtml = usuario.marcas.length
+          ? `<div class="marca-chip-row">${usuario.marcas.map((m) => `<span class="marca-chip ${marcaChipClass(m)}">${escapeHtml(m)}</span>`).join("")}</div>`
+          : `<span class="muted">Todas as marcas</span>`;
+        return `<tr data-usuario-id="${escapeHtml(usuario.id)}">
+          <td>
+            <div class="user-cell">
+              <span class="user-avatar ${isOnline ? "is-online" : ""}">${escapeHtml(userInitials(usuario.nome || usuario.email))}</span>
+              <div class="user-cell-info"><strong>${escapeHtml(usuario.nome || "Sem nome")}</strong><span>${escapeHtml(usuario.email)}</span></div>
+            </div>
+          </td>
+          <td><span class="cargo-pill ${cargoPillClass(usuario.cargo)}">${escapeHtml(usuario.cargo)}</span></td>
+          <td>${marcasHtml}</td>
+          <td><span class="status-pill ${usuario.ativo ? "active" : "inactive"}">${usuario.ativo ? "Ativo" : "Bloqueado"}</span></td>
+          <td>${escapeHtml(formatDateTime(usuario.last_sign_in_at))}</td>
+          <td>
+            <div class="actions">
+              <button type="button" class="secondary editar-acesso" data-id="${escapeHtml(usuario.id)}">Editar</button>
+              <label class="switch" title="${usuario.ativo ? "Bloquear usuário" : "Ativar usuário"}">
+                <input type="checkbox" class="toggle-ativo" data-id="${escapeHtml(usuario.id)}" ${usuario.ativo ? "checked" : ""} />
+                <span class="slider"></span>
+              </label>
+              <button type="button" class="secondary resetar-senha" data-id="${escapeHtml(usuario.id)}">Redefinir senha</button>
+              <button type="button" class="secondary resetar-mfa" data-id="${escapeHtml(usuario.id)}" ${usuario.mfa_enrolled ? "" : "disabled"}>Resetar MFA</button>
+            </div>
+          </td>
+        </tr>`;
+      }
+
+      function wireUsuariosPage() {
+        document.querySelector("#refreshUsuarios").onclick = () => renderUsuarios();
+        document.querySelector("#inviteUsuario").onclick = openInviteModal;
+        document.querySelectorAll(".editar-acesso").forEach((btn) => { btn.onclick = () => openEditAccessModal(btn.dataset.id); });
+        document.querySelectorAll(".toggle-ativo").forEach((input) => { input.onchange = () => toggleUsuarioAtivo(input.dataset.id, input.checked); });
+        document.querySelectorAll(".resetar-senha").forEach((btn) => { btn.onclick = () => enviarRedefinicaoSenha(btn.dataset.id); });
+        document.querySelectorAll(".resetar-mfa").forEach((btn) => { btn.onclick = () => resetarMfaUsuario(btn.dataset.id); });
+      }
+
+      async function toggleUsuarioAtivo(id, ativo) {
+        const usuario = (state.usuarios || []).find((u) => u.id === id);
+        const { error } = await supabase.from("perfis").update({ ativo }).eq("id", id);
+        if (error) {
+          await renderUsuarios(`Erro ao atualizar status: ${safeErrorMessage(error)}`);
+          return;
+        }
+        await renderUsuarios(`${usuario?.nome || usuario?.email || "Usuário"} foi ${ativo ? "ativado" : "bloqueado"}.`);
+      }
+
+      // resetPasswordForEmail e o mesmo metodo usado na tela publica de login (sendRecoveryEmail),
+      // so que sem captchaToken: quem chama aqui e um Admin ja autenticado disparando o reset pra
+      // OUTRA conta, nao o formulario publico que o Turnstile protege contra abuso anonimo.
+      async function enviarRedefinicaoSenha(id) {
+        const usuario = (state.usuarios || []).find((u) => u.id === id);
+        if (!usuario) return;
+        const { error } = await supabase.auth.resetPasswordForEmail(usuario.email, { redirectTo: appRedirectUrl() });
+        if (error) {
+          await renderUsuarios(`Não foi possível enviar o e-mail de redefinição de senha: ${safeErrorMessage(error)}`);
+          return;
+        }
+        await renderUsuarios(`E-mail de redefinição de senha enviado para ${usuario.email}.`);
+      }
+
+      async function resetarMfaUsuario(id) {
+        const usuario = (state.usuarios || []).find((u) => u.id === id);
+        const { data, error } = await supabase.functions.invoke("admin-reset-mfa", { body: { usuario_id: id } });
+        if (error) {
+          await renderUsuarios(`Não foi possível resetar o MFA: ${safeErrorMessage(error)}`);
+          return;
+        }
+        if (data?.error) {
+          await renderUsuarios(`Não foi possível resetar o MFA: ${data.error}`);
+          return;
+        }
+        await renderUsuarios(`Autenticação em duas etapas reiniciada para ${usuario?.nome || usuario?.email || "o usuário"}.`);
+      }
+
+      // Modal "Convidar usuario" ------------------------------------------------------------------
+      let inviteModalState = null;
+
+      function openInviteModal() {
+        const overlay = document.querySelector("#inviteUserModal");
+        if (!overlay) return;
+        inviteModalState = { nome: "", email: "", cargo: "Analista", marcas: [], saving: false, error: "" };
+        overlay.innerHTML = inviteModalPanelHtml();
+        overlay.hidden = false;
+        wireInviteModal();
+      }
+
+      function closeInviteModal() {
+        const overlay = document.querySelector("#inviteUserModal");
+        if (overlay) { overlay.hidden = true; overlay.innerHTML = ""; }
+        inviteModalState = null;
+      }
+
+      function inviteModalPanelHtml() {
+        const s = inviteModalState;
+        const marcaObrigatoria = CARGOS_QUE_EXIGEM_MARCA.includes(s.cargo);
+        return `<div class="modal-panel">
+          <div class="modal-header">
+            <div><p style="margin:0 0 4px;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Novo acesso</p><h3 style="margin:0;font-size:17px">Convidar usuário</h3></div>
+            <button type="button" class="modal-close" id="inviteModalClose"><span class="material-symbols-outlined">close</span></button>
+          </div>
+          <form id="inviteForm" class="modal-body">
+            <label>Nome completo<input name="nome" type="text" maxlength="120" required value="${escapeHtml(s.nome)}" /></label>
+            <label>E-mail corporativo<input name="email" type="email" maxlength="254" autocomplete="off" required value="${escapeHtml(s.email)}" /></label>
+            <label>Cargo
+              <select name="cargo">${cargosDisponiveis.map((c) => `<option value="${c}" ${s.cargo === c ? "selected" : ""}>${c}</option>`).join("")}</select>
+            </label>
+            <div>
+              <p class="modal-section-title">Marcas permitidas</p>
+              <div class="marca-checks" style="margin-top:8px">
+                ${marcasDisponiveis.map((m) => `<label class="marca-check">
+                  <input type="checkbox" data-invite-marca="${escapeHtml(m)}" ${s.marcas.includes(m) ? "checked" : ""} />
+                  ${escapeHtml(m)}
+                </label>`).join("")}
+              </div>
+              <p class="field-hint">${marcaObrigatoria ? "Necessário selecionar ao menos uma marca para este cargo." : `Opcional para ${escapeHtml(s.cargo)}: já enxerga todas as marcas.`}</p>
+            </div>
+            ${s.error ? `<div class="alert error">${escapeHtml(s.error)}</div>` : ""}
+            <div class="actions" style="justify-content:flex-end">
+              <button type="button" class="secondary" id="inviteCancel">Cancelar</button>
+              <button type="submit" ${s.saving ? "disabled" : ""}>${s.saving ? "Enviando convite..." : "Enviar convite"}</button>
+            </div>
+          </form>
+        </div>`;
+      }
+
+      function refreshInviteModal() {
+        const overlay = document.querySelector("#inviteUserModal");
+        if (!overlay || overlay.hidden || !inviteModalState) return;
+        overlay.innerHTML = inviteModalPanelHtml();
+        wireInviteModal();
+      }
+
+      function wireInviteModal() {
+        const overlay = document.querySelector("#inviteUserModal");
+        document.querySelector("#inviteModalClose").onclick = closeInviteModal;
+        document.querySelector("#inviteCancel").onclick = closeInviteModal;
+        document.querySelector("#inviteForm").onsubmit = submitInviteForm;
+        overlay.onclick = (event) => { if (event.target.id === "inviteUserModal") closeInviteModal(); };
+        overlay.querySelector("select[name='cargo']").onchange = (event) => {
+          inviteModalState.cargo = event.target.value;
+          refreshInviteModal();
+        };
+        overlay.querySelectorAll("[data-invite-marca]").forEach((el) => {
+          el.onchange = () => {
+            const marca = el.dataset.inviteMarca;
+            if (el.checked) { if (!inviteModalState.marcas.includes(marca)) inviteModalState.marcas.push(marca); }
+            else { inviteModalState.marcas = inviteModalState.marcas.filter((m) => m !== marca); }
+          };
+        });
+      }
+
+      async function submitInviteForm(event) {
+        event.preventDefault();
+        if (!inviteModalState) return;
+        const form = event.currentTarget;
+        const data = new FormData(form);
+        const nome = (data.get("nome") || "").toString().trim();
+        const email = (data.get("email") || "").toString().trim().toLowerCase();
+        const cargo = (data.get("cargo") || "Analista").toString();
+        const marcas = inviteModalState.marcas;
+
+        const errors = [];
+        if (!nome) errors.push("Informe o nome completo.");
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push("Informe um e-mail corporativo válido.");
+        if (CARGOS_QUE_EXIGEM_MARCA.includes(cargo) && marcas.length === 0) errors.push("Selecione ao menos uma marca permitida para este cargo.");
+
+        if (errors.length) {
+          inviteModalState.error = errors.join(" ");
+          refreshInviteModal();
+          return;
+        }
+
+        inviteModalState.saving = true;
+        inviteModalState.error = "";
+        refreshInviteModal();
+
+        try {
+          const { data: inviteResult, error: inviteError } = await supabase.functions.invoke("admin-invite-user", { body: { nome, email } });
+          if (inviteError) throw inviteError;
+          if (inviteResult?.error) throw new Error(inviteResult.error);
+          const novoId = inviteResult.id;
+
+          if (marcas.length) {
+            const { error: marcasError } = await supabase.from("perfis_marcas").insert(marcas.map((marca) => ({ perfil_id: novoId, marca })));
+            if (marcasError) throw marcasError;
+          }
+          const { error: perfilError } = await supabase.from("perfis").update({ nome, cargo, ativo: true }).eq("id", novoId);
+          if (perfilError) throw perfilError;
+
+          closeInviteModal();
+          await renderUsuarios(`Convite enviado para ${email}.`);
+        } catch (error) {
+          inviteModalState.saving = false;
+          inviteModalState.error = safeErrorMessage(error, "Não foi possível enviar o convite.");
+          refreshInviteModal();
+        }
+      }
+
+      // Modal "Editar acesso" (cargo + marcas de um usuário existente) ---------------------------
+      let editAccessModalState = null;
+
+      function openEditAccessModal(usuarioId) {
+        const overlay = document.querySelector("#editAccessModal");
+        const usuario = (state.usuarios || []).find((u) => u.id === usuarioId);
+        if (!overlay || !usuario) return;
+        editAccessModalState = { usuario, cargo: usuario.cargo, marcas: [...usuario.marcas], saving: false, error: "" };
+        overlay.innerHTML = editAccessModalPanelHtml();
+        overlay.hidden = false;
+        wireEditAccessModal();
+      }
+
+      function closeEditAccessModal() {
+        const overlay = document.querySelector("#editAccessModal");
+        if (overlay) { overlay.hidden = true; overlay.innerHTML = ""; }
+        editAccessModalState = null;
+      }
+
+      function editAccessModalPanelHtml() {
+        const s = editAccessModalState;
+        const marcaObrigatoria = CARGOS_QUE_EXIGEM_MARCA.includes(s.cargo);
+        return `<div class="modal-panel">
+          <div class="modal-header">
+            <div><p style="margin:0 0 4px;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Editar acesso</p><h3 style="margin:0;font-size:17px">${escapeHtml(s.usuario.nome || s.usuario.email)}</h3></div>
+            <button type="button" class="modal-close" id="editAccessModalClose"><span class="material-symbols-outlined">close</span></button>
+          </div>
+          <form id="editAccessForm" class="modal-body">
+            <label>Cargo
+              <select name="cargo">${cargosDisponiveis.map((c) => `<option value="${c}" ${s.cargo === c ? "selected" : ""}>${c}</option>`).join("")}</select>
+            </label>
+            <div>
+              <p class="modal-section-title">Marcas permitidas</p>
+              <div class="marca-checks" style="margin-top:8px">
+                ${marcasDisponiveis.map((m) => `<label class="marca-check">
+                  <input type="checkbox" data-edit-marca="${escapeHtml(m)}" ${s.marcas.includes(m) ? "checked" : ""} />
+                  ${escapeHtml(m)}
+                </label>`).join("")}
+              </div>
+              <p class="field-hint">${marcaObrigatoria ? "Necessário selecionar ao menos uma marca para este cargo." : `Opcional para ${escapeHtml(s.cargo)}: já enxerga todas as marcas.`}</p>
+            </div>
+            ${s.error ? `<div class="alert error">${escapeHtml(s.error)}</div>` : ""}
+            <div class="actions" style="justify-content:flex-end">
+              <button type="button" class="secondary" id="editAccessCancel">Cancelar</button>
+              <button type="submit" ${s.saving ? "disabled" : ""}>${s.saving ? "Salvando..." : "Salvar alterações"}</button>
+            </div>
+          </form>
+        </div>`;
+      }
+
+      function refreshEditAccessModal() {
+        const overlay = document.querySelector("#editAccessModal");
+        if (!overlay || overlay.hidden || !editAccessModalState) return;
+        overlay.innerHTML = editAccessModalPanelHtml();
+        wireEditAccessModal();
+      }
+
+      function wireEditAccessModal() {
+        const overlay = document.querySelector("#editAccessModal");
+        document.querySelector("#editAccessModalClose").onclick = closeEditAccessModal;
+        document.querySelector("#editAccessCancel").onclick = closeEditAccessModal;
+        document.querySelector("#editAccessForm").onsubmit = submitEditAccessForm;
+        overlay.onclick = (event) => { if (event.target.id === "editAccessModal") closeEditAccessModal(); };
+        overlay.querySelector("select[name='cargo']").onchange = (event) => {
+          editAccessModalState.cargo = event.target.value;
+          refreshEditAccessModal();
+        };
+        overlay.querySelectorAll("[data-edit-marca]").forEach((el) => {
+          el.onchange = () => {
+            const marca = el.dataset.editMarca;
+            if (el.checked) { if (!editAccessModalState.marcas.includes(marca)) editAccessModalState.marcas.push(marca); }
+            else { editAccessModalState.marcas = editAccessModalState.marcas.filter((m) => m !== marca); }
+          };
+        });
+      }
+
+      async function submitEditAccessForm(event) {
+        event.preventDefault();
+        if (!editAccessModalState) return;
+        const s = editAccessModalState;
+
+        if (CARGOS_QUE_EXIGEM_MARCA.includes(s.cargo) && s.marcas.length === 0) {
+          s.error = "Selecione ao menos uma marca permitida para este cargo.";
+          refreshEditAccessModal();
+          return;
+        }
+
+        s.saving = true;
+        s.error = "";
+        refreshEditAccessModal();
+
+        try {
+          const atuais = s.usuario.marcas;
+          const paraAdicionar = s.marcas.filter((m) => !atuais.includes(m));
+          const paraRemover = atuais.filter((m) => !s.marcas.includes(m));
+
+          if (paraAdicionar.length) {
+            const { error } = await supabase.from("perfis_marcas").insert(paraAdicionar.map((marca) => ({ perfil_id: s.usuario.id, marca })));
+            if (error) throw error;
+          }
+          const { error: cargoError } = await supabase.from("perfis").update({ cargo: s.cargo }).eq("id", s.usuario.id);
+          if (cargoError) throw cargoError;
+          if (paraRemover.length) {
+            const { error } = await supabase.from("perfis_marcas").delete().eq("perfil_id", s.usuario.id).in("marca", paraRemover);
+            if (error) throw error;
+          }
+
+          closeEditAccessModal();
+          await renderUsuarios("Cargo e marcas atualizados.");
+        } catch (error) {
+          s.saving = false;
+          s.error = safeErrorMessage(error, "Não foi possível salvar as alterações.");
+          refreshEditAccessModal();
+        }
       }
 
       init();

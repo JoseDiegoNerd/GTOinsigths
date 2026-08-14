@@ -217,6 +217,37 @@ export type CredsystemBI = {
   funil: CredsystemFunil[];
 };
 
+export type UsuarioAdmin = {
+  id: string;
+  email: string;
+  nome: string | null;
+  cargo: CargoUsuario;
+  ativo: boolean;
+  avatar_url: string | null;
+  cargo_oficial: string | null;
+  criado_em: string;
+  atualizado_em: string;
+  marcas: Marca[];
+  last_sign_in_at: string | null;
+  email_confirmed_at: string | null;
+  mfa_enrolled: boolean;
+};
+
+export type ConviteUsuarioInput = {
+  nome: string;
+  email: string;
+  cargo: CargoUsuario;
+  marcas: Marca[];
+};
+
+export type PresencaUsuario = {
+  userId: string;
+  nome: string;
+  email: string;
+  cargo: CargoUsuario | null;
+  onlineAt: string;
+};
+
 export type ImportPreview = {
   fileName: string;
   source: StageSource;
