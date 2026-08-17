@@ -12,11 +12,17 @@ import {
 const CARGOS_PERMITIDOS = ["Admin"];
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// So dispara o convite (auth.admin.inviteUserByEmail exige service_role, nunca pode rodar no
-// client). Cargo/ativo/marcas do perfil convidado NAO sao gravados aqui: o trigger
+// Cria o convite (ou reenvia, se o e-mail ja pertencer a um usuario pendente) e devolve o link
+// (auth.admin.generateLink exige service_role, nunca pode rodar no client) SEM disparar nenhum
+// e-mail automatico do Supabase - a entrega e 100% controlada pelo front (Etapa 2 "Editor de
+// Mensagens": abre rascunho de e-mail via mailto: ou de WhatsApp via wa.me, com o link e o texto
+// que o Admin editou). Por isso generateLink({type:'invite'}) no lugar de inviteUserByEmail (que
+// sempre manda o template fixo do Supabase Auth na hora).
+//
+// Cargo/ativo/marcas/telefone do perfil convidado NAO sao gravados aqui: o trigger
 // trg_auth_users_criar_perfil ja cria a linha em public.perfis (cargo "Analista", ativo=false)
-// assim que o convite cria o auth.users. O front, logo em seguida, grava cargo/marcas/ativo
-// definitivos usando a PROPRIA sessao do Admin (supabase.from('perfis').update(...) /
+// assim que o convite cria o auth.users. O front, logo em seguida, grava cargo/marcas/ativo/
+// telefone definitivos usando a PROPRIA sessao do Admin (supabase.from('perfis').update(...) /
 // perfis_marcas insert) - essas chamadas passam pela RLS normal porque quem assina a requisicao
 // e o Admin autenticado, nao o service_role. Fazer isso aqui (com o client admin) esbarraria no
 // trigger trg_perfis_bloquear_campos_sensiveis, que so libera alterar cargo/ativo pra quem tem
@@ -41,16 +47,32 @@ Deno.serve(withCors(async (req) => {
     }
 
     const supabase = getAdminClient();
-    const { data: invited, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
-      data: { nome },
-      redirectTo: resolveAppReturnUrl(req, typeof body.redirect_to === "string" ? body.redirect_to : undefined),
+    const redirectTo = resolveAppReturnUrl(req, typeof body.redirect_to === "string" ? body.redirect_to : undefined);
+
+    let generated = await supabase.auth.admin.generateLink({
+      type: "invite",
+      email,
+      options: { data: { nome }, redirectTo },
     });
 
-    if (inviteError) throw inviteError;
-    if (!invited.user?.id) throw new Error("Convite enviado, mas o usuario nao retornou id.");
+    if (generated.error) {
+      // Reenvio de convite pra um e-mail que ja existe (usuario convidado antes, ainda pendente):
+      // type "invite" rejeita e-mail ja cadastrado em algumas versoes do Supabase Auth. type
+      // "recovery" gera um link igualmente valido pra completar cadastro/definir senha em
+      // qualquer usuario ja existente, confirmado ou nao - serve como fallback pro reenvio.
+      generated = await supabase.auth.admin.generateLink({ type: "recovery", email, options: { redirectTo } });
+      if (generated.error) throw generated.error;
+    }
 
-    return jsonResponse({ ok: true, id: invited.user.id, email: invited.user.email });
+    if (!generated.data.user?.id) throw new Error("Convite criado, mas o usuario nao retornou id.");
+
+    return jsonResponse({
+      ok: true,
+      id: generated.data.user.id,
+      email: generated.data.user.email,
+      action_link: generated.data.properties?.action_link ?? null,
+    });
   } catch (error) {
-    return jsonResponse({ error: safeErrorMessage(error, "Nao foi possivel enviar o convite.") }, 400);
+    return jsonResponse({ error: safeErrorMessage(error, "Nao foi possivel gerar o convite.") }, 400);
   }
 }));

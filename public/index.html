@@ -15,6 +15,10 @@
       button, input, select { font: inherit; }
       button { border: 0; border-radius: 8px; background: var(--accent); color: white; padding: 10px 14px; font-weight: 700; cursor: pointer; }
       button.secondary { background: white; color: #334155; border: 1px solid #cbd5e1; }
+      button.pill-action { border-radius: 999px; }
+      button.danger { background: #dc2626; color: white; }
+      button.danger:hover { background: #b91c1c; }
+      button.danger:disabled { background: #fca5a5; cursor: not-allowed; }
       input, select { border: 1px solid #d8e3fb; border-radius: 8px; padding: 10px 12px; background: white; }
       label { display: grid; gap: 6px; color: #475569; font-size: 12px; font-weight: 800; text-transform: uppercase; }
       code { font-size: 12px; }
@@ -93,6 +97,14 @@
       .status-pill.pending { background: #fef3c7; color: #92400e; }
       .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
       .actions button { white-space: nowrap; }
+      .row-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+      .row-actions button { white-space: nowrap; border-radius: 999px; }
+      .row-actions button.secondary { padding: 4px 12px; font-size: 12px; font-weight: 500; color: #334155; background: white; border: 1px solid #e2e8f0; transition: border-color .15s, background-color .15s; }
+      .row-actions button.secondary:hover:not(:disabled) { border-color: #cbd5e1; background: #f8fafc; }
+      .row-actions button.secondary:disabled { color: #94a3b8; background: #f8fafc; cursor: not-allowed; }
+      .row-actions button.danger { padding: 6px; line-height: 0; background: #fff1f2; color: #e11d48; border: 1px solid #fecdd3; }
+      .row-actions button.danger:hover { background: #ffe4e6; color: #e11d48; }
+      .row-actions .switch { flex: none; }
       table { width: 100%; border-collapse: collapse; font-size: 14px; }
       th, td { border-bottom: 1px solid #e2e8f0; padding: 12px; text-align: left; white-space: nowrap; }
       th { background: #f1f5f9; color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
@@ -215,6 +227,10 @@
       .marca-chip.marca-ouro { background: #fef3c7; color: #92400e; }
       .marca-chip.marca-economia { background: #dcfce7; color: #166534; }
       .marca-chip.marca-calcados { background: #dbeafe; color: #1e40af; }
+      .origem-pill { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+      .origem-pill.origem-email { background: #dbeafe; color: #1d4ed8; }
+      .origem-pill.origem-whatsapp { background: #dcfce7; color: #166534; }
+      .origem-pill.origem-desconhecida { background: #f1f5f9; color: #64748b; }
       .user-cell { display: flex; align-items: center; gap: 12px; }
       .user-avatar { position: relative; flex: none; width: 34px; height: 34px; border-radius: 50%; background: #e2e8f0; color: #334155; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; }
       .user-avatar::after { content: ""; position: absolute; right: -1px; bottom: -1px; width: 10px; height: 10px; border-radius: 50%; background: #cbd5e1; border: 2px solid #fff; }
@@ -251,6 +267,18 @@
       .modal-block.positive { background: #f0fdf4; border: 1px solid #bbf7d0; }
       .modal-block.negative { background: #fef2f2; border: 1px solid #fecaca; }
       .modal-block.neutral { background: #eff6ff; border: 1px solid #bfdbfe; }
+      .modal-panel.wide { max-width: 620px; }
+      .wizard-steps { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: #94a3b8; padding: 0 22px; margin-top: -6px; }
+      .wizard-steps span.active { color: #1d4ed8; }
+      .wizard-steps .sep { color: #cbd5e1; }
+      .drop-zone { position: relative; display: grid; gap: 8px; place-items: center; min-height: 190px; border: 2px dashed #93c5fd; border-radius: 12px; background: #eff6ff; text-align: center; padding: 20px; transition: border-color .15s, background-color .15s; }
+      .drop-zone.dragover { border-color: #1d4ed8; background: #dbeafe; }
+      .drop-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+      .message-tabs { display: flex; gap: 6px; border-bottom: 1px solid #e2e8f0; margin-bottom: 4px; }
+      .message-tab { background: transparent; border: none; border-bottom: 2px solid transparent; padding: 8px 4px; font-weight: 700; font-size: 13px; color: #64748b; border-radius: 0; }
+      .message-tab.active { color: #1d4ed8; border-bottom-color: #1d4ed8; }
+      .message-textarea { width: 100%; font: inherit; border: 1px solid #d8e3fb; border-radius: 8px; padding: 10px 12px; min-height: 160px; resize: vertical; }
+      .invite-link-preview { font-size: 12px; color: #64748b; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px; word-break: break-all; }
       .mfa-factor-list { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 8px; }
       .mfa-factor-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 13px; }
       .mfa-qr-wrap { display: flex; justify-content: center; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; }
@@ -360,6 +388,14 @@
         google_business_profile: "stage_google_business_profile",
         social_format_metrics: "stage_social_format_metrics"
       };
+      const sourceLabels = {
+        credsystem_emissoes: "CredSystem Emissões",
+        credsystem_propostas: "CredSystem Propostas",
+        rd_station: "E-mail Marketing (RD Station / Planilha Padrão)",
+        meta_business: "Meta Business",
+        google_business_profile: "Google Business Profile",
+        social_format_metrics: "Social Format Metrics"
+      };
 
       let state = { session: null, perfil: null, page: "dashboard", marca: "Todas", periodo: "30d", periodoDe: "", periodoAte: "", periodoMenuOpen: false, rows: [], rd: [], meta: [], metaSeguidoresSnapshot: [], ads: [], google: null, dashboardConsolidadoMetric: "credito", propostas: [], bi: null, channels: null, email: null, emailSelectedId: null, social: null, socialFormat: null, socialTab: "geral", connections: [], bestTimes: null, socialCompareMetric: "alcance", socialEficienciaTab: "frequencia", compareA: { de: "", ate: "" }, compareB: { de: "", ate: "" }, adsStatusFilter: "todas", adsObjetivoFilter: "todos", adsCrossMetric: "alcance", adsSortColumn: "investimento", adsSortDirection: "desc", topbarMenuOpen: false };
 
@@ -431,6 +467,16 @@
       const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
       const avg = (arr) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
       const num = (v) => Number.isFinite(Number(v)) ? Number(v) : 0;
+      // Diferente de num(): devolve null quando o valor bruto nao veio (undefined/null/string
+      // vazia), em vez de 0 - usado nos campos novos de e-mail marketing (aberturas_unicas etc.)
+      // onde "nao informado" e um estado diferente de "informado como zero" (ver migration
+      // 20260817_032).
+      const rawNum = (v) => {
+        if (v === undefined || v === null || String(v).trim() === "") return null;
+        const parsed = Number(v);
+        return Number.isFinite(parsed) ? parsed : null;
+      };
+      const round2 = (v) => Math.round(v * 100) / 100;
       function parseJsonField(value) {
         if (!value) return {};
         if (typeof value === "object") return value;
@@ -449,6 +495,11 @@
         const { data } = await supabase.auth.getSession();
         state.session = data.session;
         if (state.session) {
+          // Cobre tanto o fluxo PKCE (?code=, tratado dentro de handleRecoveryUrl) quanto o
+          // implicit/hash (#access_token=..., auto-detectado pelo proprio client Supabase antes
+          // deste ponto) - em ambos os casos a query string original do redirect_to (com
+          // ?utm_source=) sobrevive em location.search. Ver registrarOrigemConvite.
+          await registrarOrigemConvite(new URLSearchParams(location.search).get("utm_source"));
           // Sessao existe (senha ja validada) mas pode estar em aal1 com um fator TOTP verificado
           // pendente - o Supabase nao bloqueia isso sozinho, quem tem que exigir o segundo fator
           // antes de liberar a tela e o proprio app (por isso o cheque explicito aqui, no unico
@@ -515,6 +566,21 @@
         }
 
         return false;
+      }
+
+      // Rastreamento de origem do convite: o link de convite (Etapa 2 de "Convidar usuário") leva
+      // ?utm_source=email|whatsapp no redirect_to, que sobrevive tanto ao fluxo PKCE (?code=)
+      // quanto ao implicit/hash (#access_token=...) porque e so query string, nao faz parte do
+      // token. Quando o convidado confirma o cadastro por ali, a PROPRIA sessao recem-criada
+      // grava perfis.origem_convite - a RLS de self-update libera isso, e o trigger
+      // gto_perfis_bloquear_campos_sensiveis torna o valor imutavel depois do primeiro registro,
+      // entao chamar isto em todo login (init()) e inofensivo.
+      async function registrarOrigemConvite(utmSource) {
+        if (utmSource !== "email" && utmSource !== "whatsapp") return;
+        const { data } = await supabase.auth.getSession();
+        const userId = data.session?.user?.id;
+        if (!userId) return;
+        await supabase.from("perfis").update({ origem_convite: utmSource }).eq("id", userId);
       }
 
       async function loadPerfil() {
@@ -992,17 +1058,20 @@
       async function loadEmailBIFallback(reason = null) {
         const rdRows = await fetchAllRows(
           "stage_rd_station_marketing",
-          "id,marca,id_campanha,nome_campanha,enviados,entregues,taxa_abertura,taxa_clique,descadastros,assunto_email,preheader,corpo_copy,data_referencia,origem_api",
+          "id,marca,id_campanha,nome_campanha,enviados,entregues,taxa_abertura,taxa_clique,aberturas_unicas,cliques_unicos,bounces,ctr,ctor,enviado_em,descadastros,assunto_email,preheader,corpo_copy,data_referencia,origem_api",
           state.marca,
           "data_referencia"
         );
 
+        // Mesma preferencia da view vw_email_marketing_campanhas: usa o numero real quando a
+        // campanha ja tiver sido importada com o rastreamento novo, senao cai pra estimativa via
+        // taxa_abertura/taxa_clique (campanhas antigas).
         const campanhas = rdRows.map((row) => {
           const copy = analyzeCopy(row);
           return {
             ...row,
-            abertos_estimados: Math.round(num(row.entregues) * num(row.taxa_abertura) / 100),
-            cliques_estimados: Math.round(num(row.entregues) * num(row.taxa_clique) / 100),
+            abertos_estimados: row.aberturas_unicas ?? Math.round(num(row.entregues) * num(row.taxa_abertura) / 100),
+            cliques_estimados: row.cliques_unicos ?? Math.round(num(row.entregues) * num(row.taxa_clique) / 100),
             score_copy: copy.score_copy,
             diagnostico_copy: copy.diagnostico_copy,
             recomendacao_copy: copy.recomendacao_copy
@@ -1611,7 +1680,8 @@
           <div class="modal-overlay" id="securityModal" hidden></div>
           <div class="modal-overlay" id="creativoModal" hidden></div>
           <div class="modal-overlay" id="inviteUserModal" hidden></div>
-          <div class="modal-overlay" id="editAccessModal" hidden></div>`;
+          <div class="modal-overlay" id="editAccessModal" hidden></div>
+          <div class="modal-overlay" id="deleteUserModal" hidden></div>`;
         document.querySelector("#logout").onclick = signOut;
         document.querySelector("#editProfile").onclick = openProfileModal;
         wireTopbarProfileMenu();
@@ -3431,16 +3501,29 @@
         const copyDetail = selectedCampaign ? buildCopyDetail(selectedCampaign) : null;
         // Totais calculados a partir de "campaigns" (ja filtradas por periodo), nao da view
         // "resumo" agregada sem dimensao de data - senao os KPIs nao mudariam ao trocar o periodo.
-        const totals = campaigns.reduce((acc, row) => ({
-          total_campanhas: acc.total_campanhas + 1,
-          total_enviados: acc.total_enviados + num(row.enviados),
-          total_entregues: acc.total_entregues + num(row.entregues),
-          total_abertos_estimados: acc.total_abertos_estimados + num(row.abertos_estimados),
-          total_cliques_estimados: acc.total_cliques_estimados + num(row.cliques_estimados)
-        }), { total_campanhas: 0, total_enviados: 0, total_entregues: 0, total_abertos_estimados: 0, total_cliques_estimados: 0 });
-        totals.taxa_abertura_media = avg(campaigns.map((r) => num(r.taxa_abertura)));
-        totals.taxa_clique_media = avg(campaigns.map((r) => num(r.taxa_clique)));
-        totals.score_copy_medio = avg(campaigns.map((r) => num(r.score_copy)));
+        // Abertura/CTR/CTOR usam media ponderada por volume (soma de aberturas/cliques dividida
+        // pela soma de entregues/aberturas do periodo), nao a media simples por campanha - mais
+        // correto pra um card que representa o periodo inteiro, e consistente com "somar primeiro,
+        // dividir depois" que o resto do app ja faz (ex.: taxaAprovacao do Dashboard Geral). Cada
+        // campanha usa o numero real (aberturas_unicas/cliques_unicos) quando disponivel, com
+        // fallback pra estimativa via taxa_abertura/taxa_clique em campanhas antigas.
+        const totals = campaigns.reduce((acc, row) => {
+          const entregues = num(row.entregues);
+          const aberturasEfetivas = row.aberturas_unicas != null ? num(row.aberturas_unicas) : Math.round(entregues * num(row.taxa_abertura) / 100);
+          const cliquesEfetivos = row.cliques_unicos != null ? num(row.cliques_unicos) : Math.round(entregues * num(row.taxa_clique) / 100);
+          return {
+            total_campanhas: acc.total_campanhas + 1,
+            total_enviados: acc.total_enviados + num(row.enviados),
+            total_entregues: acc.total_entregues + entregues,
+            total_aberturas: acc.total_aberturas + aberturasEfetivas,
+            total_cliques: acc.total_cliques + cliquesEfetivos,
+            total_bounces: acc.total_bounces + num(row.bounces)
+          };
+        }, { total_campanhas: 0, total_enviados: 0, total_entregues: 0, total_aberturas: 0, total_cliques: 0, total_bounces: 0 });
+        totals.taxa_entrega = totals.total_enviados ? (totals.total_entregues / totals.total_enviados) * 100 : 0;
+        totals.taxa_abertura_media = totals.total_entregues ? (totals.total_aberturas / totals.total_entregues) * 100 : 0;
+        totals.ctr = totals.total_entregues ? (totals.total_cliques / totals.total_entregues) * 100 : 0;
+        totals.ctor = totals.total_aberturas ? (totals.total_cliques / totals.total_aberturas) * 100 : 0;
 
         content.innerHTML = `
           <div class="page-head">
@@ -3453,19 +3536,26 @@
           </div>
           ${email.fallback ? `<div class="alert">Usando cálculo local temporário. Para ativar as views oficiais, rode <code>supabase/migrations/20260707_006_email_marketing_bi_views.sql</code>. Detalhe: <code>${escapeHtml(email.fallbackReason || "sem detalhe retornado")}</code></div>` : ""}
           <div class="grid kpis">
-            ${kpi("Campanhas", fmt.format(totals.total_campanhas), "campaign")}
-            ${kpi("Emails enviados", fmt.format(totals.total_enviados), "outgoing_mail")}
-            ${kpi("Emails recebidos", fmt.format(totals.total_entregues), "mail")}
-            ${kpi("Abertos estimados", fmt.format(totals.total_abertos_estimados), "drafts")}
-            ${kpi("Cliques estimados", fmt.format(totals.total_cliques_estimados), "ads_click")}
-            ${kpi("Taxa abertura", `${totals.taxa_abertura_media.toFixed(2).replace(".", ",")}%`, "mark_email_read")}
-            ${kpi("Taxa clique", `${totals.taxa_clique_media.toFixed(2).replace(".", ",")}%`, "touch_app")}
-            ${kpi("Score copy", `${totals.score_copy_medio.toFixed(0)}/100`, "psychology")}
+            ${kpi("Campanhas disparadas", fmt.format(totals.total_campanhas), "campaign")}
+            ${kpi("Total enviados", fmt.format(totals.total_enviados), "outgoing_mail")}
+            ${kpi("Entregues", fmt.format(totals.total_entregues), "mail")}
+            ${kpi("Taxa de entrega", `${totals.taxa_entrega.toFixed(2).replace(".", ",")}%`, "verified")}
+            ${kpi("Taxa de abertura", `${totals.taxa_abertura_media.toFixed(2).replace(".", ",")}%`, "mark_email_read")}
+            ${kpi("CTR", `${totals.ctr.toFixed(2).replace(".", ",")}%`, "ads_click")}
+            ${kpi("CTOR", `${totals.ctor.toFixed(2).replace(".", ",")}%`, "touch_app")}
+            ${kpi("Bounces", fmt.format(totals.total_bounces), "report")}
           </div>
           <section class="card">
             <h3>Campanhas</h3>
-            <p class="muted">Abertos e cliques são estimados a partir das taxas recebidas da RD Station.</p>
-            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Campanha</th><th>Enviados</th><th>Recebidos</th><th>Abertos</th><th>Cliques</th><th>Abertura</th><th>Clique</th><th>Copy</th></tr></thead><tbody>${campaigns.map((r) => `<tr><td>${r.marca}</td><td>${escapeHtml(r.nome_campanha)}</td><td>${fmt.format(num(r.enviados))}</td><td>${fmt.format(num(r.entregues))}</td><td>${fmt.format(num(r.abertos_estimados))}</td><td>${fmt.format(num(r.cliques_estimados))}</td><td>${num(r.taxa_abertura).toFixed(2).replace(".", ",")}%</td><td>${num(r.taxa_clique).toFixed(2).replace(".", ",")}%</td><td>${escapeHtml(r.diagnostico_copy || "Sem análise")}</td></tr>`).join("") || `<tr><td colspan="9">Sem campanhas importadas.</td></tr>`}</tbody></table></div>
+            <p class="muted">Abertos, cliques, CTR e CTOR usam os números reais da campanha quando disponíveis; campanhas importadas antes do rastreamento detalhado caem para a estimativa via taxa de abertura/clique.</p>
+            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Campanha</th><th>Enviados</th><th>Recebidos</th><th>Abertos</th><th>Cliques</th><th>Abertura</th><th>CTR</th><th>CTOR</th><th>Bounces</th><th>Copy</th></tr></thead><tbody>${campaigns.map((r) => {
+              const entregues = num(r.entregues);
+              const abertos = r.aberturas_unicas != null ? num(r.aberturas_unicas) : num(r.abertos_estimados);
+              const cliques = r.cliques_unicos != null ? num(r.cliques_unicos) : num(r.cliques_estimados);
+              const ctr = r.ctr != null ? num(r.ctr) : (entregues ? (cliques / entregues) * 100 : 0);
+              const ctor = r.ctor != null ? num(r.ctor) : (abertos ? (cliques / abertos) * 100 : 0);
+              return `<tr><td>${r.marca}</td><td>${escapeHtml(r.nome_campanha)}</td><td>${fmt.format(num(r.enviados))}</td><td>${fmt.format(entregues)}</td><td>${fmt.format(abertos)}</td><td>${fmt.format(cliques)}</td><td>${num(r.taxa_abertura).toFixed(2).replace(".", ",")}%</td><td>${ctr.toFixed(2).replace(".", ",")}%</td><td>${ctor.toFixed(2).replace(".", ",")}%</td><td>${r.bounces != null ? fmt.format(num(r.bounces)) : "—"}</td><td>${escapeHtml(r.diagnostico_copy || "Sem análise")}</td></tr>`;
+            }).join("") || `<tr><td colspan="11">Sem campanhas importadas.</td></tr>`}</tbody></table></div>
           </section>
           <section class="card">
             <h3>Analista de copy</h3>
@@ -4584,7 +4674,6 @@
             </div>
           </div>
           ${socialTabsHtml("geral")}
-          ${social.fallback ? `<div class="alert ${social.usingMetaStage ? "success" : ""}">${social.usingMetaStage ? "Resumo montado com os registros sincronizados diretamente da Meta em <code>stage_social_format_metrics</code>." : "Usando base stage antiga como contingência."} ${social.fallbackReason ? `Detalhe técnico: <code>${escapeHtml(social.fallbackReason)}</code>` : ""}</div>` : ""}
 
           <div class="eyebrow" style="margin:18px 0 8px">Mês atual vs. mês anterior</div>
           <div class="grid kpis" style="grid-template-columns:repeat(5,minmax(0,1fr))">
@@ -6760,31 +6849,313 @@
         await renderGoogleBusiness("Cadastro da loja atualizado.", { force: true });
       }
 
-      function renderImport() {
-        const content = document.querySelector("#content");
-        content.innerHTML = `
-          <div class="page-head"><div><div class="eyebrow">Importação controlada</div><h2>Importar planilhas</h2><p class="muted">Fluxo CSV para CredSystem e tabelas stage.</p></div></div>
-          <div class="grid cols">
-            <section class="card grid" style="gap:16px">
-              <label>Marca<select id="importMarca">${marcas.filter((m) => m !== "Todas").map((m) => `<option>${m}</option>`).join("")}</select></label>
-              <label>Origem<select id="source">${Object.entries(sourceTables).map(([k, v]) => `<option value="${k}">${k} - ${v}</option>`).join("")}</select></label>
-              <div class="drop"><span class="material-symbols-outlined">upload_file</span><strong>Selecione um CSV</strong><p class="muted">O arquivo será validado antes da importação.</p><input id="file" type="file" accept=".csv"></div>
-            </section>
-            <section class="card"><h3>Preview</h3><div id="preview" class="muted">Escolha um arquivo para começar.${lastImportLogHtml()}</div></section>
-          </div>`;
-        document.querySelector("#file").onchange = previewCsv;
+      // Wizard "Importar planilhas" (Marca -> Origem -> Upload -> Preview & Confirmacao) --------
+      // Estado de modulo, mesmo padrao usado no modal de convite da Gestao de Usuarios
+      // (inviteModalState) - persiste entre re-renders da mesma etapa e entre navegacoes pra
+      // outras paginas e volta (so reseta apos uma importacao confirmada com sucesso).
+      let importWizardState = null;
+
+      function resetImportWizard() {
+        importWizardState = {
+          step: 1,
+          marca: marcas.filter((m) => m !== "Todas")[0],
+          source: Object.keys(sourceTables)[0],
+          fileName: "",
+          parsing: false,
+          saving: false,
+          error: "",
+          importStatusMessage: "",
+          previewRows: []
+        };
       }
 
-      async function previewCsv(event) {
-        const file = event.target.files?.[0];
-        if (!file) return;
+      function renderImport(statusMessage = "") {
+        const content = document.querySelector("#content");
+        if (!importWizardState) resetImportWizard();
+        const s = importWizardState;
+        content.innerHTML = `
+          <div class="page-head"><div><div class="eyebrow">Importação controlada</div><h2>Importar planilhas</h2><p class="muted">Marca → Origem → Upload → Preview, com validação antes de gravar no Supabase.</p></div></div>
+          <section class="card">
+            <div class="wizard-steps">
+              <span class="${s.step === 1 ? "active" : ""}">1. Marca</span>
+              <span class="sep">›</span>
+              <span class="${s.step === 2 ? "active" : ""}">2. Origem</span>
+              <span class="sep">›</span>
+              <span class="${s.step === 3 ? "active" : ""}">3. Upload</span>
+              <span class="sep">›</span>
+              <span class="${s.step === 4 ? "active" : ""}">4. Preview & Confirmação</span>
+            </div>
+            ${statusMessage ? `<div class="alert success" style="margin-top:14px">${escapeHtml(statusMessage)}</div>` : ""}
+            <div style="margin-top:18px">
+              ${s.step === 1 ? importStep1Html() : s.step === 2 ? importStep2Html() : s.step === 3 ? importStep3Html() : importStep4Html()}
+            </div>
+          </section>
+          ${lastImportLogHtml()}`;
+        wireImportWizard();
+      }
+
+      function refreshImportWizard() {
+        renderImport();
+      }
+
+      function importStep1Html() {
+        const s = importWizardState;
+        return `<div class="grid" style="gap:16px;max-width:420px">
+          <label>Marca<select id="wizardMarca">${marcas.filter((m) => m !== "Todas").map((m) => `<option ${s.marca === m ? "selected" : ""}>${m}</option>`).join("")}</select></label>
+          <div class="actions" style="justify-content:flex-end">
+            <button type="button" id="wizardNext1">Avançar →</button>
+          </div>
+        </div>`;
+      }
+
+      function importStep2Html() {
+        const s = importWizardState;
+        return `<div class="grid" style="gap:16px;max-width:480px">
+          <p class="muted">Marca selecionada: <strong>${escapeHtml(s.marca)}</strong></p>
+          <label>Origem / Canal
+            <select id="wizardSource">${Object.keys(sourceTables).map((k) => `<option value="${k}" ${s.source === k ? "selected" : ""}>${escapeHtml(sourceLabels[k] || k)}</option>`).join("")}</select>
+          </label>
+          <div class="actions" style="justify-content:space-between">
+            <button type="button" class="secondary" id="wizardBack2">← Voltar</button>
+            <button type="button" id="wizardNext2">Avançar →</button>
+          </div>
+        </div>`;
+      }
+
+      function importStep3Html() {
+        const s = importWizardState;
+        return `<div class="grid" style="gap:16px">
+          <p class="muted"><strong>${escapeHtml(s.marca)}</strong> · ${escapeHtml(sourceLabels[s.source] || s.source)}</p>
+          <div class="drop-zone" id="wizardDropZone">
+            <span class="material-symbols-outlined">upload_file</span>
+            <strong>Arraste um arquivo aqui ou clique para selecionar</strong>
+            <p class="muted">CSV ou XLSX - será validado antes da importação.</p>
+            <input id="wizardFile" type="file" accept=".csv,.xlsx,.xls" />
+          </div>
+          ${s.error ? `<div class="alert error">${escapeHtml(s.error)}</div>` : ""}
+          <div class="actions" style="justify-content:flex-start">
+            <button type="button" class="secondary" id="wizardBack3">← Voltar</button>
+          </div>
+        </div>`;
+      }
+
+      // Lista curada de colunas por origem, pra Etapa 4 mostrar so o que faz sentido revisar - o
+      // objeto mapeado tem varios campos internos (id_campanha aleatorio quando nao veio no
+      // arquivo, lote_importacao, payload_bruto, origem_api etc.) que so confundiriam o preview.
+      const previewColumnsBySource = {
+        credsystem_emissoes: ["marca", "data_emissao", "data_ativacao", "loja_operacao", "nome_cliente", "valor_compra_inicial", "tipo_cartao"],
+        credsystem_propostas: ["marca", "dt_proposta", "nm_loja", "proposta_aprov", "proposta_rejei", "motivo"],
+        rd_station: ["marca", "nome_campanha", "assunto_email", "enviados", "entregues", "aberturas_unicas", "cliques_unicos", "ctr", "ctor", "bounces", "enviado_em"],
+        social_format_metrics: ["marca", "rede_social", "formato", "data_referencia", "total_visualizacoes", "compartilhamentos", "salvamentos"],
+        meta_business: ["marca", "data_referencia", "seguidores_instagram", "alcance_facebook", "engajamento_total"],
+        google_business_profile: ["marca", "nome_loja", "rating_medio", "data_referencia"]
+      };
+      const previewColumnLabels = {
+        marca: "Marca", data_emissao: "Data Emissão", data_ativacao: "Data Ativação", loja_operacao: "Loja",
+        nome_cliente: "Cliente", valor_compra_inicial: "Valor", tipo_cartao: "Tipo Cartão", dt_proposta: "Data Proposta",
+        nm_loja: "Loja", proposta_aprov: "Aprovadas", proposta_rejei: "Rejeitadas", motivo: "Motivo",
+        nome_campanha: "Nome da Campanha", assunto_email: "Assunto", enviados: "Enviados", entregues: "Entregues",
+        aberturas_unicas: "Aberturas Únicas", cliques_unicos: "Cliques Únicos", ctr: "CTR", ctor: "CTOR", bounces: "Bounces",
+        enviado_em: "Data/Hora", rede_social: "Rede", formato: "Formato", data_referencia: "Data",
+        total_visualizacoes: "Visualizações", compartilhamentos: "Compartilhamentos", salvamentos: "Salvamentos",
+        seguidores_instagram: "Seguidores Instagram", alcance_facebook: "Alcance Facebook", engajamento_total: "Engajamento",
+        nome_loja: "Loja", rating_medio: "Rating"
+      };
+
+      // CTR/CTOR nao existem no objeto mapeado (sao generated columns calculadas pelo Postgres no
+      // insert) - calculadas aqui so pra preview, com a mesma formula da migration 20260817_032.
+      function previewCellValue(row, col) {
+        if (col === "ctr") {
+          const entregues = num(row.entregues);
+          const cliques = row.cliques_unicos;
+          return cliques == null || !entregues ? "" : `${round2((cliques / entregues) * 100)}%`;
+        }
+        if (col === "ctor") {
+          const aberturas = row.aberturas_unicas;
+          const cliques = row.cliques_unicos;
+          return cliques == null || !aberturas ? "" : `${round2((cliques / aberturas) * 100)}%`;
+        }
+        const value = row[col];
+        return value === null || value === undefined ? "" : String(value);
+      }
+
+      function importStep4Html() {
+        const s = importWizardState;
+        if (s.parsing) return `<div class="alert">Lendo ${escapeHtml(s.fileName)}...</div>`;
+
+        if (!s.previewRows.length) {
+          return `<div class="alert error">Nenhuma linha válida encontrada em ${escapeHtml(s.fileName)}.</div>
+            <div class="actions" style="justify-content:flex-start;margin-top:12px">
+              <button type="button" class="secondary" id="wizardBack4">← Voltar</button>
+            </div>`;
+        }
+
+        const previewColumns = previewColumnsBySource[s.source] || Object.keys(s.previewRows[0]).filter((k) => !["payload_bruto", "lote_importacao", "origem_api", "origem_arquivo"].includes(k));
+        const linhasPreview = s.previewRows.slice(0, 20);
+
+        return `<div class="grid" style="gap:14px">
+          <p class="muted"><b>${escapeHtml(s.fileName)}</b> · ${s.previewRows.length} linhas · <strong>${escapeHtml(s.marca)}</strong> · ${escapeHtml(sourceLabels[s.source] || s.source)}</p>
+          <div class="table-wrap" style="max-height:360px;overflow:auto">
+            <table>
+              <thead><tr>${previewColumns.map((c) => `<th>${escapeHtml(previewColumnLabels[c] || c)}</th>`).join("")}</tr></thead>
+              <tbody>
+                ${linhasPreview.map((row, index) => `<tr>${previewColumns.map((col) => {
+                  if (col === "nome_campanha") {
+                    return `<td><input type="text" class="preview-nome-campanha" data-index="${index}" value="${escapeHtml(row[col] ?? "")}" style="width:100%" /></td>`;
+                  }
+                  return `<td>${escapeHtml(previewCellValue(row, col))}</td>`;
+                }).join("")}</tr>`).join("")}
+              </tbody>
+            </table>
+          </div>
+          ${s.previewRows.length > 20 ? `<p class="field-hint">Mostrando as primeiras 20 de ${s.previewRows.length} linhas - todas serão importadas.</p>` : ""}
+          ${s.error ? `<div class="alert error">${escapeHtml(s.error)}</div>` : ""}
+          ${s.importStatusMessage ? `<div class="alert">${escapeHtml(s.importStatusMessage)}</div>` : ""}
+          <div class="actions" style="justify-content:space-between">
+            <button type="button" class="secondary" id="wizardBack4" ${s.saving ? "disabled" : ""}>← Voltar</button>
+            <button type="button" id="wizardConfirmImport" ${s.saving ? "disabled" : ""}>${s.saving ? "Importando..." : "Importar para Supabase"}</button>
+          </div>
+        </div>`;
+      }
+
+      function wireImportWizard() {
+        const s = importWizardState;
+
+        if (s.step === 1) {
+          document.querySelector("#wizardMarca").onchange = (event) => { s.marca = event.target.value; };
+          document.querySelector("#wizardNext1").onclick = () => { s.step = 2; renderImport(); };
+          return;
+        }
+
+        if (s.step === 2) {
+          document.querySelector("#wizardSource").onchange = (event) => { s.source = event.target.value; };
+          document.querySelector("#wizardBack2").onclick = () => { s.step = 1; renderImport(); };
+          document.querySelector("#wizardNext2").onclick = () => { s.step = 3; renderImport(); };
+          return;
+        }
+
+        if (s.step === 3) {
+          const dropZone = document.querySelector("#wizardDropZone");
+          document.querySelector("#wizardBack3").onclick = () => { s.step = 2; s.error = ""; renderImport(); };
+          document.querySelector("#wizardFile").onchange = (event) => handleWizardFile(event.target.files?.[0]);
+          dropZone.ondragover = (event) => { event.preventDefault(); dropZone.classList.add("dragover"); };
+          dropZone.ondragleave = () => dropZone.classList.remove("dragover");
+          dropZone.ondrop = (event) => {
+            event.preventDefault();
+            dropZone.classList.remove("dragover");
+            handleWizardFile(event.dataTransfer.files?.[0]);
+          };
+          return;
+        }
+
+        // Etapa 4 --------------------------------------------------------------------------------
+        const backBtn = document.querySelector("#wizardBack4");
+        if (backBtn) backBtn.onclick = () => { s.step = 3; s.error = ""; renderImport(); };
+        document.querySelectorAll(".preview-nome-campanha").forEach((input) => {
+          input.oninput = (event) => { s.previewRows[Number(event.target.dataset.index)].nome_campanha = event.target.value; };
+        });
+        const confirmBtn = document.querySelector("#wizardConfirmImport");
+        if (confirmBtn) confirmBtn.onclick = confirmImport;
+      }
+
+      // Normaliza um cabecalho de coluna (CSV ou XLSX) pro mesmo formato de chave usado em
+      // mapRow(): minusculo, sem acento, nao-alfanumerico vira "_". Mesma regra que o parser de
+      // CSV original ja usava, extraida aqui pra ser reaproveitada tambem pelo parser de XLSX
+      // (mesmo shape {rows} pros dois formatos, entao mapRow() nao precisa saber de onde veio o
+      // arquivo).
+      function normalizeHeaderKey(raw) {
+        return String(raw || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+      }
+
+      // Relatorios de e-mail marketing/BI costumam vir em planilhas com varias abas (dashboard
+      // visual, base de campanhas, analises, calculos auxiliares) e a aba com dados tabulares de
+      // verdade pode nao ser a primeira, alem de ter linhas de titulo/legenda/nota antes do
+      // cabecalho real (comum em exports "bonitos" do RD Station ou templates manuais). Encontra
+      // a linha que mais parece um cabecalho de verdade dentro das primeiras 15 linhas de uma
+      // matriz: um cabecalho tem varias celulas com nomes DIFERENTES; titulo/legenda em celulas
+      // mescladas repetem o mesmo texto em todas as celulas (poucos valores distintos).
+      function findBestHeaderRow(matrix) {
+        let bestIndex = 0;
+        let bestScore = -1;
+        const scanLimit = Math.min(matrix.length, 15);
+        for (let i = 0; i < scanLimit; i++) {
+          const distinct = new Set((matrix[i] || []).map((cell) => String(cell ?? "").trim().toLowerCase()).filter(Boolean)).size;
+          if (distinct > bestScore) {
+            bestScore = distinct;
+            bestIndex = i;
+          }
+        }
+        return bestIndex;
+      }
+
+      // SheetJS carregado sob demanda (so quando o arquivo e .xlsx/.xls) via esm.sh, mesmo padrao
+      // de import ja usado pro @supabase/supabase-js - a CSP do app ja libera esm.sh em
+      // script-src, entao nao precisa de nenhum ajuste em serve-public.mjs/netlify.toml.
+      async function parseSpreadsheetFile(file) {
+        const name = file.name.toLowerCase();
+
+        if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
+          const XLSX = await import("https://esm.sh/xlsx@0.18.5");
+          const buffer = await file.arrayBuffer();
+          const workbook = XLSX.read(buffer, { type: "array" });
+
+          // Roda a heuristica de cabecalho em TODAS as abas e fica com a combinacao aba+linha de
+          // maior pontuacao - nao assume que os dados estao na primeira aba (ex.: um "Dashboard
+          // Executivo" decorativo antes da aba "Campanhas" com os dados de verdade).
+          let melhorLinhas = null;
+          let melhorHeaderIdx = 0;
+          let melhorScore = -1;
+          for (const sheetName of workbook.SheetNames) {
+            const linhasAba = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, raw: false, defval: "" });
+            const headerIdx = findBestHeaderRow(linhasAba);
+            const score = new Set((linhasAba[headerIdx] || []).map((cell) => String(cell ?? "").trim().toLowerCase()).filter(Boolean)).size;
+            if (score > melhorScore) {
+              melhorScore = score;
+              melhorLinhas = linhasAba;
+              melhorHeaderIdx = headerIdx;
+            }
+          }
+
+          if (!melhorLinhas || !melhorLinhas.length) return { rows: [] };
+          const columns = melhorLinhas[melhorHeaderIdx].map(normalizeHeaderKey);
+          const rows = melhorLinhas.slice(melhorHeaderIdx + 1)
+            .filter((linha) => linha.some((cell) => String(cell ?? "").trim() !== ""))
+            .map((linha) => Object.fromEntries(columns.map((col, index) => [col, String(linha[index] ?? "").trim()])));
+          return { rows };
+        }
+
         const text = await readCsvText(file);
-        const lines = text.split(/\r?\n/).filter(Boolean);
-        const sep = lines[0]?.includes(";") ? ";" : ",";
-        const columns = lines[0].split(sep).map((c) => c.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, ""));
-        const rows = lines.slice(1).map((line) => Object.fromEntries(line.split(sep).map((value, index) => [columns[index], value.trim()])));
-        document.querySelector("#preview").innerHTML = `<p><b>${file.name}</b> · ${rows.length} linhas · ${columns.length} colunas</p><button id="doImport">Importar para Supabase</button><div id="importStatus" style="margin-top:12px"></div>`;
-        document.querySelector("#doImport").onclick = () => importRows(file.name, rows);
+        const todasLinhas = text.split(/\r?\n/).filter(Boolean);
+        if (!todasLinhas.length) return { rows: [] };
+        const sep = todasLinhas[0].includes(";") ? ";" : ",";
+        const matriz = todasLinhas.map((linha) => linha.split(sep));
+        const headerIdx = findBestHeaderRow(matriz);
+        const columns = matriz[headerIdx].map(normalizeHeaderKey);
+        const rows = matriz.slice(headerIdx + 1).map((linha) => Object.fromEntries(columns.map((col, index) => [col, (linha[index] ?? "").trim()])));
+        return { rows };
+      }
+
+      async function handleWizardFile(file) {
+        if (!file) return;
+        const s = importWizardState;
+        s.fileName = file.name;
+        s.step = 4;
+        s.parsing = true;
+        s.error = "";
+        s.previewRows = [];
+        renderImport();
+
+        try {
+          const { rows } = await parseSpreadsheetFile(file);
+          s.previewRows = rows.map((row) => mapRow(s.source, s.marca, row, file.name));
+          s.parsing = false;
+          renderImport();
+        } catch (error) {
+          s.parsing = false;
+          s.error = safeErrorMessage(error, "Não foi possível ler o arquivo.");
+          s.step = 3;
+          renderImport();
+        }
       }
 
       // REVERTIDO em 14/08/2026: a versao anterior pedia count:"exact" na 1a pagina pra saber
@@ -6802,7 +7173,14 @@
       // contagem e barato, mesmo sem retornar linhas).
       async function fetchPaginated(table, columns, marca, dateColumn, de, ate) {
         const pageSize = 1000;
-        const batchSize = 10;
+        // Paginacao por OFFSET fica mais cara quanto mais fundo a pagina (Postgres varre e
+        // descarta as linhas anteriores antes de devolver a proxima fatia). Disparar muitas
+        // paginas profundas em paralelo (batchSize alto) multiplica isso e derruba o Dashboard
+        // com "canceling statement due to statement timeout" (57014) quando a tabela/filtro tem
+        // varias paginas - incidente observado em dados_cartoes_credsystem (17/08/2026). Um
+        // batchSize baixo mantem concorrencia suficiente pra nao ficar lento, sem empilhar
+        // consultas caras umas em cima das outras.
+        const batchSize = 2;
 
         function buildQuery(from) {
           let query = supabase
@@ -6900,24 +7278,28 @@
         }
       }
 
-      async function importRows(fileName, rows) {
-        const marca = document.querySelector("#importMarca").value;
-        const source = document.querySelector("#source").value;
-        const table = sourceTables[source];
-        const mapped = rows.map((r) => mapRow(source, marca, r, fileName));
-        const status = document.querySelector("#importStatus");
-        const button = document.querySelector("#doImport");
-        const chunkSize = source === "credsystem_propostas" ? 100 : 300;
+      // Confirma a Etapa 4 do wizard: grava importWizardState.previewRows (ja mapeadas, e com
+      // eventuais edicoes de nome_campanha) no Supabase em lotes. Mesma logica/chunking que a
+      // antiga importRows() tinha, só que a fonte dos dados agora é o preview já revisado pelo
+      // Admin, não as linhas cruas recém-parseadas.
+      async function confirmImport() {
+        const s = importWizardState;
+        const table = sourceTables[s.source];
+        const mapped = s.previewRows;
+        const chunkSize = s.source === "credsystem_propostas" ? 100 : 300;
         let imported = 0;
 
-        button.disabled = true;
-        status.innerHTML = `<div class="alert">Importando em lotes de ${chunkSize} linhas...</div>`;
+        s.saving = true;
+        s.error = "";
+        s.importStatusMessage = `Importando em lotes de ${chunkSize} linhas...`;
+        refreshImportWizard();
         saveImportLog(`Importação iniciada: ${mapped.length} linhas para ${table}.`);
 
         const conflictColumns = {
           credsystem_propostas: "marca,id_cod_proposta",
-          credsystem_emissoes: "marca,id_cod_cartao"
-        }[source];
+          credsystem_emissoes: "marca,id_cod_cartao",
+          rd_station: "marca,id_campanha,data_referencia"
+        }[s.source];
 
         for (let start = 0; start < mapped.length; start += chunkSize) {
           const chunk = mapped.slice(start, start + chunkSize);
@@ -6931,24 +7313,26 @@
           const { error } = await request;
 
           if (error) {
-            const message = `Falha após ${imported} linhas em ${table}: ${escapeHtml(safeErrorMessage(error))}`;
-            status.insertAdjacentHTML("beforeend", `<div class="alert error">${message}</div>`);
+            const message = `Falha após ${imported} linhas em ${table}: ${safeErrorMessage(error)}`;
+            s.saving = false;
+            s.error = message;
+            s.importStatusMessage = "";
             saveImportLog(message, "error");
-            button.disabled = false;
+            refreshImportWizard();
             return;
           }
 
           imported += chunk.length;
-          const message = `Importadas ${imported} de ${mapped.length} linhas em ${table}...`;
-          status.innerHTML = `<div class="alert">${message}</div>`;
-          saveImportLog(message);
+          s.importStatusMessage = `Importadas ${imported} de ${mapped.length} linhas em ${table}...`;
+          saveImportLog(s.importStatusMessage);
+          refreshImportWizard();
         }
 
         const finalMessage = `${imported} linhas processadas em ${table}.`;
-        status.innerHTML = `<div class="alert success">${finalMessage}</div>`;
         saveImportLog(finalMessage, "success");
         saveLastImportTimestamp(table);
-        button.disabled = false;
+        resetImportWizard();
+        renderImport(finalMessage);
       }
 
       function mapRow(source, marca, r, fileName) {
@@ -6994,23 +7378,39 @@
           origem_arquivo: fileName,
           lote_importacao: crypto.randomUUID()
         };
-        if (source === "rd_station") return {
-          marca,
-          id_campanha: r.id_campanha || r.campanha_id || crypto.randomUUID(),
-          nome_campanha: r.nome_campanha || r.campanha || "Campanha sem nome",
-          enviados: num(r.enviados),
-          entregues: num(r.entregues),
-          taxa_abertura: num(r.taxa_abertura),
-          taxa_clique: num(r.taxa_clique),
-          descadastros: num(r.descadastros),
-          assunto_email: r.assunto_email || r.assunto || r.subject || null,
-          preheader: r.preheader || r.pre_header || null,
-          corpo_copy: r.corpo_copy || r.copy || r.corpo || r.conteudo || null,
-          payload_bruto: r,
-          origem_api: "csv_import",
-          data_referencia: r.data_referencia || today,
-          lote_importacao: crypto.randomUUID()
-        };
+        if (source === "rd_station") {
+          const enviadoEm = normalizeDateTime(r.data_hora || r.data_e_hora || r.enviado_em || r.data_envio || r.data_referencia);
+          const enviados = num(r.enviados);
+          const entregues = num(r.entregues);
+          // aberturas_unicas/cliques_unicos/bounces ficam null (nao 0) quando a coluna nao veio no
+          // arquivo - 0 significaria "rastreado, deu zero", que e uma afirmacao diferente de "nao
+          // informado" (ver comentario da migration 20260817_032). rawNum() so converte quando o
+          // valor bruto existe, senao devolve null.
+          const aberturasUnicas = rawNum(r.aberturas_unicas ?? r.aberturas ?? r.opens_unicos ?? r.unique_opens);
+          const cliquesUnicos = rawNum(r.cliques_unicos ?? r.cliques ?? r.clicks_unicos ?? r.unique_clicks);
+          const bounces = rawNum(r.bounces ?? r.bounce ?? r.emails_retornados);
+          return {
+            marca,
+            id_campanha: r.id_campanha || r.campanha_id || crypto.randomUUID(),
+            nome_campanha: r.nome_campanha || r.campanha || "Campanha sem nome",
+            enviados,
+            entregues,
+            taxa_abertura: aberturasUnicas != null && entregues > 0 ? round2(aberturasUnicas / entregues * 100) : num(r.taxa_abertura),
+            taxa_clique: cliquesUnicos != null && entregues > 0 ? round2(cliquesUnicos / entregues * 100) : num(r.taxa_clique),
+            aberturas_unicas: aberturasUnicas,
+            cliques_unicos: cliquesUnicos,
+            bounces,
+            descadastros: num(r.descadastros),
+            assunto_email: r.assunto_email || r.assunto_do_e_mail || r.assunto || r.subject || null,
+            preheader: r.preheader || r.pre_header || null,
+            corpo_copy: r.corpo_copy || r.copy || r.corpo || r.conteudo || null,
+            payload_bruto: r,
+            origem_api: "csv_import",
+            enviado_em: enviadoEm,
+            data_referencia: enviadoEm ? enviadoEm.slice(0, 10) : normalizeDate(r.data_referencia || today),
+            lote_importacao: crypto.randomUUID()
+          };
+        }
         if (source === "social_format_metrics") {
           const rede = normalizeSocialNetwork(r.rede_social || r.rede || r.canal || r.network);
           const formato = normalizeSocialFormat(r.formato || r.tipo_conteudo || r.tipo || r.format, rede);
@@ -7085,6 +7485,31 @@
         return clean.slice(0, 10);
       }
 
+      // Le "Data/Hora" de origens como RD Station (aceita dd/mm/aaaa e aaaa-mm-dd, com ou sem
+      // hora) e devolve um timestamp ISO pra gravar em enviado_em (timestamptz). null quando o
+      // valor esta vazio ou nao da pra interpretar - data_referencia continua caindo pro fallback
+      // de normalizeDate() nesse caso, entao a falha aqui nunca quebra a importacao.
+      function normalizeDateTime(value) {
+        if (!value) return null;
+        const raw = String(value).trim();
+        if (!raw) return null;
+
+        const brMatch = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+        if (brMatch) {
+          const [, day, month, year, hour = "00", minute = "00", second = "00"] = brMatch;
+          return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
+        }
+
+        const isoMatch = raw.match(/^(\d{4})[-/](\d{2})[-/](\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+        if (isoMatch) {
+          const [, year, month, day, hour = "00", minute = "00", second = "00"] = isoMatch;
+          return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
+        }
+
+        const parsed = new Date(raw);
+        return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+      }
+
       function joinPhone(ddd, phone) {
         const cleanDdd = String(ddd || "").replace(/\D/g, "");
         const cleanPhone = String(phone || "").replace(/\D/g, "");
@@ -7104,6 +7529,11 @@
       }
       function marcaChipClass(marca) {
         return { "Tesoura de Ouro": "marca-ouro", "Magazine da Economia": "marca-economia", "Free Center Calçados": "marca-calcados" }[marca] || "";
+      }
+      function origemConviteHtml(origem) {
+        if (origem === "email") return `<span class="origem-pill origem-email">E-mail</span>`;
+        if (origem === "whatsapp") return `<span class="origem-pill origem-whatsapp">WhatsApp</span>`;
+        return `<span class="origem-pill origem-desconhecida">—</span>`;
       }
       function userInitials(name) {
         const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -7199,8 +7629,8 @@
           <div class="page-head">
             <div><div class="eyebrow">Admin · RBAC</div><h2>Gestão de Usuários</h2><p class="muted">Convites, cargos, marcas permitidas e presença em tempo real de quem acessa o GTO Insights.</p></div>
             <div class="filters">
-              <button id="refreshUsuarios" class="secondary"><span class="material-symbols-outlined" style="vertical-align:middle">refresh</span> Atualizar</button>
-              <button id="inviteUsuario"><span class="material-symbols-outlined" style="vertical-align:middle">person_add</span> Convidar usuário</button>
+              <button id="refreshUsuarios" class="secondary pill-action"><span class="material-symbols-outlined" style="vertical-align:middle">refresh</span> Atualizar</button>
+              <button id="inviteUsuario" class="pill-action"><span class="material-symbols-outlined" style="vertical-align:middle">person_add</span> Convidar usuário</button>
             </div>
           </div>
           ${statusHtml}
@@ -7215,8 +7645,8 @@
             <p class="muted">Alterar cargo/marcas, ativar ou bloquear, e disparar redefinição de senha ou reset de MFA.</p>
             <div class="table-wrap" style="margin-top:16px">
               <table>
-                <thead><tr><th>Usuário</th><th>Cargo</th><th>Marcas permitidas</th><th>Status</th><th>Último acesso</th><th>Ações</th></tr></thead>
-                <tbody>${usuarios.length ? usuarios.map((u) => usuarioRowHtml(u, onlineIds)).join("") : `<tr><td colspan="6">Nenhum usuário cadastrado ainda.</td></tr>`}</tbody>
+                <thead><tr><th>Usuário</th><th>Cargo</th><th>Marcas permitidas</th><th>Status</th><th>Origem</th><th>Último acesso</th><th>Ações</th></tr></thead>
+                <tbody>${usuarios.length ? usuarios.map((u) => usuarioRowHtml(u, onlineIds)).join("") : `<tr><td colspan="7">Nenhum usuário cadastrado ainda.</td></tr>`}</tbody>
               </table>
             </div>
           </section>`;
@@ -7239,9 +7669,11 @@
           <td><span class="cargo-pill ${cargoPillClass(usuario.cargo)}">${escapeHtml(usuario.cargo)}</span></td>
           <td>${marcasHtml}</td>
           <td><span class="status-pill ${usuario.ativo ? "active" : "inactive"}">${usuario.ativo ? "Ativo" : "Bloqueado"}</span></td>
+          <td>${origemConviteHtml(usuario.origem_convite)}</td>
           <td>${escapeHtml(formatDateTime(usuario.last_sign_in_at))}</td>
           <td>
-            <div class="actions">
+            <div class="row-actions">
+              ${usuario.last_sign_in_at ? "" : `<button type="button" class="secondary reenviar-convite" data-id="${escapeHtml(usuario.id)}">Reenviar convite</button>`}
               <button type="button" class="secondary editar-acesso" data-id="${escapeHtml(usuario.id)}">Editar</button>
               <label class="switch" title="${usuario.ativo ? "Bloquear usuário" : "Ativar usuário"}">
                 <input type="checkbox" class="toggle-ativo" data-id="${escapeHtml(usuario.id)}" ${usuario.ativo ? "checked" : ""} />
@@ -7249,6 +7681,7 @@
               </label>
               <button type="button" class="secondary resetar-senha" data-id="${escapeHtml(usuario.id)}">Redefinir senha</button>
               <button type="button" class="secondary resetar-mfa" data-id="${escapeHtml(usuario.id)}" ${usuario.mfa_enrolled ? "" : "disabled"}>Resetar MFA</button>
+              ${usuario.id === state.session.user.id ? "" : `<button type="button" class="danger excluir-usuario" data-id="${escapeHtml(usuario.id)}" title="Excluir usuário"><span class="material-symbols-outlined" style="vertical-align:middle;font-size:18px">delete</span></button>`}
             </div>
           </td>
         </tr>`;
@@ -7256,11 +7689,13 @@
 
       function wireUsuariosPage() {
         document.querySelector("#refreshUsuarios").onclick = () => renderUsuarios();
-        document.querySelector("#inviteUsuario").onclick = openInviteModal;
+        document.querySelector("#inviteUsuario").onclick = () => openInviteModal();
         document.querySelectorAll(".editar-acesso").forEach((btn) => { btn.onclick = () => openEditAccessModal(btn.dataset.id); });
         document.querySelectorAll(".toggle-ativo").forEach((input) => { input.onchange = () => toggleUsuarioAtivo(input.dataset.id, input.checked); });
         document.querySelectorAll(".resetar-senha").forEach((btn) => { btn.onclick = () => enviarRedefinicaoSenha(btn.dataset.id); });
         document.querySelectorAll(".resetar-mfa").forEach((btn) => { btn.onclick = () => resetarMfaUsuario(btn.dataset.id); });
+        document.querySelectorAll(".reenviar-convite").forEach((btn) => { btn.onclick = () => openInviteModal(btn.dataset.id); });
+        document.querySelectorAll(".excluir-usuario").forEach((btn) => { btn.onclick = () => openDeleteUserModal(btn.dataset.id); });
       }
 
       async function toggleUsuarioAtivo(id, ativo) {
@@ -7302,12 +7737,44 @@
       }
 
       // Modal "Convidar usuario" ------------------------------------------------------------------
+      // Fluxo em 2 etapas: (1) dados do convidado -> cria a conta via generateLink e grava
+      // cargo/marcas/telefone/ativo com a sessao do Admin; (2) editor de mensagens com abas
+      // E-mail/WhatsApp - o Admin edita o texto e dispara pelo proprio canal (mailto:/wa.me), sem
+      // envio automatico do backend. Rastreamento de origem: cada aba usa uma variante do link de
+      // convite com ?utm_source=email|whatsapp embutido no redirect_to (buildInviteLink); quando o
+      // convidado confirma o cadastro por ali, o proprio app grava perfis.origem_convite (ver
+      // registrarOrigemConvite, chamada em init() logo que a sessão existe).
       let inviteModalState = null;
 
-      function openInviteModal() {
+      function maskTelefoneBR(rawDigits) {
+        const digits = String(rawDigits || "").replace(/\D/g, "").slice(0, 11);
+        if (!digits.length) return "";
+        if (digits.length <= 2) return digits.replace(/^(\d*)/, "($1");
+        if (digits.length <= 6) return digits.replace(/^(\d{2})(\d*)/, "($1) $2");
+        if (digits.length <= 10) return digits.replace(/^(\d{2})(\d{4})(\d*)/, "($1) $2-$3");
+        return digits.replace(/^(\d{2})(\d{5})(\d*)/, "($1) $2-$3");
+      }
+
+      // usuarioId presente = reenvio/edicao de um convite pendente (pre-preenche com os dados
+      // atuais do perfil e reaproveita o mesmo fluxo de 2 etapas). Ausente = convite novo.
+      function openInviteModal(usuarioId) {
         const overlay = document.querySelector("#inviteUserModal");
         if (!overlay) return;
-        inviteModalState = { nome: "", email: "", cargo: "Analista", marcas: [], saving: false, error: "" };
+        const usuarioExistente = usuarioId ? (state.usuarios || []).find((u) => u.id === usuarioId) : null;
+        inviteModalState = {
+          step: 1,
+          editingId: usuarioExistente ? usuarioExistente.id : null,
+          ativoOriginal: usuarioExistente ? usuarioExistente.ativo : true,
+          marcasOriginais: usuarioExistente ? [...usuarioExistente.marcas] : [],
+          nome: usuarioExistente?.nome || "",
+          email: usuarioExistente?.email || "",
+          telefoneDigits: usuarioExistente?.telefone || "",
+          cargo: usuarioExistente?.cargo || "Analista",
+          marcas: usuarioExistente ? [...usuarioExistente.marcas] : [],
+          saving: false, error: "", info: "",
+          usuarioId: null, actionLink: null, activeTab: "email",
+          assuntoEmail: "", corpoEmail: "", corpoWhatsapp: ""
+        };
         overlay.innerHTML = inviteModalPanelHtml();
         overlay.hidden = false;
         wireInviteModal();
@@ -7315,40 +7782,84 @@
 
       function closeInviteModal() {
         const overlay = document.querySelector("#inviteUserModal");
+        const usuarioCriado = Boolean(inviteModalState?.usuarioId);
         if (overlay) { overlay.hidden = true; overlay.innerHTML = ""; }
         inviteModalState = null;
+        if (usuarioCriado) renderUsuarios("Convite salvo com sucesso.");
       }
 
       function inviteModalPanelHtml() {
         const s = inviteModalState;
-        const marcaObrigatoria = CARGOS_QUE_EXIGEM_MARCA.includes(s.cargo);
-        return `<div class="modal-panel">
+        const eyebrow = s.editingId ? "Reenvio de convite" : "Novo acesso";
+        const titulo = s.editingId ? (s.nome || s.email) : "Convidar usuário";
+        return `<div class="modal-panel wide">
           <div class="modal-header">
-            <div><p style="margin:0 0 4px;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Novo acesso</p><h3 style="margin:0;font-size:17px">Convidar usuário</h3></div>
+            <div><p style="margin:0 0 4px;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.04em">${escapeHtml(eyebrow)}</p><h3 style="margin:0;font-size:17px">${escapeHtml(titulo)}</h3></div>
             <button type="button" class="modal-close" id="inviteModalClose"><span class="material-symbols-outlined">close</span></button>
           </div>
-          <form id="inviteForm" class="modal-body">
-            <label>Nome completo<input name="nome" type="text" maxlength="120" required value="${escapeHtml(s.nome)}" /></label>
-            <label>E-mail corporativo<input name="email" type="email" maxlength="254" autocomplete="off" required value="${escapeHtml(s.email)}" /></label>
-            <label>Cargo
-              <select name="cargo">${cargosDisponiveis.map((c) => `<option value="${c}" ${s.cargo === c ? "selected" : ""}>${c}</option>`).join("")}</select>
-            </label>
-            <div>
-              <p class="modal-section-title">Marcas permitidas</p>
-              <div class="marca-checks" style="margin-top:8px">
-                ${marcasDisponiveis.map((m) => `<label class="marca-check">
-                  <input type="checkbox" data-invite-marca="${escapeHtml(m)}" ${s.marcas.includes(m) ? "checked" : ""} />
-                  ${escapeHtml(m)}
-                </label>`).join("")}
-              </div>
-              <p class="field-hint">${marcaObrigatoria ? "Necessário selecionar ao menos uma marca para este cargo." : `Opcional para ${escapeHtml(s.cargo)}: já enxerga todas as marcas.`}</p>
+          <div class="wizard-steps">
+            <span class="${s.step === 1 ? "active" : ""}">1. Dados do usuário</span>
+            <span class="sep">›</span>
+            <span class="${s.step === 2 ? "active" : ""}">2. Mensagens &amp; disparo</span>
+          </div>
+          ${s.step === 1 ? inviteStep1Html(s) : inviteStep2Html(s)}
+        </div>`;
+      }
+
+      function inviteStep1Html(s) {
+        const marcaObrigatoria = CARGOS_QUE_EXIGEM_MARCA.includes(s.cargo);
+        return `<form id="inviteForm" class="modal-body">
+          <label>Nome completo<input name="nome" type="text" maxlength="120" required value="${escapeHtml(s.nome)}" /></label>
+          <label>E-mail corporativo<input name="email" type="email" maxlength="254" autocomplete="off" required value="${escapeHtml(s.email)}" ${s.editingId ? "readonly" : ""} /></label>
+          ${s.editingId ? `<p class="field-hint" style="margin-top:-10px">E-mail não pode ser alterado no reenvio - crie um novo convite se precisar trocar.</p>` : ""}
+          <label>Telefone / WhatsApp<input name="telefone" type="tel" inputmode="numeric" placeholder="(11) 91234-5678" maxlength="16" value="${escapeHtml(maskTelefoneBR(s.telefoneDigits))}" /></label>
+          <p class="field-hint" style="margin-top:-10px">Opcional, mas necessário pra disparar o convite pelo WhatsApp na próxima etapa.</p>
+          <label>Cargo
+            <select name="cargo">${cargosDisponiveis.map((c) => `<option value="${c}" ${s.cargo === c ? "selected" : ""}>${c}</option>`).join("")}</select>
+          </label>
+          <div>
+            <p class="modal-section-title">Marcas permitidas</p>
+            <div class="marca-checks" style="margin-top:8px">
+              ${marcasDisponiveis.map((m) => `<label class="marca-check">
+                <input type="checkbox" data-invite-marca="${escapeHtml(m)}" ${s.marcas.includes(m) ? "checked" : ""} />
+                ${escapeHtml(m)}
+              </label>`).join("")}
             </div>
-            ${s.error ? `<div class="alert error">${escapeHtml(s.error)}</div>` : ""}
-            <div class="actions" style="justify-content:flex-end">
-              <button type="button" class="secondary" id="inviteCancel">Cancelar</button>
-              <button type="submit" ${s.saving ? "disabled" : ""}>${s.saving ? "Enviando convite..." : "Enviar convite"}</button>
-            </div>
-          </form>
+            <p class="field-hint">${marcaObrigatoria ? "Necessário selecionar ao menos uma marca para este cargo." : `Opcional para ${escapeHtml(s.cargo)}: já enxerga todas as marcas.`}</p>
+          </div>
+          ${s.error ? `<div class="alert error">${escapeHtml(s.error)}</div>` : ""}
+          <div class="actions" style="justify-content:flex-end">
+            <button type="button" class="secondary" id="inviteCancel">Cancelar</button>
+            <button type="submit" ${s.saving ? "disabled" : ""}>${s.saving ? "Salvando..." : "Avançar para Mensagens →"}</button>
+          </div>
+        </form>`;
+      }
+
+      function inviteStep2Html(s) {
+        const temTelefone = s.telefoneDigits.length >= 10;
+        return `<div class="modal-body">
+          <div class="message-tabs">
+            <button type="button" class="message-tab ${s.activeTab === "email" ? "active" : ""}" data-invite-tab="email">E-mail</button>
+            <button type="button" class="message-tab ${s.activeTab === "whatsapp" ? "active" : ""}" data-invite-tab="whatsapp">WhatsApp</button>
+          </div>
+          ${s.activeTab === "email" ? `
+            <label>Assunto<input name="assuntoEmail" type="text" maxlength="200" value="${escapeHtml(s.assuntoEmail)}" /></label>
+            <label>Corpo do e-mail<textarea name="corpoEmail" class="message-textarea">${escapeHtml(s.corpoEmail)}</textarea></label>
+            <p class="field-hint">Abre um rascunho no seu cliente de e-mail (Outlook/Gmail) já preenchido - você revisa e envia por lá.</p>
+          ` : `
+            <label>Mensagem do WhatsApp<textarea name="corpoWhatsapp" class="message-textarea">${escapeHtml(s.corpoWhatsapp)}</textarea></label>
+            ${temTelefone
+              ? `<p class="field-hint">Abre o WhatsApp Web/app já com a mensagem preenchida para ${escapeHtml(maskTelefoneBR(s.telefoneDigits))}.</p>`
+              : `<div class="alert error">Nenhum telefone informado na Etapa 1 - volte e preencha pra liberar o disparo por WhatsApp.</div>`}
+          `}
+          ${s.error ? `<div class="alert error">${escapeHtml(s.error)}</div>` : ""}
+          ${s.info ? `<div class="alert success">${escapeHtml(s.info)}</div>` : ""}
+          <div class="actions" style="justify-content:flex-end">
+            <button type="button" class="secondary" id="inviteClose">Fechar</button>
+            ${s.activeTab === "email"
+              ? `<button type="button" id="inviteDispararEmail">Disparar E-mail</button>`
+              : `<button type="button" id="inviteAbrirWhatsapp" ${temTelefone ? "" : "disabled"}>Abrir no WhatsApp</button>`}
+          </div>
         </div>`;
       }
 
@@ -7359,26 +7870,119 @@
         wireInviteModal();
       }
 
-      function wireInviteModal() {
+      function syncStep2Textarea() {
         const overlay = document.querySelector("#inviteUserModal");
-        document.querySelector("#inviteModalClose").onclick = closeInviteModal;
-        document.querySelector("#inviteCancel").onclick = closeInviteModal;
-        document.querySelector("#inviteForm").onsubmit = submitInviteForm;
-        overlay.onclick = (event) => { if (event.target.id === "inviteUserModal") closeInviteModal(); };
-        overlay.querySelector("select[name='cargo']").onchange = (event) => {
-          inviteModalState.cargo = event.target.value;
-          refreshInviteModal();
-        };
-        overlay.querySelectorAll("[data-invite-marca]").forEach((el) => {
-          el.onchange = () => {
-            const marca = el.dataset.inviteMarca;
-            if (el.checked) { if (!inviteModalState.marcas.includes(marca)) inviteModalState.marcas.push(marca); }
-            else { inviteModalState.marcas = inviteModalState.marcas.filter((m) => m !== marca); }
-          };
-        });
+        const assuntoInput = overlay.querySelector("input[name='assuntoEmail']");
+        if (assuntoInput) inviteModalState.assuntoEmail = assuntoInput.value;
+        const corpoEmailInput = overlay.querySelector("textarea[name='corpoEmail']");
+        if (corpoEmailInput) inviteModalState.corpoEmail = corpoEmailInput.value;
+        const corpoWhatsappInput = overlay.querySelector("textarea[name='corpoWhatsapp']");
+        if (corpoWhatsappInput) inviteModalState.corpoWhatsapp = corpoWhatsappInput.value;
       }
 
-      async function submitInviteForm(event) {
+      function wireInviteModal() {
+        const overlay = document.querySelector("#inviteUserModal");
+        overlay.querySelector("#inviteModalClose").onclick = closeInviteModal;
+        overlay.onclick = (event) => { if (event.target.id === "inviteUserModal") closeInviteModal(); };
+
+        if (inviteModalState.step === 1) {
+          overlay.querySelector("#inviteCancel").onclick = closeInviteModal;
+          overlay.querySelector("#inviteForm").onsubmit = submitInviteStep1;
+          overlay.querySelector("input[name='nome']").oninput = (event) => {
+            inviteModalState.nome = event.target.value;
+          };
+          overlay.querySelector("input[name='email']").oninput = (event) => {
+            inviteModalState.email = event.target.value;
+          };
+          const telefoneInput = overlay.querySelector("input[name='telefone']");
+          telefoneInput.oninput = (event) => {
+            inviteModalState.telefoneDigits = event.target.value.replace(/\D/g, "").slice(0, 11);
+            event.target.value = maskTelefoneBR(inviteModalState.telefoneDigits);
+          };
+          overlay.querySelector("select[name='cargo']").onchange = (event) => {
+            inviteModalState.cargo = event.target.value;
+            refreshInviteModal();
+          };
+          overlay.querySelectorAll("[data-invite-marca]").forEach((el) => {
+            el.onchange = () => {
+              const marca = el.dataset.inviteMarca;
+              if (el.checked) { if (!inviteModalState.marcas.includes(marca)) inviteModalState.marcas.push(marca); }
+              else { inviteModalState.marcas = inviteModalState.marcas.filter((m) => m !== marca); }
+            };
+          });
+          return;
+        }
+
+        // Etapa 2 - editor de mensagens -------------------------------------------------------------
+        overlay.querySelector("#inviteClose").onclick = closeInviteModal;
+        overlay.querySelectorAll("[data-invite-tab]").forEach((btn) => {
+          btn.onclick = () => {
+            syncStep2Textarea();
+            inviteModalState.activeTab = btn.dataset.inviteTab;
+            inviteModalState.info = "";
+            refreshInviteModal();
+          };
+        });
+
+        const assuntoInput = overlay.querySelector("input[name='assuntoEmail']");
+        if (assuntoInput) assuntoInput.oninput = (event) => { inviteModalState.assuntoEmail = event.target.value; };
+        const corpoEmailInput = overlay.querySelector("textarea[name='corpoEmail']");
+        if (corpoEmailInput) corpoEmailInput.oninput = (event) => { inviteModalState.corpoEmail = event.target.value; };
+        const corpoWhatsappInput = overlay.querySelector("textarea[name='corpoWhatsapp']");
+        if (corpoWhatsappInput) corpoWhatsappInput.oninput = (event) => { inviteModalState.corpoWhatsapp = event.target.value; };
+
+        const dispararEmailBtn = overlay.querySelector("#inviteDispararEmail");
+        if (dispararEmailBtn) dispararEmailBtn.onclick = dispararEmailConvite;
+        const abrirWhatsappBtn = overlay.querySelector("#inviteAbrirWhatsapp");
+        if (abrirWhatsappBtn) abrirWhatsappBtn.onclick = abrirWhatsappConvite;
+      }
+
+      // Reescreve o utm_source embutido no redirect_to do action_link (gerado 1x na Etapa 1) sem
+      // gerar um novo link/token - o Supabase valida redirect_to contra a allowlist de Redirect
+      // URLs ignorando a query string, entao adicionar ?utm_source aqui e seguro e nao invalida o
+      // token de convite (ao contrario de chamar generateLink de novo por canal).
+      function buildInviteLink(actionLink, canal) {
+        if (!actionLink) return "";
+        try {
+          const url = new URL(actionLink);
+          const redirectTo = url.searchParams.get("redirect_to");
+          if (redirectTo) {
+            const redirectUrl = new URL(redirectTo);
+            redirectUrl.searchParams.set("utm_source", canal);
+            url.searchParams.set("redirect_to", redirectUrl.toString());
+          }
+          return url.toString();
+        } catch {
+          return actionLink;
+        }
+      }
+
+      // Reconcilia perfis_marcas com a selecao atual (so insere/remove a diferenca, em vez de
+      // apagar tudo e reinserir) - usado tanto pelo modal "Editar acesso" quanto pelo modo de
+      // edicao/reenvio do modal de convite. marcasAtuais=[] (caso de convite novo) faz paraRemover
+      // ficar vazio e paraAdicionar virar a selecao inteira, equivalente a um insert simples.
+      async function syncPerfilMarcas(perfilId, marcasAtuais, marcasNovas) {
+        const paraAdicionar = marcasNovas.filter((m) => !marcasAtuais.includes(m));
+        const paraRemover = marcasAtuais.filter((m) => !marcasNovas.includes(m));
+
+        if (paraAdicionar.length) {
+          const { error } = await supabase.from("perfis_marcas").insert(paraAdicionar.map((marca) => ({ perfil_id: perfilId, marca })));
+          if (error) throw error;
+        }
+        if (paraRemover.length) {
+          const { error } = await supabase.from("perfis_marcas").delete().eq("perfil_id", perfilId).in("marca", paraRemover);
+          if (error) throw error;
+        }
+      }
+
+      function defaultConviteMensagem(nome, cargo, link, canal) {
+        if (canal === "whatsapp") {
+          return `Olá, ${nome}! 👋\n\nVocê foi convidado(a) para acessar o *GTO Insights* com o cargo de ${cargo}.\n\nConclua seu cadastro e defina sua senha por aqui:\n${link}`;
+        }
+        return `Olá, ${nome}!\n\nVocê foi convidado(a) para acessar o GTO Insights com o cargo de ${cargo}.\n\nClique no link abaixo para concluir seu cadastro e definir sua senha:\n${link}\n\nQualquer dúvida, é só responder este e-mail.`;
+      }
+
+      async function submitInviteStep1(event) {
         event.preventDefault();
         if (!inviteModalState) return;
         const form = event.currentTarget;
@@ -7387,10 +7991,12 @@
         const email = (data.get("email") || "").toString().trim().toLowerCase();
         const cargo = (data.get("cargo") || "Analista").toString();
         const marcas = inviteModalState.marcas;
+        const telefoneDigits = inviteModalState.telefoneDigits;
 
         const errors = [];
         if (!nome) errors.push("Informe o nome completo.");
         if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push("Informe um e-mail corporativo válido.");
+        if (telefoneDigits && ![10, 11].includes(telefoneDigits.length)) errors.push("Telefone inválido - informe DDD + número.");
         if (CARGOS_QUE_EXIGEM_MARCA.includes(cargo) && marcas.length === 0) errors.push("Selecione ao menos uma marca permitida para este cargo.");
 
         if (errors.length) {
@@ -7409,20 +8015,49 @@
           if (inviteResult?.error) throw new Error(inviteResult.error);
           const novoId = inviteResult.id;
 
-          if (marcas.length) {
-            const { error: marcasError } = await supabase.from("perfis_marcas").insert(marcas.map((marca) => ({ perfil_id: novoId, marca })));
-            if (marcasError) throw marcasError;
-          }
-          const { error: perfilError } = await supabase.from("perfis").update({ nome, cargo, ativo: true }).eq("id", novoId);
+          await syncPerfilMarcas(novoId, inviteModalState.marcasOriginais, marcas);
+          const { error: perfilError } = await supabase
+            .from("perfis")
+            .update({ nome, cargo, ativo: inviteModalState.ativoOriginal, telefone: telefoneDigits || null })
+            .eq("id", novoId);
           if (perfilError) throw perfilError;
 
-          closeInviteModal();
-          await renderUsuarios(`Convite enviado para ${email}.`);
+          inviteModalState.nome = nome;
+          inviteModalState.email = email;
+          inviteModalState.cargo = cargo;
+          inviteModalState.usuarioId = novoId;
+          inviteModalState.actionLink = inviteResult.action_link || null;
+          inviteModalState.assuntoEmail = "Convite para acessar o GTO Insights";
+          inviteModalState.corpoEmail = defaultConviteMensagem(nome, cargo, buildInviteLink(inviteModalState.actionLink, "email"), "email");
+          inviteModalState.corpoWhatsapp = defaultConviteMensagem(nome, cargo, buildInviteLink(inviteModalState.actionLink, "whatsapp"), "whatsapp");
+          inviteModalState.step = 2;
+          inviteModalState.saving = false;
+          refreshInviteModal();
         } catch (error) {
           inviteModalState.saving = false;
-          inviteModalState.error = safeErrorMessage(error, "Não foi possível enviar o convite.");
+          inviteModalState.error = safeErrorMessage(error, "Não foi possível criar o acesso.");
           refreshInviteModal();
         }
+      }
+
+      function dispararEmailConvite() {
+        syncStep2Textarea();
+        const s = inviteModalState;
+        const mailto = `mailto:${encodeURIComponent(s.email)}?subject=${encodeURIComponent(s.assuntoEmail)}&body=${encodeURIComponent(s.corpoEmail)}`;
+        window.location.href = mailto;
+        s.error = "";
+        s.info = `Rascunho de e-mail aberto para ${s.email}.`;
+        refreshInviteModal();
+      }
+
+      function abrirWhatsappConvite() {
+        syncStep2Textarea();
+        const s = inviteModalState;
+        if (s.telefoneDigits.length < 10) return;
+        window.open(`https://wa.me/55${s.telefoneDigits}?text=${encodeURIComponent(s.corpoWhatsapp)}`, "_blank", "noopener");
+        s.error = "";
+        s.info = `WhatsApp aberto para ${maskTelefoneBR(s.telefoneDigits)}.`;
+        refreshInviteModal();
       }
 
       // Modal "Editar acesso" (cargo + marcas de um usuário existente) ---------------------------
@@ -7517,20 +8152,9 @@
         refreshEditAccessModal();
 
         try {
-          const atuais = s.usuario.marcas;
-          const paraAdicionar = s.marcas.filter((m) => !atuais.includes(m));
-          const paraRemover = atuais.filter((m) => !s.marcas.includes(m));
-
-          if (paraAdicionar.length) {
-            const { error } = await supabase.from("perfis_marcas").insert(paraAdicionar.map((marca) => ({ perfil_id: s.usuario.id, marca })));
-            if (error) throw error;
-          }
+          await syncPerfilMarcas(s.usuario.id, s.usuario.marcas, s.marcas);
           const { error: cargoError } = await supabase.from("perfis").update({ cargo: s.cargo }).eq("id", s.usuario.id);
           if (cargoError) throw cargoError;
-          if (paraRemover.length) {
-            const { error } = await supabase.from("perfis_marcas").delete().eq("perfil_id", s.usuario.id).in("marca", paraRemover);
-            if (error) throw error;
-          }
 
           closeEditAccessModal();
           await renderUsuarios("Cargo e marcas atualizados.");
@@ -7539,6 +8163,83 @@
           s.error = safeErrorMessage(error, "Não foi possível salvar as alterações.");
           refreshEditAccessModal();
         }
+      }
+
+      // Modal "Excluir usuario" -------------------------------------------------------------------
+      let deleteUserModalState = null;
+
+      function openDeleteUserModal(usuarioId) {
+        const overlay = document.querySelector("#deleteUserModal");
+        const usuario = (state.usuarios || []).find((u) => u.id === usuarioId);
+        if (!overlay || !usuario) return;
+        if (usuario.id === state.session.user.id) {
+          renderUsuarios("Você não pode excluir a própria conta.");
+          return;
+        }
+        deleteUserModalState = { usuario, saving: false, error: "" };
+        overlay.innerHTML = deleteUserModalPanelHtml();
+        overlay.hidden = false;
+        wireDeleteUserModal();
+      }
+
+      function closeDeleteUserModal() {
+        const overlay = document.querySelector("#deleteUserModal");
+        if (overlay) { overlay.hidden = true; overlay.innerHTML = ""; }
+        deleteUserModalState = null;
+      }
+
+      function deleteUserModalPanelHtml() {
+        const s = deleteUserModalState;
+        const nomeUsuario = s.usuario.nome || s.usuario.email;
+        return `<div class="modal-panel">
+          <div class="modal-header">
+            <div><p style="margin:0 0 4px;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Ação irreversível</p><h3 style="margin:0;font-size:17px">Excluir usuário</h3></div>
+            <button type="button" class="modal-close" id="deleteUserModalClose"><span class="material-symbols-outlined">close</span></button>
+          </div>
+          <div class="modal-body">
+            <p>Tem certeza que deseja excluir o usuário <strong>${escapeHtml(nomeUsuario)}</strong>? O acesso e o cadastro dele são removidos por completo e essa ação não pode ser desfeita.</p>
+            ${s.error ? `<div class="alert error">${escapeHtml(s.error)}</div>` : ""}
+            <div class="actions" style="justify-content:flex-end">
+              <button type="button" class="secondary" id="deleteUserCancel">Cancelar</button>
+              <button type="button" class="danger" id="deleteUserConfirm" ${s.saving ? "disabled" : ""}>${s.saving ? "Excluindo..." : "Excluir usuário"}</button>
+            </div>
+          </div>
+        </div>`;
+      }
+
+      function refreshDeleteUserModal() {
+        const overlay = document.querySelector("#deleteUserModal");
+        if (!overlay || overlay.hidden || !deleteUserModalState) return;
+        overlay.innerHTML = deleteUserModalPanelHtml();
+        wireDeleteUserModal();
+      }
+
+      function wireDeleteUserModal() {
+        const overlay = document.querySelector("#deleteUserModal");
+        overlay.querySelector("#deleteUserModalClose").onclick = closeDeleteUserModal;
+        overlay.querySelector("#deleteUserCancel").onclick = closeDeleteUserModal;
+        overlay.onclick = (event) => { if (event.target.id === "deleteUserModal") closeDeleteUserModal(); };
+        overlay.querySelector("#deleteUserConfirm").onclick = confirmDeleteUser;
+      }
+
+      async function confirmDeleteUser() {
+        if (!deleteUserModalState) return;
+        const s = deleteUserModalState;
+        s.saving = true;
+        s.error = "";
+        refreshDeleteUserModal();
+
+        const { data, error } = await supabase.functions.invoke("admin-delete-user", { body: { usuario_id: s.usuario.id } });
+        if (error || data?.error) {
+          s.saving = false;
+          s.error = data?.error || safeErrorMessage(error, "Não foi possível excluir este usuário.");
+          refreshDeleteUserModal();
+          return;
+        }
+
+        const nomeExcluido = s.usuario.nome || s.usuario.email;
+        closeDeleteUserModal();
+        await renderUsuarios(`Usuário ${nomeExcluido} excluído com sucesso.`);
       }
 
       init();

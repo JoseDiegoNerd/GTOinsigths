@@ -27,7 +27,7 @@ Deno.serve(withCors(async (req) => {
     const [{ data: perfis, error: perfisError }, { data: marcasRows, error: marcasError }] = await Promise.all([
       supabase
         .from("perfis")
-        .select("id,email,nome,cargo,ativo,avatar_url,cargo_oficial,criado_em,atualizado_em")
+        .select("id,email,nome,cargo,ativo,avatar_url,cargo_oficial,origem_convite,telefone,criado_em,atualizado_em")
         .order("criado_em", { ascending: false }),
       supabase.from("perfis_marcas").select("perfil_id,marca"),
     ]);
