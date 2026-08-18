@@ -30,6 +30,11 @@ const requiredTables = [
   'stage_social_format_metrics'
 ];
 
+// vw_email_marketing_campanhas/vw_email_marketing_resumo_marca ficaram de fora desta lista de
+// proposito (migration 20260818_033): a tela de Email Marketing passou a ler de
+// vw_campanha_disparos_resumo (campanhas_email/campanha_disparos/campanha_analise_estrategica),
+// nao mais dessas duas. As views antigas continuam existindo no banco (historico pre-033), so
+// deixaram de ser obrigatorias no frontend.
 const requiredViews = [
   'vw_credsystem_resumo_geral',
   'vw_credsystem_por_marca',
@@ -40,8 +45,6 @@ const requiredViews = [
   'vw_meta_business_resumo',
   'vw_google_business_resumo',
   'vw_marketing_canais_por_marca',
-  'vw_email_marketing_campanhas',
-  'vw_email_marketing_resumo_marca',
   'vw_meta_social_periodos',
   'vw_meta_social_resumo_marca',
   'vw_meta_social_ranking_conteudo',

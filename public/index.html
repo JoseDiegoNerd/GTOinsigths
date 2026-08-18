@@ -397,7 +397,7 @@
         social_format_metrics: "Social Format Metrics"
       };
 
-      let state = { session: null, perfil: null, page: "dashboard", marca: "Todas", periodo: "30d", periodoDe: "", periodoAte: "", periodoMenuOpen: false, rows: [], rd: [], meta: [], metaSeguidoresSnapshot: [], ads: [], google: null, dashboardConsolidadoMetric: "credito", propostas: [], bi: null, channels: null, email: null, emailSelectedId: null, social: null, socialFormat: null, socialTab: "geral", connections: [], bestTimes: null, socialCompareMetric: "alcance", socialEficienciaTab: "frequencia", compareA: { de: "", ate: "" }, compareB: { de: "", ate: "" }, adsStatusFilter: "todas", adsObjetivoFilter: "todos", adsCrossMetric: "alcance", adsSortColumn: "investimento", adsSortDirection: "desc", topbarMenuOpen: false };
+      let state = { session: null, perfil: null, page: "dashboard", marca: "Todas", periodo: "30d", periodoDe: "", periodoAte: "", periodoMenuOpen: false, rows: [], rd: [], meta: [], metaSeguidoresSnapshot: [], ads: [], google: null, dashboardConsolidadoMetric: "credito", propostas: [], bi: null, channels: null, email: null, emailSelectedCampanhaId: null, social: null, socialFormat: null, socialTab: "geral", connections: [], bestTimes: null, socialCompareMetric: "alcance", socialEficienciaTab: "frequencia", compareA: { de: "", ate: "" }, compareB: { de: "", ate: "" }, adsStatusFilter: "todas", adsObjetivoFilter: "todos", adsCrossMetric: "alcance", adsSortColumn: "investimento", adsSortDirection: "desc", topbarMenuOpen: false };
 
       // Cache "estilo React Query" para o Dashboard Geral: guarda o ultimo modelo montado por
       // marca+periodo por 5min (staleTime) e reaproveita na hora ao trocar de aba (keepPreviousData),
@@ -897,155 +897,6 @@
       }
 
 
-      async function loadEmailBI() {
-        let campanhas = supabase
-          .from("vw_email_marketing_campanhas")
-          .select("*")
-          .order("data_referencia", { ascending: false });
-        let resumo = supabase.from("vw_email_marketing_resumo_marca").select("*").order("marca");
-
-        if (state.marca !== "Todas") {
-          campanhas = campanhas.eq("marca", state.marca);
-          resumo = resumo.eq("marca", state.marca);
-        }
-        const de = fromDate();
-        const ate = toDate();
-        if (de) campanhas = campanhas.gte("data_referencia", de);
-        if (ate) campanhas = campanhas.lte("data_referencia", ate);
-
-        const [campanhasResult, resumoResult] = await Promise.all([campanhas, resumo]);
-        const firstError = campanhasResult.error || resumoResult.error;
-        if (firstError) throw firstError;
-
-        state.email = {
-          campanhas: campanhasResult.data || [],
-          resumo: resumoResult.data || []
-        };
-      }
-
-      function analyzeCopy(row) {
-        const subject = row.assunto_email || "";
-        const preheader = row.preheader || "";
-        const body = row.corpo_copy || "";
-        const hasCopy = subject || preheader || body;
-        let score = hasCopy ? 45 : 35;
-        const issues = [];
-
-        if (!hasCopy) issues.push("Copy não informada");
-        if (subject.length >= 25 && subject.length <= 70) score += 20;
-        else if (subject.length >= 10 && subject.length <= 90) score += 10;
-        else if (hasCopy) issues.push("Revisar assunto");
-        if (preheader) score += 15;
-        else if (hasCopy) issues.push("Adicionar preheader");
-        if (/(compre|confira|acesse|garanta|aproveite|clique|venha|saiba)/i.test(body)) score += 10;
-        else if (hasCopy) issues.push("Fortalecer chamada para ação");
-        if (num(row.taxa_abertura) >= 20) score += 5;
-        if (num(row.taxa_clique) >= 2) score += 5;
-
-        const diagnostic = issues[0] || (score >= 80 ? "Boa" : "Precisa melhorar");
-        const recommendation = diagnostic === "Boa"
-          ? "Manter estrutura e testar variações para ganho incremental."
-          : diagnostic === "Copy não informada"
-            ? "Importe assunto, preheader e corpo para uma análise melhor."
-            : diagnostic === "Adicionar preheader"
-              ? "Inclua um preheader que complemente o assunto e antecipe a oferta."
-              : diagnostic === "Fortalecer chamada para ação"
-                ? "Inclua uma chamada para ação clara, com verbo e próximo passo."
-                : "Use benefício claro, urgência moderada e uma promessa fácil de entender.";
-
-        return {
-          score_copy: Math.max(0, Math.min(score, 100)),
-          diagnostico_copy: diagnostic,
-          recomendacao_copy: recommendation
-        };
-      }
-
-      function campaignKey(row) {
-        return row.id || row.id_campanha || row.nome_campanha || "";
-      }
-
-      function copyPerformanceLabel(row) {
-        const open = num(row.taxa_abertura);
-        const click = num(row.taxa_clique);
-        if (open >= 25 && click >= 3) return "Forte";
-        if (open >= 18 && click >= 1.5) return "Saudável";
-        if (open < 15 || click < 1) return "Atenção";
-        return "Regular";
-      }
-
-      function buildCopyDetail(row) {
-        const subject = row?.assunto_email || "";
-        const preheader = row?.preheader || "";
-        const body = row?.corpo_copy || "";
-        const brand = row?.marca || "Marca";
-        const campaignName = row?.nome_campanha || "campanha";
-        const hasCopy = subject || preheader || body;
-        const score = num(row?.score_copy);
-        const open = num(row?.taxa_abertura);
-        const click = num(row?.taxa_clique);
-
-        const strengths = [];
-        const risks = [];
-        const actions = [];
-
-        if (open >= 25) strengths.push("Boa capacidade de gerar abertura pelo histórico da campanha.");
-        if (click >= 3) strengths.push("Clique acima do básico, indicando oferta ou CTA com tração.");
-        if (subject.length >= 25 && subject.length <= 70) strengths.push("Assunto em tamanho adequado para leitura rápida.");
-        if (preheader) strengths.push("Preheader preenchido, ajudando a complementar o assunto.");
-        if (/(compre|confira|acesse|garanta|aproveite|clique|venha|saiba)/i.test(body)) strengths.push("Corpo possui chamada para ação explícita.");
-
-        if (!hasCopy) risks.push("A campanha não tem assunto, preheader ou corpo importados para análise textual.");
-        if (subject && subject.length < 10) risks.push("Assunto curto demais para comunicar valor.");
-        if (subject && subject.length > 90) risks.push("Assunto longo demais, com risco de corte no inbox.");
-        if (!preheader && hasCopy) risks.push("Sem preheader, a campanha perde uma segunda chance de convencimento.");
-        if (body && !/(compre|confira|acesse|garanta|aproveite|clique|venha|saiba)/i.test(body)) risks.push("CTA pouco evidente no corpo da mensagem.");
-        if (open < 15) risks.push("Taxa de abertura baixa: o gancho inicial precisa ser mais forte.");
-        if (click < 1) risks.push("Taxa de clique baixa: oferta, link ou chamada para ação precisam ficar mais claros.");
-
-        if (!hasCopy) actions.push("Na próxima importação RD, inclua as colunas assunto_email, preheader e corpo_copy.");
-        if (!subject || subject.length < 25 || subject.length > 70) actions.push("Reescrever o assunto com benefício claro em uma frase curta.");
-        if (!preheader) actions.push("Adicionar preheader com complemento direto da promessa do assunto.");
-        actions.push("Deixar apenas uma ação principal para reduzir dispersão do clique.");
-        actions.push("Testar variação A/B com urgência moderada versus benefício econômico.");
-
-        if (strengths.length === 0) strengths.push("Há dados suficientes de performance para priorizar melhorias na copy.");
-        if (risks.length === 0) risks.push("Nenhum risco crítico detectado pelas regras atuais.");
-
-        const subjectBase = campaignName.replace(/^campanha\s*/i, "").trim() || brand;
-        const temCta = /(compre|confira|acesse|garanta|aproveite|clique|venha|saiba)/i.test(body);
-        const rewrites = [];
-
-        if (!subject || subject.length > 90) {
-          rewrites.push({ label: "Assunto direto", text: `${brand}: confira oportunidades selecionadas para você` });
-        }
-        if (!subject || subject.length < 25 || (subject.length > 70 && subject.length <= 90)) {
-          rewrites.push({ label: "Assunto com benefício", text: `${subjectBase}: aproveite condições especiais por tempo limitado` });
-        }
-        if (!preheader) {
-          rewrites.push({ label: "Preheader", text: "Veja os destaques da campanha e escolha a melhor oferta para o seu momento." });
-        }
-        if (!temCta) {
-          rewrites.push({ label: "CTA", text: "Acesse agora e confira as opções disponíveis." });
-        }
-        if (!rewrites.length) {
-          rewrites.push({ label: "Estrutura atual", text: "Assunto, preheader e CTA já atendem as regras básicas — testar apenas pequenas variações de tom." });
-        }
-
-        return {
-          performance: copyPerformanceLabel(row),
-          score,
-          strengths,
-          risks,
-          actions,
-          rewrites,
-          current: {
-            subject: subject || "Assunto não informado",
-            preheader: preheader || "Preheader não informado",
-            body: body || "Corpo da copy não informado"
-          }
-        };
-      }
-
       function listItems(items) {
         return items.map((item) => `<li>${item}</li>`).join("");
       }
@@ -1053,56 +904,6 @@
       function insightCardsHtml(items, variant = "info", icon = "lightbulb") {
         if (!items?.length) return `<p class="muted">Sem itens no momento.</p>`;
         return `<div class="insight-cards">${items.map((item) => `<div class="insight-card ${variant}"><span class="material-symbols-outlined">${icon}</span><p>${item}</p></div>`).join("")}</div>`;
-      }
-
-      async function loadEmailBIFallback(reason = null) {
-        const rdRows = await fetchAllRows(
-          "stage_rd_station_marketing",
-          "id,marca,id_campanha,nome_campanha,enviados,entregues,taxa_abertura,taxa_clique,aberturas_unicas,cliques_unicos,bounces,ctr,ctor,enviado_em,descadastros,assunto_email,preheader,corpo_copy,data_referencia,origem_api",
-          state.marca,
-          "data_referencia"
-        );
-
-        // Mesma preferencia da view vw_email_marketing_campanhas: usa o numero real quando a
-        // campanha ja tiver sido importada com o rastreamento novo, senao cai pra estimativa via
-        // taxa_abertura/taxa_clique (campanhas antigas).
-        const campanhas = rdRows.map((row) => {
-          const copy = analyzeCopy(row);
-          return {
-            ...row,
-            abertos_estimados: row.aberturas_unicas ?? Math.round(num(row.entregues) * num(row.taxa_abertura) / 100),
-            cliques_estimados: row.cliques_unicos ?? Math.round(num(row.entregues) * num(row.taxa_clique) / 100),
-            score_copy: copy.score_copy,
-            diagnostico_copy: copy.diagnostico_copy,
-            recomendacao_copy: copy.recomendacao_copy
-          };
-        });
-
-        const marcasVisiveis = state.marca === "Todas"
-          ? Array.from(new Set(campanhas.map((r) => r.marca).filter(Boolean)))
-          : [state.marca];
-
-        const resumo = marcasVisiveis.map((marca) => {
-          const rows = campanhas.filter((r) => r.marca === marca);
-          return {
-            marca,
-            total_campanhas: rows.length,
-            total_enviados: rows.reduce((s, r) => s + num(r.enviados), 0),
-            total_entregues: rows.reduce((s, r) => s + num(r.entregues), 0),
-            total_abertos_estimados: rows.reduce((s, r) => s + num(r.abertos_estimados), 0),
-            total_cliques_estimados: rows.reduce((s, r) => s + num(r.cliques_estimados), 0),
-            taxa_abertura_media: avg(rows.map((r) => num(r.taxa_abertura))),
-            taxa_clique_media: avg(rows.map((r) => num(r.taxa_clique))),
-            score_copy_medio: avg(rows.map((r) => num(r.score_copy)))
-          };
-        });
-
-        state.email = {
-          campanhas,
-          resumo,
-          fallback: true,
-          fallbackReason: safeErrorMessage(reason, "")
-        };
       }
 
       async function loadSocialBI() {
@@ -3478,148 +3279,403 @@
         });
       }
 
-      async function renderEmailBI() {
-        const content = document.querySelector("#content");
-        content.innerHTML = `<div class="alert">Carregando campanhas de email marketing...</div>`;
+      // ---------------------------------------------------------------------------------------
+      // E-mail Marketing (modelo novo: campanhas_email -> campanha_disparos ->
+      // campanha_analise_estrategica, migration 20260818_033). As funcoes abaixo (computeDisparoRates,
+      // gerarAnaliseEstrategica e os 7 blocos emailPreview*Html) sao compartilhadas entre a Etapa 3
+      // do wizard "Importar Planilhas" (preview antes de salvar) e o drill-down desta tela
+      // (dado ja salvo) - ambos alimentam essas funcoes com o MESMO formato de array simples de
+      // disparos/analise, entao renderizam identico independente da origem do dado.
+      // ---------------------------------------------------------------------------------------
 
-        try {
-          await loadEmailBI();
-        } catch (error) {
-          try {
-            await loadEmailBIFallback(error);
-          } catch (fallbackError) {
-            content.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(fallbackError))}</div>`;
-            return;
+      function weightedDisparosAggregate(disparos) {
+        const acc = disparos.reduce((a, d) => {
+          a.enviados += num(d.enviados);
+          a.entregues += num(d.entregues);
+          if (d.aberturas_unicas != null) { a.aberturas += num(d.aberturas_unicas); a.aberturasCount++; }
+          if (d.cliques_unicos != null) { a.cliques += num(d.cliques_unicos); a.cliquesCount++; }
+          if (d.bounces != null) { a.bounces += num(d.bounces); a.bouncesCount++; }
+          if (d.invalidos != null) a.invalidos += num(d.invalidos);
+          if (d.indeterminados != null) a.indeterminados += num(d.indeterminados);
+          if (d.engajados != null) a.engajados += num(d.engajados);
+          if (d.desengajados != null) a.desengajados += num(d.desengajados);
+          return a;
+        }, { enviados: 0, entregues: 0, aberturas: 0, aberturasCount: 0, cliques: 0, cliquesCount: 0, bounces: 0, bouncesCount: 0, invalidos: 0, indeterminados: 0, engajados: 0, desengajados: 0 });
+
+        return {
+          ...acc,
+          taxaEntrega: acc.enviados > 0 ? (acc.entregues / acc.enviados) * 100 : 0,
+          taxaAbertura: acc.aberturasCount > 0 && acc.entregues > 0 ? (acc.aberturas / acc.entregues) * 100 : 0,
+          ctr: acc.cliquesCount > 0 && acc.entregues > 0 ? (acc.cliques / acc.entregues) * 100 : 0,
+          ctor: acc.cliquesCount > 0 && acc.aberturasCount > 0 && acc.aberturas > 0 ? (acc.cliques / acc.aberturas) * 100 : 0,
+          taxaBounce: acc.bouncesCount > 0 && acc.enviados > 0 ? (acc.bounces / acc.enviados) * 100 : 0
+        };
+      }
+
+      // Calcula taxa_entrega/taxa_abertura/ctr/ctor/taxa_bounce no client, com EXATAMENTE as
+      // mesmas formulas/guardas das generated columns da migration 20260818_033 - usado so para
+      // exibicao no preview do wizard, antes do disparo existir no banco (o banco recalcula por
+      // conta propria no insert; isso aqui nunca e escrito).
+      function computeDisparoRates(d) {
+        const enviados = num(d.enviados);
+        const entregues = num(d.entregues);
+        const aberturas = rawNum(d.aberturas_unicas);
+        const cliques = rawNum(d.cliques_unicos);
+        const bounces = rawNum(d.bounces);
+        return {
+          ...d,
+          taxa_entrega: enviados > 0 ? round2((entregues / enviados) * 100) : null,
+          taxa_abertura: aberturas != null && entregues > 0 ? round2((aberturas / entregues) * 100) : null,
+          ctr: cliques != null && entregues > 0 ? round2((cliques / entregues) * 100) : null,
+          ctor: cliques != null && aberturas != null && aberturas > 0 ? round2((cliques / aberturas) * 100) : null,
+          taxa_bounce: bounces != null && enviados > 0 ? round2((bounces / enviados) * 100) : null
+        };
+      }
+
+      // Motor de regras do Quadro de Analise Estrategica (bloco 7): examina os disparos importados
+      // e devolve {prioridade, tema, diagnostico, evidencia, acao_recomendada, kpi_principal}[],
+      // ordenado Alta -> Media -> Baixa. Sem digitacao manual - o usuario pode editar
+      // diagnostico/acao_recomendada no preview antes de salvar, mas a geracao e sempre automatica.
+      function gerarAnaliseEstrategica(disparos) {
+        if (!disparos.length) {
+          return [{
+            prioridade: "Baixa", tema: "Geral",
+            diagnostico: "Nenhum disparo para analisar.",
+            evidencia: "-",
+            acao_recomendada: "Importe ao menos um disparo para gerar a análise.",
+            kpi_principal: "-"
+          }];
+        }
+
+        const agg = weightedDisparosAggregate(disparos);
+        const linhas = [];
+
+        if (agg.bouncesCount > 0 && agg.taxaBounce > 5) {
+          linhas.push({
+            prioridade: "Alta", tema: "Qualidade da Base",
+            diagnostico: `Taxa de bounce média de ${agg.taxaBounce.toFixed(2).replace(".", ",")}%, acima do saudável (5%).`,
+            evidencia: `${fmt.format(Math.round(agg.bounces))} bounces em ${fmt.format(agg.enviados)} envios.`,
+            acao_recomendada: "Higienizar a lista e remover contatos com bounce recorrente antes do próximo disparo.",
+            kpi_principal: "Taxa de Bounce"
+          });
+        }
+
+        const invalidosIndeterminados = agg.invalidos + agg.indeterminados;
+        if (agg.enviados > 0 && (invalidosIndeterminados / agg.enviados) * 100 > 10) {
+          linhas.push({
+            prioridade: "Alta", tema: "Qualidade da Base",
+            diagnostico: `${(((invalidosIndeterminados) / agg.enviados) * 100).toFixed(2).replace(".", ",")}% da base está inválida ou indeterminada.`,
+            evidencia: `${fmt.format(invalidosIndeterminados)} contatos inválidos/indeterminados.`,
+            acao_recomendada: "Validar e-mails na captura (double opt-in) e revisar a origem da lista.",
+            kpi_principal: "Inválidos"
+          });
+        }
+
+        if (agg.enviados > 0 && agg.taxaEntrega < 95) {
+          linhas.push({
+            prioridade: "Media", tema: "Entregabilidade",
+            diagnostico: `Taxa de entrega média de ${agg.taxaEntrega.toFixed(2).replace(".", ",")}%, abaixo de 95%.`,
+            evidencia: `${fmt.format(agg.entregues)} entregues de ${fmt.format(agg.enviados)} enviados.`,
+            acao_recomendada: "Verificar configuração de SPF/DKIM/DMARC e a reputação do domínio de envio.",
+            kpi_principal: "Taxa de Entrega"
+          });
+        }
+
+        if (agg.aberturasCount > 0 && agg.taxaAbertura < 15) {
+          linhas.push({
+            prioridade: "Media", tema: "Engajamento e Abertura",
+            diagnostico: `Taxa de abertura média de ${agg.taxaAbertura.toFixed(2).replace(".", ",")}%, abaixo de 15%.`,
+            evidencia: `${fmt.format(Math.round(agg.aberturas))} aberturas em ${fmt.format(agg.entregues)} entregues.`,
+            acao_recomendada: "Testar novos assuntos, preheaders e horários de disparo (A/B).",
+            kpi_principal: "Taxa de Abertura"
+          });
+        }
+
+        if (agg.aberturasCount > 0 && agg.taxaAbertura >= 15 && agg.cliquesCount > 0 && agg.ctor < 8) {
+          linhas.push({
+            prioridade: "Media", tema: "Eficiência de Clique",
+            diagnostico: `CTOR de ${agg.ctor.toFixed(2).replace(".", ",")}% mesmo com abertura saudável.`,
+            evidencia: `${fmt.format(Math.round(agg.cliques))} cliques em ${fmt.format(Math.round(agg.aberturas))} aberturas.`,
+            acao_recomendada: "Reforçar um único CTA claro, acima da dobra, com oferta objetiva.",
+            kpi_principal: "CTOR"
+          });
+        }
+
+        if (disparos.length >= 2) {
+          const desengajadosPrimeiro = num(disparos[0].desengajados);
+          const desengajadosUltimo = num(disparos[disparos.length - 1].desengajados);
+          if (desengajadosPrimeiro > 0 && desengajadosUltimo > desengajadosPrimeiro * 1.3) {
+            linhas.push({
+              prioridade: "Media", tema: "Timing e Frequência",
+              diagnostico: "Desengajamento crescendo ao longo dos disparos da campanha.",
+              evidencia: `${fmt.format(desengajadosPrimeiro)} desengajados no primeiro disparo, ${fmt.format(desengajadosUltimo)} no último.`,
+              acao_recomendada: "Reduzir a frequência de envio ou segmentar por engajamento recente.",
+              kpi_principal: "Desengajados"
+            });
           }
         }
 
-        const email = state.email || { campanhas: [], resumo: [] };
-        const campaigns = email.campanhas || [];
-        if (!state.emailSelectedId && campaigns[0]) state.emailSelectedId = campaignKey(campaigns[0]);
-        const selectedCampaign = campaigns.find((row) => campaignKey(row) === state.emailSelectedId) || campaigns[0] || null;
-        if (selectedCampaign) state.emailSelectedId = campaignKey(selectedCampaign);
-        const copyDetail = selectedCampaign ? buildCopyDetail(selectedCampaign) : null;
-        // Totais calculados a partir de "campaigns" (ja filtradas por periodo), nao da view
-        // "resumo" agregada sem dimensao de data - senao os KPIs nao mudariam ao trocar o periodo.
-        // Abertura/CTR/CTOR usam media ponderada por volume (soma de aberturas/cliques dividida
-        // pela soma de entregues/aberturas do periodo), nao a media simples por campanha - mais
-        // correto pra um card que representa o periodo inteiro, e consistente com "somar primeiro,
-        // dividir depois" que o resto do app ja faz (ex.: taxaAprovacao do Dashboard Geral). Cada
-        // campanha usa o numero real (aberturas_unicas/cliques_unicos) quando disponivel, com
-        // fallback pra estimativa via taxa_abertura/taxa_clique em campanhas antigas.
-        const totals = campaigns.reduce((acc, row) => {
-          const entregues = num(row.entregues);
-          const aberturasEfetivas = row.aberturas_unicas != null ? num(row.aberturas_unicas) : Math.round(entregues * num(row.taxa_abertura) / 100);
-          const cliquesEfetivos = row.cliques_unicos != null ? num(row.cliques_unicos) : Math.round(entregues * num(row.taxa_clique) / 100);
-          return {
-            total_campanhas: acc.total_campanhas + 1,
-            total_enviados: acc.total_enviados + num(row.enviados),
-            total_entregues: acc.total_entregues + entregues,
-            total_aberturas: acc.total_aberturas + aberturasEfetivas,
-            total_cliques: acc.total_cliques + cliquesEfetivos,
-            total_bounces: acc.total_bounces + num(row.bounces)
-          };
-        }, { total_campanhas: 0, total_enviados: 0, total_entregues: 0, total_aberturas: 0, total_cliques: 0, total_bounces: 0 });
-        totals.taxa_entrega = totals.total_enviados ? (totals.total_entregues / totals.total_enviados) * 100 : 0;
-        totals.taxa_abertura_media = totals.total_entregues ? (totals.total_aberturas / totals.total_entregues) * 100 : 0;
-        totals.ctr = totals.total_entregues ? (totals.total_cliques / totals.total_entregues) * 100 : 0;
-        totals.ctor = totals.total_aberturas ? (totals.total_cliques / totals.total_aberturas) * 100 : 0;
+        if (!linhas.length) {
+          linhas.push({
+            prioridade: "Baixa", tema: "Geral",
+            diagnostico: "Nenhum ponto crítico identificado pelas regras atuais.",
+            evidencia: `CTOR médio de ${agg.ctor.toFixed(2).replace(".", ",")}%, taxa de entrega de ${agg.taxaEntrega.toFixed(2).replace(".", ",")}%.`,
+            acao_recomendada: "Manter a estrutura atual e testar variações incrementais de copy e oferta.",
+            kpi_principal: "CTOR"
+          });
+        }
 
-        content.innerHTML = `
+        const ordem = { "Alta": 0, "Media": 1, "Baixa": 2 };
+        return linhas.sort((a, b) => ordem[a.prioridade] - ordem[b.prioridade]);
+      }
+
+      function prioridadePillHtml(prioridade) {
+        const classe = prioridade === "Alta" ? "inactive" : prioridade === "Media" ? "pending" : "active";
+        return `<span class="status-pill ${classe}">${escapeHtml(prioridade)}</span>`;
+      }
+
+      // Bloco 1: Visao Geral & KPIs Consolidados
+      function emailPreviewOverviewHtml(disparos) {
+        const agg = weightedDisparosAggregate(disparos);
+        return `<div class="grid kpis">
+          ${kpi("Disparos", fmt.format(disparos.length), "campaign")}
+          ${kpi("Enviados", fmt.format(agg.enviados), "outgoing_mail")}
+          ${kpi("Entregues", fmt.format(agg.entregues), "mail")}
+          ${kpi("Taxa de Entrega", `${agg.taxaEntrega.toFixed(2).replace(".", ",")}%`, "verified")}
+          ${kpi("Aberturas Únicas", fmt.format(Math.round(agg.aberturas)), "mark_email_read")}
+          ${kpi("Taxa de Abertura", `${agg.taxaAbertura.toFixed(2).replace(".", ",")}%`, "visibility")}
+          ${kpi("Cliques Únicos", fmt.format(Math.round(agg.cliques)), "ads_click")}
+          ${kpi("CTR", `${agg.ctr.toFixed(2).replace(".", ",")}%`, "touch_app")}
+          ${kpi("CTOR", `${agg.ctor.toFixed(2).replace(".", ",")}%`, "target")}
+          ${kpi("Bounces", fmt.format(Math.round(agg.bounces)), "report")}
+        </div>`;
+      }
+
+      function disparosMetricBarEntradas(disparos, field) {
+        return disparos.filter((d) => d[field] != null).map((d) => [d.nome_disparo, { percentual: num(d[field]) }]);
+      }
+
+      // Bloco 2: Comparativo entre Disparos (Entrega x Abertura)
+      function emailPreviewComparativoHtml(disparos) {
+        return `<div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+          <div><h4>Taxa de Entrega por disparo</h4>${barListHtml(disparosMetricBarEntradas(disparos, "taxa_entrega"))}</div>
+          <div><h4>Taxa de Abertura por disparo</h4>${barListHtml(disparosMetricBarEntradas(disparos, "taxa_abertura"))}</div>
+        </div>`;
+      }
+
+      // Bloco 3: Qualidade da Base (Engajados/Desengajados/Invalidos/Indeterminados por disparo,
+      // exibidos como % do volume enviado em cada disparo)
+      function disparosQualidadeBarEntradas(disparos, field) {
+        return disparos
+          .filter((d) => d[field] != null && num(d.enviados) > 0)
+          .map((d) => [d.nome_disparo, { percentual: round2((num(d[field]) / num(d.enviados)) * 100) }]);
+      }
+
+      function emailPreviewQualidadeBaseHtml(disparos) {
+        return `<div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+          <div><h4>Engajados (% da base)</h4>${barListHtml(disparosQualidadeBarEntradas(disparos, "engajados"))}</div>
+          <div><h4>Desengajados (% da base)</h4>${barListHtml(disparosQualidadeBarEntradas(disparos, "desengajados"))}</div>
+          <div><h4>Inválidos (% da base)</h4>${barListHtml(disparosQualidadeBarEntradas(disparos, "invalidos"))}</div>
+          <div><h4>Indeterminados (% da base)</h4>${barListHtml(disparosQualidadeBarEntradas(disparos, "indeterminados"))}</div>
+        </div>`;
+      }
+
+      // Bloco 4: Eficiencia do Clique (CTR x CTOR)
+      function emailPreviewCtrCtorHtml(disparos) {
+        return `<div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+          <div><h4>CTR por disparo</h4>${barListHtml(disparosMetricBarEntradas(disparos, "ctr"))}</div>
+          <div><h4>CTOR por disparo</h4>${barListHtml(disparosMetricBarEntradas(disparos, "ctor"))}</div>
+        </div>`;
+      }
+
+      // Bloco 5: Leitura de Desempenho & Gargalo Principal - reaproveita o resultado do motor de
+      // regras (gargalo = diagnostico da linha de maior prioridade), sem calculo paralelo.
+      function emailPreviewLeituraDesempenhoHtml(disparos, analiseEstrategica) {
+        const comAbertura = disparos.filter((d) => d.taxa_abertura != null);
+        const melhor = comAbertura.length ? comAbertura.reduce((a, b) => (num(b.taxa_abertura) > num(a.taxa_abertura) ? b : a)) : null;
+        const pior = comAbertura.length ? comAbertura.reduce((a, b) => (num(b.taxa_abertura) < num(a.taxa_abertura) ? b : a)) : null;
+        const gargalo = analiseEstrategica[0] || null;
+        return `<div class="insight-grid">
+          <div class="insight-panel">
+            <h4>Melhor disparo</h4>
+            ${melhor ? `<p>${escapeHtml(melhor.nome_disparo)} · ${num(melhor.taxa_abertura).toFixed(2).replace(".", ",")}% de abertura</p>` : `<p class="muted">Sem dado suficiente.</p>`}
+          </div>
+          <div class="insight-panel">
+            <h4>Disparo com maior oportunidade</h4>
+            ${pior ? `<p>${escapeHtml(pior.nome_disparo)} · ${num(pior.taxa_abertura).toFixed(2).replace(".", ",")}% de abertura</p>` : `<p class="muted">Sem dado suficiente.</p>`}
+          </div>
+          <div class="insight-panel">
+            <h4>Gargalo principal</h4>
+            ${gargalo ? `<p><strong>${escapeHtml(gargalo.tema)}:</strong> ${escapeHtml(gargalo.diagnostico)}</p>` : `<p class="muted">Sem gargalo identificado.</p>`}
+          </div>
+        </div>`;
+      }
+
+      // Bloco 6: Tabela completa de disparos
+      function emailPreviewDisparosTableHtml(disparos) {
+        return `<div class="table-wrap" style="margin-top:16px"><table><thead><tr>
+          <th>Data/Hora</th><th>Disparo</th><th>Assunto/Copy</th><th>Segmentação</th><th>Enviados</th><th>Entregues</th><th>Taxa de Entrega</th><th>Aberturas Únicas</th><th>Taxa de Abertura</th><th>Cliques Únicos</th><th>CTR</th><th>CTOR</th><th>Bounces</th><th>Taxa de Bounce</th><th>Engajados</th><th>Desengajados</th><th>Inválidos</th>
+        </tr></thead><tbody>${disparos.map((d) => `<tr>
+          <td>${formatDateTime(d.data_hora)}</td>
+          <td>${escapeHtml(d.nome_disparo)}</td>
+          <td>${escapeHtml(d.assunto_email || "-")}</td>
+          <td>${escapeHtml(d.segmentacao || "-")}</td>
+          <td>${fmt.format(num(d.enviados))}</td>
+          <td>${fmt.format(num(d.entregues))}</td>
+          <td>${d.taxa_entrega != null ? `${num(d.taxa_entrega).toFixed(2).replace(".", ",")}%` : "—"}</td>
+          <td>${d.aberturas_unicas != null ? fmt.format(num(d.aberturas_unicas)) : "—"}</td>
+          <td>${d.taxa_abertura != null ? `${num(d.taxa_abertura).toFixed(2).replace(".", ",")}%` : "—"}</td>
+          <td>${d.cliques_unicos != null ? fmt.format(num(d.cliques_unicos)) : "—"}</td>
+          <td>${d.ctr != null ? `${num(d.ctr).toFixed(2).replace(".", ",")}%` : "—"}</td>
+          <td>${d.ctor != null ? `${num(d.ctor).toFixed(2).replace(".", ",")}%` : "—"}</td>
+          <td>${d.bounces != null ? fmt.format(num(d.bounces)) : "—"}</td>
+          <td>${d.taxa_bounce != null ? `${num(d.taxa_bounce).toFixed(2).replace(".", ",")}%` : "—"}</td>
+          <td>${d.engajados != null ? fmt.format(num(d.engajados)) : "—"}</td>
+          <td>${d.desengajados != null ? fmt.format(num(d.desengajados)) : "—"}</td>
+          <td>${d.invalidos != null ? fmt.format(num(d.invalidos)) : "—"}</td>
+        </tr>`).join("") || `<tr><td colspan="17">Sem disparos.</td></tr>`}</tbody></table></div>`;
+      }
+
+      // Bloco 7: Quadro de Analise Estrategica. editable=true (usado so no preview do wizard,
+      // antes de salvar) libera edicao leve de diagnostico/acao_recomendada via input inline -
+      // os valores editados sao lidos de volta pelo wizard via data-analise-index/data-analise-field
+      // no momento de montar o payload do RPC. No drill-down do dashboard (dado ja salvo,
+      // imutavel - nao ha policy de UPDATE nas 3 tabelas) sempre renderiza editable=false.
+      function emailPreviewAnaliseEstrategicaHtml(analiseEstrategica, { editable = false } = {}) {
+        return `<div class="table-wrap" style="margin-top:16px"><table><thead><tr>
+          <th>Prioridade</th><th>Tema</th><th>Diagnóstico</th><th>Evidência</th><th>Ação Recomendada</th><th>KPI Principal</th>
+        </tr></thead><tbody>${analiseEstrategica.map((a, index) => `<tr>
+          <td>${prioridadePillHtml(a.prioridade)}</td>
+          <td>${escapeHtml(a.tema)}</td>
+          <td>${editable ? `<input type="text" data-analise-field="diagnostico" data-analise-index="${index}" value="${escapeHtml(a.diagnostico)}" style="width:100%" />` : escapeHtml(a.diagnostico)}</td>
+          <td>${escapeHtml(a.evidencia)}</td>
+          <td>${editable ? `<input type="text" data-analise-field="acao_recomendada" data-analise-index="${index}" value="${escapeHtml(a.acao_recomendada)}" style="width:100%" />` : escapeHtml(a.acao_recomendada)}</td>
+          <td>${escapeHtml(a.kpi_principal)}</td>
+        </tr>`).join("") || `<tr><td colspan="6">Sem itens de análise.</td></tr>`}</tbody></table></div>`;
+      }
+
+      // ---- Dashboard "E-mail Marketing" (renderCachedPage, mesmo molde de renderCredsystemBI) ----
+
+      async function fetchEmailModel() {
+        let disparosQuery = supabase
+          .from("vw_campanha_disparos_resumo")
+          .select("*")
+          .order("data_hora", { ascending: false });
+        if (state.marca !== "Todas") disparosQuery = disparosQuery.eq("marca", state.marca);
+        const de = fromDate();
+        const ate = toDate();
+        if (de) disparosQuery = disparosQuery.gte("data_hora", de);
+        if (ate) disparosQuery = disparosQuery.lte("data_hora", ate);
+
+        let campanhasQuery = supabase
+          .from("campanhas_email")
+          .select("id,nome_campanha,marca,data_importacao")
+          .order("data_importacao", { ascending: false });
+        if (state.marca !== "Todas") campanhasQuery = campanhasQuery.eq("marca", state.marca);
+
+        const [disparosResult, campanhasResult] = await Promise.all([disparosQuery, campanhasQuery]);
+        if (disparosResult.error) throw disparosResult.error;
+        if (campanhasResult.error) throw campanhasResult.error;
+
+        return {
+          disparos: disparosResult.data || [],
+          campanhasSalvas: campanhasResult.data || []
+        };
+      }
+
+      function paintEmailHtml({ disparos, campanhasSalvas }) {
+        if (!state.emailSelectedCampanhaId && campanhasSalvas[0]) state.emailSelectedCampanhaId = campanhasSalvas[0].id;
+        const campanhaSelecionada = campanhasSalvas.find((c) => c.id === state.emailSelectedCampanhaId) || campanhasSalvas[0] || null;
+        if (campanhaSelecionada) state.emailSelectedCampanhaId = campanhaSelecionada.id;
+
+        return `
           <div class="page-head">
-            <div><div class="eyebrow">RD Station</div><h2>Email Marketing</h2><p class="muted">Campanhas por marca, entregas, aberturas, cliques e análise de copy.</p></div>
+            <div><div class="eyebrow">Campanhas importadas</div><h2>Email Marketing</h2><p class="muted">Campanhas, disparos, qualidade de base e análise estratégica por marca e período.</p></div>
             <div class="filters">
               ${marcaPillsHtml()}
               ${periodoDropdownHtml()}
               <button id="refresh">Atualizar</button>
             </div>
           </div>
-          ${email.fallback ? `<div class="alert">Usando cálculo local temporário. Para ativar as views oficiais, rode <code>supabase/migrations/20260707_006_email_marketing_bi_views.sql</code>. Detalhe: <code>${escapeHtml(email.fallbackReason || "sem detalhe retornado")}</code></div>` : ""}
-          <div class="grid kpis">
-            ${kpi("Campanhas disparadas", fmt.format(totals.total_campanhas), "campaign")}
-            ${kpi("Total enviados", fmt.format(totals.total_enviados), "outgoing_mail")}
-            ${kpi("Entregues", fmt.format(totals.total_entregues), "mail")}
-            ${kpi("Taxa de entrega", `${totals.taxa_entrega.toFixed(2).replace(".", ",")}%`, "verified")}
-            ${kpi("Taxa de abertura", `${totals.taxa_abertura_media.toFixed(2).replace(".", ",")}%`, "mark_email_read")}
-            ${kpi("CTR", `${totals.ctr.toFixed(2).replace(".", ",")}%`, "ads_click")}
-            ${kpi("CTOR", `${totals.ctor.toFixed(2).replace(".", ",")}%`, "touch_app")}
-            ${kpi("Bounces", fmt.format(totals.total_bounces), "report")}
-          </div>
-          <section class="card">
-            <h3>Campanhas</h3>
-            <p class="muted">Abertos, cliques, CTR e CTOR usam os números reais da campanha quando disponíveis; campanhas importadas antes do rastreamento detalhado caem para a estimativa via taxa de abertura/clique.</p>
-            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Campanha</th><th>Enviados</th><th>Recebidos</th><th>Abertos</th><th>Cliques</th><th>Abertura</th><th>CTR</th><th>CTOR</th><th>Bounces</th><th>Copy</th></tr></thead><tbody>${campaigns.map((r) => {
-              const entregues = num(r.entregues);
-              const abertos = r.aberturas_unicas != null ? num(r.aberturas_unicas) : num(r.abertos_estimados);
-              const cliques = r.cliques_unicos != null ? num(r.cliques_unicos) : num(r.cliques_estimados);
-              const ctr = r.ctr != null ? num(r.ctr) : (entregues ? (cliques / entregues) * 100 : 0);
-              const ctor = r.ctor != null ? num(r.ctor) : (abertos ? (cliques / abertos) * 100 : 0);
-              return `<tr><td>${r.marca}</td><td>${escapeHtml(r.nome_campanha)}</td><td>${fmt.format(num(r.enviados))}</td><td>${fmt.format(entregues)}</td><td>${fmt.format(abertos)}</td><td>${fmt.format(cliques)}</td><td>${num(r.taxa_abertura).toFixed(2).replace(".", ",")}%</td><td>${ctr.toFixed(2).replace(".", ",")}%</td><td>${ctor.toFixed(2).replace(".", ",")}%</td><td>${r.bounces != null ? fmt.format(num(r.bounces)) : "—"}</td><td>${escapeHtml(r.diagnostico_copy || "Sem análise")}</td></tr>`;
-            }).join("") || `<tr><td colspan="11">Sem campanhas importadas.</td></tr>`}</tbody></table></div>
-          </section>
-          <section class="card">
-            <h3>Analista de copy</h3>
-            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Campanha</th><th>Marca</th><th>Score</th><th>Diagnóstico</th><th>Recomendação</th><th>Assunto</th></tr></thead><tbody>${campaigns.map((r) => `<tr><td>${escapeHtml(r.nome_campanha)}</td><td>${r.marca}</td><td>${fmt.format(num(r.score_copy))}/100</td><td>${escapeHtml(r.diagnostico_copy || "-")}</td><td>${escapeHtml(r.recomendacao_copy || "-")}</td><td>${escapeHtml(r.assunto_email || "-")}</td></tr>`).join("") || `<tr><td colspan="6">Sem copies para análise.</td></tr>`}</tbody></table></div>
-          </section>
+          ${emailPreviewOverviewHtml(disparos)}
           <section class="card">
             <div class="page-head" style="align-items:start">
               <div>
-                <h3>Análise detalhada da copy</h3>
-                <p class="muted">Selecione uma campanha para ver leitura crítica, riscos e sugestões de reescrita.</p>
+                <h3>Histórico de campanhas</h3>
+                <p class="muted">Selecione uma campanha salva para ver o comparativo entre disparos, qualidade de base e análise estratégica.</p>
               </div>
               <div class="filters">
-                <select id="copyCampaign">${campaigns.map((r) => `<option value="${escapeHtml(campaignKey(r))}" ${campaignKey(r) === state.emailSelectedId ? "selected" : ""}>${escapeHtml(r.nome_campanha)} · ${r.marca}</option>`).join("")}</select>
+                <select id="emailCampanhaSelect">${campanhasSalvas.map((c) => `<option value="${escapeHtml(c.id)}" ${c.id === state.emailSelectedCampanhaId ? "selected" : ""}>${escapeHtml(c.nome_campanha)} · ${c.marca}</option>`).join("") || `<option value="">Nenhuma campanha importada</option>`}</select>
               </div>
             </div>
-            ${copyDetail ? `
-              <div class="grid kpis" style="margin-top:16px">
-                ${kpi("Campanha", escapeHtml(selectedCampaign.nome_campanha), "campaign")}
-                ${kpi("Marca", selectedCampaign.marca, "storefront")}
-                ${kpi("Performance", copyDetail.performance, "monitoring")}
-                ${kpi("Score copy", `${copyDetail.score}/100`, "psychology")}
-              </div>
-              <div class="insight-grid">
-                <div class="insight-panel">
-                  <h4>Copy atual</h4>
-                  <div class="copy-sample"><strong>Assunto:</strong> ${escapeHtml(copyDetail.current.subject)}<br><strong>Preheader:</strong> ${escapeHtml(copyDetail.current.preheader)}<br><strong>Corpo:</strong> ${escapeHtml(copyDetail.current.body)}</div>
-                </div>
-                <div class="insight-panel">
-                  <h4>Sugestões de reescrita</h4>
-                  <ul>${copyDetail.rewrites.map((item) => `<li><strong>${item.label}:</strong> ${item.text}</li>`).join("")}</ul>
-                </div>
-                <div class="insight-panel">
-                  <h4>Forças</h4>
-                  ${insightCardsHtml(copyDetail.strengths, "success", "check_circle")}
-                </div>
-                <div class="insight-panel">
-                  <h4>Riscos</h4>
-                  ${insightCardsHtml(copyDetail.risks, "danger", "warning")}
-                </div>
-                <div class="insight-panel">
-                  <h4>Próximas ações</h4>
-                  ${insightCardsHtml(copyDetail.actions, "info", "arrow_forward")}
-                </div>
-                <div class="insight-panel">
-                  <h4>Leitura do funil</h4>
-                  <ul>
-                    <li>Abertura: ${num(selectedCampaign.taxa_abertura).toFixed(2).replace(".", ",")}% com ${fmt.format(num(selectedCampaign.abertos_estimados))} abertos estimados.</li>
-                    <li>Clique: ${num(selectedCampaign.taxa_clique).toFixed(2).replace(".", ",")}% com ${fmt.format(num(selectedCampaign.cliques_estimados))} cliques estimados.</li>
-                    <li>Entregabilidade: ${fmt.format(num(selectedCampaign.entregues))} recebidos de ${fmt.format(num(selectedCampaign.enviados))} enviados.</li>
-                  </ul>
-                </div>
-              </div>
-            ` : `<p class="muted">Importe uma campanha RD para habilitar a análise detalhada.</p>`}
-          </section>
-          <section class="card">
-            <h3>Resumo por marca</h3>
-            <div class="table-wrap" style="margin-top:16px"><table><thead><tr><th>Marca</th><th>Campanhas</th><th>Enviados</th><th>Recebidos</th><th>Abertos</th><th>Cliques</th><th>Score copy</th></tr></thead><tbody>${(email.resumo || []).map((r) => `<tr><td>${r.marca}</td><td>${fmt.format(num(r.total_campanhas))}</td><td>${fmt.format(num(r.total_enviados))}</td><td>${fmt.format(num(r.total_entregues))}</td><td>${fmt.format(num(r.total_abertos_estimados))}</td><td>${fmt.format(num(r.total_cliques_estimados))}</td><td>${num(r.score_copy_medio).toFixed(0)}/100</td></tr>`).join("") || `<tr><td colspan="7">Sem resumo por marca.</td></tr>`}</tbody></table></div>
+            <div id="emailDrillDown">${campanhaSelecionada ? `<p class="muted">Carregando disparos da campanha...</p>` : `<p class="muted">Nenhuma campanha de e-mail marketing importada ainda para este filtro. Use "Importar Planilhas" para começar.</p>`}</div>
           </section>`;
+      }
 
-        wireMarcaPills(() => { state.emailSelectedId = null; renderEmailBI(); });
-        wirePeriodoDropdown(() => { state.emailSelectedId = null; renderEmailBI(); });
-        document.querySelector("#refresh").onclick = renderEmailBI;
-        const copyCampaign = document.querySelector("#copyCampaign");
-        if (copyCampaign) copyCampaign.onchange = (event) => { state.emailSelectedId = event.target.value; renderEmailBI(); };
+      function paintEmailDrillDownHtml(disparos, analiseEstrategica) {
+        if (!disparos.length) return `<p class="muted">Esta campanha ainda não tem disparos importados.</p>`;
+        return `
+          <h4 style="margin-top:20px">Comparativo entre Disparos</h4>
+          ${emailPreviewComparativoHtml(disparos)}
+          <h4 style="margin-top:20px">Qualidade da Base</h4>
+          ${emailPreviewQualidadeBaseHtml(disparos)}
+          <h4 style="margin-top:20px">Eficiência do Clique (CTR × CTOR)</h4>
+          ${emailPreviewCtrCtorHtml(disparos)}
+          <h4 style="margin-top:20px">Tabela de Disparos</h4>
+          ${emailPreviewDisparosTableHtml(disparos)}
+          <h4 style="margin-top:20px">Quadro de Análise Estratégica</h4>
+          ${emailPreviewAnaliseEstrategicaHtml(analiseEstrategica, { editable: false })}
+        `;
+      }
+
+      async function loadCampanhaDrillDown(campanhaId) {
+        const drillDown = document.querySelector("#emailDrillDown");
+        if (!drillDown) return;
+        if (!campanhaId) {
+          drillDown.innerHTML = `<p class="muted">Nenhuma campanha selecionada.</p>`;
+          return;
+        }
+        try {
+          const [disparosResult, analiseResult] = await Promise.all([
+            supabase.from("campanha_disparos").select("*").eq("campanha_id", campanhaId).order("data_hora"),
+            supabase.from("campanha_analise_estrategica").select("*").eq("campanha_id", campanhaId)
+          ]);
+          if (disparosResult.error) throw disparosResult.error;
+          if (analiseResult.error) throw analiseResult.error;
+          drillDown.innerHTML = paintEmailDrillDownHtml(disparosResult.data || [], analiseResult.data || []);
+        } catch (error) {
+          drillDown.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
+        }
+      }
+
+      function wireEmailInteractions() {
+        wireMarcaPills(() => { state.emailSelectedCampanhaId = null; renderEmailBI(); });
+        wirePeriodoDropdown(() => { state.emailSelectedCampanhaId = null; renderEmailBI(); });
+        const refreshBtn = document.querySelector("#refresh");
+        if (refreshBtn) refreshBtn.onclick = () => renderEmailBI({ force: true });
+        const campanhaSelect = document.querySelector("#emailCampanhaSelect");
+        if (campanhaSelect) {
+          campanhaSelect.onchange = (event) => {
+            state.emailSelectedCampanhaId = event.target.value;
+            loadCampanhaDrillDown(state.emailSelectedCampanhaId);
+          };
+          if (state.emailSelectedCampanhaId) loadCampanhaDrillDown(state.emailSelectedCampanhaId);
+        }
+      }
+
+      async function renderEmailBI({ force = false } = {}) {
+        const key = marcaPeriodoCacheKey();
+        await renderCachedPage({
+          pageName: "email",
+          cacheKey: key,
+          force,
+          isStillActive: () => state.page === "email" && marcaPeriodoCacheKey() === key,
+          fetchModel: fetchEmailModel,
+          paintHtml: paintEmailHtml,
+          skeletonHtml: () => genericPageSkeletonHtml("Email Marketing", 10),
+          wireInteractions: wireEmailInteractions,
+          renderError: (error) => `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`
+        });
       }
 
       async function renderSocialFormatPage(rede) {
@@ -6849,23 +6905,64 @@
         await renderGoogleBusiness("Cadastro da loja atualizado.", { force: true });
       }
 
-      // Wizard "Importar planilhas" (Marca -> Origem -> Upload -> Preview & Confirmacao) --------
+      // Wizard "Importar planilhas" (Destino & Marca -> Campanha & Upload -> Preview & Confirmacao)
       // Estado de modulo, mesmo padrao usado no modal de convite da Gestao de Usuarios
       // (inviteModalState) - persiste entre re-renders da mesma etapa e entre navegacoes pra
       // outras paginas e volta (so reseta apos uma importacao confirmada com sucesso).
+      //
+      // destino === "email_marketing" segue um fluxo proprio (Etapa 3 com os 7 blocos de preview,
+      // salvamento via RPC atomica em campanhas_email/campanha_disparos/campanha_analise_estrategica
+      // - migration 20260818_033). Os outros 3 destinos (Cartoes Proprios, Midia Paga, Outras
+      // Origens) continuam usando a importacao de sempre (sourceTables/mapRow), so agora
+      // selecionados pelo dropdown de Destino da Etapa 1 em vez do antigo dropdown flat de Origem.
+      // "Outras Origens" existe pra nao perder a capacidade de importar Google Business Profile e
+      // Social Format Metrics, que nao tem lugar nos 3 destinos pedidos.
       let importWizardState = null;
+
+      const destinoLabels = {
+        email_marketing: "E-mail Marketing",
+        cartoes_proprios: "Cartões Próprios",
+        midia_paga: "Mídia Pago / Meta Ads",
+        outras_origens: "Outras Origens"
+      };
+      const canalDisparoOptions = ["E-mail", "SMS", "WhatsApp"];
+      const tipoDisparoOptions = ["Campanha Pontual", "Fluxo/Automação", "Newsletter Recorrente", "Transacional"];
+      const cartoesTipoLabels = {
+        credsystem_emissoes: "CredSystem Emissões",
+        credsystem_propostas: "CredSystem Propostas"
+      };
+      const outrasOrigemLabels = {
+        google_business_profile: "Google Business Profile",
+        social_format_metrics: "Social Format Metrics"
+      };
+
+      // Resolve a chave de sourceTables/sourceLabels/mapRow pros 3 destinos "legados" (tudo que
+      // nao e email_marketing, que tem seu proprio fluxo de salvamento via RPC e nao usa
+      // sourceTables).
+      function resolveSource(s) {
+        if (s.destino === "cartoes_proprios") return s.cartoesTipo;
+        if (s.destino === "midia_paga") return "meta_business";
+        if (s.destino === "outras_origens") return s.outrasOrigem;
+        return null;
+      }
 
       function resetImportWizard() {
         importWizardState = {
           step: 1,
           marca: marcas.filter((m) => m !== "Todas")[0],
-          source: Object.keys(sourceTables)[0],
+          destino: "email_marketing",
+          canalDisparo: canalDisparoOptions[0],
+          tipoDisparo: tipoDisparoOptions[0],
+          cartoesTipo: Object.keys(cartoesTipoLabels)[0],
+          outrasOrigem: Object.keys(outrasOrigemLabels)[0],
+          nomeCampanha: "",
           fileName: "",
           parsing: false,
           saving: false,
           error: "",
           importStatusMessage: "",
-          previewRows: []
+          previewRows: [],
+          emailPreview: null
         };
       }
 
@@ -6874,20 +6971,18 @@
         if (!importWizardState) resetImportWizard();
         const s = importWizardState;
         content.innerHTML = `
-          <div class="page-head"><div><div class="eyebrow">Importação controlada</div><h2>Importar planilhas</h2><p class="muted">Marca → Origem → Upload → Preview, com validação antes de gravar no Supabase.</p></div></div>
+          <div class="page-head"><div><div class="eyebrow">Importação controlada</div><h2>Importar planilhas</h2><p class="muted">Destino & Marca → Campanha & Upload → Preview & Confirmação, com validação antes de gravar no Supabase.</p></div></div>
           <section class="card">
             <div class="wizard-steps">
-              <span class="${s.step === 1 ? "active" : ""}">1. Marca</span>
+              <span class="${s.step === 1 ? "active" : ""}">1. Destino & Marca</span>
               <span class="sep">›</span>
-              <span class="${s.step === 2 ? "active" : ""}">2. Origem</span>
+              <span class="${s.step === 2 ? "active" : ""}">2. Campanha & Upload</span>
               <span class="sep">›</span>
-              <span class="${s.step === 3 ? "active" : ""}">3. Upload</span>
-              <span class="sep">›</span>
-              <span class="${s.step === 4 ? "active" : ""}">4. Preview & Confirmação</span>
+              <span class="${s.step === 3 ? "active" : ""}">3. Preview & Confirmação</span>
             </div>
             ${statusMessage ? `<div class="alert success" style="margin-top:14px">${escapeHtml(statusMessage)}</div>` : ""}
             <div style="margin-top:18px">
-              ${s.step === 1 ? importStep1Html() : s.step === 2 ? importStep2Html() : s.step === 3 ? importStep3Html() : importStep4Html()}
+              ${s.step === 1 ? importStep1Html() : s.step === 2 ? importStep2Html() : importStep3Html()}
             </div>
           </section>
           ${lastImportLogHtml()}`;
@@ -6900,41 +6995,40 @@
 
       function importStep1Html() {
         const s = importWizardState;
-        return `<div class="grid" style="gap:16px;max-width:420px">
+        return `<div class="grid" style="gap:16px;max-width:480px">
           <label>Marca<select id="wizardMarca">${marcas.filter((m) => m !== "Todas").map((m) => `<option ${s.marca === m ? "selected" : ""}>${m}</option>`).join("")}</select></label>
+          <label>Destino dos Dados<select id="wizardDestino">${Object.keys(destinoLabels).map((k) => `<option value="${k}" ${s.destino === k ? "selected" : ""}>${escapeHtml(destinoLabels[k])}</option>`).join("")}</select></label>
+          ${s.destino === "email_marketing" ? `<label>Canal do Disparo<select id="wizardCanalDisparo">${canalDisparoOptions.map((c) => `<option ${s.canalDisparo === c ? "selected" : ""}>${c}</option>`).join("")}</select></label>` : ""}
+          ${s.destino === "cartoes_proprios" ? `<label>Tipo de Dado<select id="wizardCartoesTipo">${Object.keys(cartoesTipoLabels).map((k) => `<option value="${k}" ${s.cartoesTipo === k ? "selected" : ""}>${escapeHtml(cartoesTipoLabels[k])}</option>`).join("")}</select></label>` : ""}
+          ${s.destino === "outras_origens" ? `<label>Origem<select id="wizardOutrasOrigem">${Object.keys(outrasOrigemLabels).map((k) => `<option value="${k}" ${s.outrasOrigem === k ? "selected" : ""}>${escapeHtml(outrasOrigemLabels[k])}</option>`).join("")}</select></label>` : ""}
           <div class="actions" style="justify-content:flex-end">
             <button type="button" id="wizardNext1">Avançar →</button>
           </div>
         </div>`;
       }
 
-      function importStep2Html() {
-        const s = importWizardState;
-        return `<div class="grid" style="gap:16px;max-width:480px">
-          <p class="muted">Marca selecionada: <strong>${escapeHtml(s.marca)}</strong></p>
-          <label>Origem / Canal
-            <select id="wizardSource">${Object.keys(sourceTables).map((k) => `<option value="${k}" ${s.source === k ? "selected" : ""}>${escapeHtml(sourceLabels[k] || k)}</option>`).join("")}</select>
-          </label>
-          <div class="actions" style="justify-content:space-between">
-            <button type="button" class="secondary" id="wizardBack2">← Voltar</button>
-            <button type="button" id="wizardNext2">Avançar →</button>
-          </div>
-        </div>`;
+      function importStep2ResumoDestino(s) {
+        if (s.destino === "cartoes_proprios") return `${destinoLabels[s.destino]} · ${cartoesTipoLabels[s.cartoesTipo]}`;
+        if (s.destino === "outras_origens") return `${destinoLabels[s.destino]} · ${outrasOrigemLabels[s.outrasOrigem]}`;
+        if (s.destino === "email_marketing") return `${destinoLabels[s.destino]} · ${s.canalDisparo}`;
+        return destinoLabels[s.destino];
       }
 
-      function importStep3Html() {
+      function importStep2Html() {
         const s = importWizardState;
-        return `<div class="grid" style="gap:16px">
-          <p class="muted"><strong>${escapeHtml(s.marca)}</strong> · ${escapeHtml(sourceLabels[s.source] || s.source)}</p>
+        return `<div class="grid" style="gap:16px;max-width:520px">
+          <p class="muted"><strong>${escapeHtml(s.marca)}</strong> · ${escapeHtml(importStep2ResumoDestino(s))}</p>
+          <label>Nome da Campanha<input type="text" id="wizardNomeCampanha" value="${escapeHtml(s.nomeCampanha)}" placeholder="ex: Dia dos Pais 2026" /></label>
+          ${s.destino === "email_marketing" ? `<label>Tipo de Disparo<select id="wizardTipoDisparo">${tipoDisparoOptions.map((t) => `<option ${s.tipoDisparo === t ? "selected" : ""}>${t}</option>`).join("")}</select></label>` : ""}
           <div class="drop-zone" id="wizardDropZone">
             <span class="material-symbols-outlined">upload_file</span>
             <strong>Arraste um arquivo aqui ou clique para selecionar</strong>
-            <p class="muted">CSV ou XLSX - será validado antes da importação.</p>
+            <p class="muted">CSV ou XLSX - será validado antes da importação.${s.destino === "email_marketing" ? " XLSX com múltiplas abas = múltiplos disparos; CSV = uma linha por disparo." : ""}</p>
             <input id="wizardFile" type="file" accept=".csv,.xlsx,.xls" />
           </div>
           ${s.error ? `<div class="alert error">${escapeHtml(s.error)}</div>` : ""}
           <div class="actions" style="justify-content:flex-start">
-            <button type="button" class="secondary" id="wizardBack3">← Voltar</button>
+            <button type="button" class="secondary" id="wizardBack2">← Voltar</button>
           </div>
         </div>`;
       }
@@ -6979,32 +7073,33 @@
         return value === null || value === undefined ? "" : String(value);
       }
 
-      function importStep4Html() {
+      function importStep3Html() {
+        const s = importWizardState;
+        return s.destino === "email_marketing" ? importStep3EmailHtml() : importStep3LegacyHtml();
+      }
+
+      function importStep3LegacyHtml() {
         const s = importWizardState;
         if (s.parsing) return `<div class="alert">Lendo ${escapeHtml(s.fileName)}...</div>`;
 
         if (!s.previewRows.length) {
-          return `<div class="alert error">Nenhuma linha válida encontrada em ${escapeHtml(s.fileName)}.</div>
+          return `<div class="alert error">${s.error ? escapeHtml(s.error) : `Nenhuma linha válida encontrada em ${escapeHtml(s.fileName)}.`}</div>
             <div class="actions" style="justify-content:flex-start;margin-top:12px">
-              <button type="button" class="secondary" id="wizardBack4">← Voltar</button>
+              <button type="button" class="secondary" id="wizardBack3">← Voltar</button>
             </div>`;
         }
 
-        const previewColumns = previewColumnsBySource[s.source] || Object.keys(s.previewRows[0]).filter((k) => !["payload_bruto", "lote_importacao", "origem_api", "origem_arquivo"].includes(k));
+        const source = resolveSource(s);
+        const previewColumns = previewColumnsBySource[source] || Object.keys(s.previewRows[0]).filter((k) => !["payload_bruto", "lote_importacao", "origem_api", "origem_arquivo"].includes(k));
         const linhasPreview = s.previewRows.slice(0, 20);
 
         return `<div class="grid" style="gap:14px">
-          <p class="muted"><b>${escapeHtml(s.fileName)}</b> · ${s.previewRows.length} linhas · <strong>${escapeHtml(s.marca)}</strong> · ${escapeHtml(sourceLabels[s.source] || s.source)}</p>
+          <p class="muted"><b>${escapeHtml(s.fileName)}</b> · ${s.previewRows.length} linhas · <strong>${escapeHtml(s.marca)}</strong> · ${escapeHtml(sourceLabels[source] || source)}</p>
           <div class="table-wrap" style="max-height:360px;overflow:auto">
             <table>
               <thead><tr>${previewColumns.map((c) => `<th>${escapeHtml(previewColumnLabels[c] || c)}</th>`).join("")}</tr></thead>
               <tbody>
-                ${linhasPreview.map((row, index) => `<tr>${previewColumns.map((col) => {
-                  if (col === "nome_campanha") {
-                    return `<td><input type="text" class="preview-nome-campanha" data-index="${index}" value="${escapeHtml(row[col] ?? "")}" style="width:100%" /></td>`;
-                  }
-                  return `<td>${escapeHtml(previewCellValue(row, col))}</td>`;
-                }).join("")}</tr>`).join("")}
+                ${linhasPreview.map((row) => `<tr>${previewColumns.map((col) => `<td>${escapeHtml(previewCellValue(row, col))}</td>`).join("")}</tr>`).join("")}
               </tbody>
             </table>
           </div>
@@ -7012,8 +7107,46 @@
           ${s.error ? `<div class="alert error">${escapeHtml(s.error)}</div>` : ""}
           ${s.importStatusMessage ? `<div class="alert">${escapeHtml(s.importStatusMessage)}</div>` : ""}
           <div class="actions" style="justify-content:space-between">
-            <button type="button" class="secondary" id="wizardBack4" ${s.saving ? "disabled" : ""}>← Voltar</button>
+            <button type="button" class="secondary" id="wizardBack3" ${s.saving ? "disabled" : ""}>← Voltar</button>
             <button type="button" id="wizardConfirmImport" ${s.saving ? "disabled" : ""}>${s.saving ? "Importando..." : "Importar para Supabase"}</button>
+          </div>
+        </div>`;
+      }
+
+      // Etapa 3 do destino "E-mail Marketing": os 7 blocos de preview pedidos, todos alimentados
+      // por s.emailPreview.disparos/analiseEstrategica (montados em handleWizardFile). As mesmas
+      // funcoes emailPreview*Html sao reaproveitadas sem alteracao pelo drill-down do dashboard de
+      // E-mail Marketing (ver renderEmailBI) - so muda a origem do array (recem-parseado aqui,
+      // vindo do banco la).
+      function importStep3EmailHtml() {
+        const s = importWizardState;
+        if (s.parsing) return `<div class="alert">Lendo ${escapeHtml(s.fileName)}...</div>`;
+
+        if (!s.emailPreview || !s.emailPreview.disparos.length) {
+          return `<div class="alert error">${s.error ? escapeHtml(s.error) : `Nenhum disparo reconhecido em ${escapeHtml(s.fileName)}.`}</div>
+            <div class="actions" style="justify-content:flex-start;margin-top:12px">
+              <button type="button" class="secondary" id="wizardBack3">← Voltar</button>
+            </div>`;
+        }
+
+        const { disparos, analiseEstrategica } = s.emailPreview;
+
+        return `<div class="grid" style="gap:20px">
+          <p class="muted"><b>${escapeHtml(s.nomeCampanha)}</b> · ${escapeHtml(s.marca)} · ${escapeHtml(s.canalDisparo)} · ${disparos.length} disparo(s) em ${escapeHtml(s.fileName)}</p>
+
+          <div><h4>1. Visão Geral &amp; KPIs Consolidados</h4>${emailPreviewOverviewHtml(disparos)}</div>
+          <div><h4>2. Comparativo entre Disparos</h4>${emailPreviewComparativoHtml(disparos)}</div>
+          <div><h4>3. Qualidade da Base</h4>${emailPreviewQualidadeBaseHtml(disparos)}</div>
+          <div><h4>4. Eficiência do Clique (CTR × CTOR)</h4>${emailPreviewCtrCtorHtml(disparos)}</div>
+          <div><h4>5. Leitura de Desempenho &amp; Gargalo Principal</h4>${emailPreviewLeituraDesempenhoHtml(disparos, analiseEstrategica)}</div>
+          <div><h4>6. Tabela Completa de Disparos</h4>${emailPreviewDisparosTableHtml(disparos)}</div>
+          <div><h4>7. Quadro de Análise Estratégica</h4>${emailPreviewAnaliseEstrategicaHtml(analiseEstrategica, { editable: true })}</div>
+
+          ${s.error ? `<div class="alert error">${escapeHtml(s.error)}</div>` : ""}
+          ${s.importStatusMessage ? `<div class="alert">${escapeHtml(s.importStatusMessage)}</div>` : ""}
+          <div class="actions" style="justify-content:space-between">
+            <button type="button" class="secondary" id="wizardBack3" ${s.saving ? "disabled" : ""}>← Voltar</button>
+            <button type="button" id="wizardConfirmImport" ${s.saving ? "disabled" : ""}>${s.saving ? "Salvando..." : "Confirmar e Salvar no Banco"}</button>
           </div>
         </div>`;
       }
@@ -7023,20 +7156,23 @@
 
         if (s.step === 1) {
           document.querySelector("#wizardMarca").onchange = (event) => { s.marca = event.target.value; };
+          document.querySelector("#wizardDestino").onchange = (event) => { s.destino = event.target.value; renderImport(); };
+          const canalSelect = document.querySelector("#wizardCanalDisparo");
+          if (canalSelect) canalSelect.onchange = (event) => { s.canalDisparo = event.target.value; };
+          const cartoesTipoSelect = document.querySelector("#wizardCartoesTipo");
+          if (cartoesTipoSelect) cartoesTipoSelect.onchange = (event) => { s.cartoesTipo = event.target.value; };
+          const outrasOrigemSelect = document.querySelector("#wizardOutrasOrigem");
+          if (outrasOrigemSelect) outrasOrigemSelect.onchange = (event) => { s.outrasOrigem = event.target.value; };
           document.querySelector("#wizardNext1").onclick = () => { s.step = 2; renderImport(); };
           return;
         }
 
         if (s.step === 2) {
-          document.querySelector("#wizardSource").onchange = (event) => { s.source = event.target.value; };
-          document.querySelector("#wizardBack2").onclick = () => { s.step = 1; renderImport(); };
-          document.querySelector("#wizardNext2").onclick = () => { s.step = 3; renderImport(); };
-          return;
-        }
-
-        if (s.step === 3) {
+          document.querySelector("#wizardNomeCampanha").oninput = (event) => { s.nomeCampanha = event.target.value; };
+          const tipoDisparoSelect = document.querySelector("#wizardTipoDisparo");
+          if (tipoDisparoSelect) tipoDisparoSelect.onchange = (event) => { s.tipoDisparo = event.target.value; };
+          document.querySelector("#wizardBack2").onclick = () => { s.step = 1; s.error = ""; renderImport(); };
           const dropZone = document.querySelector("#wizardDropZone");
-          document.querySelector("#wizardBack3").onclick = () => { s.step = 2; s.error = ""; renderImport(); };
           document.querySelector("#wizardFile").onchange = (event) => handleWizardFile(event.target.files?.[0]);
           dropZone.ondragover = (event) => { event.preventDefault(); dropZone.classList.add("dragover"); };
           dropZone.ondragleave = () => dropZone.classList.remove("dragover");
@@ -7048,14 +7184,25 @@
           return;
         }
 
-        // Etapa 4 --------------------------------------------------------------------------------
-        const backBtn = document.querySelector("#wizardBack4");
-        if (backBtn) backBtn.onclick = () => { s.step = 3; s.error = ""; renderImport(); };
-        document.querySelectorAll(".preview-nome-campanha").forEach((input) => {
-          input.oninput = (event) => { s.previewRows[Number(event.target.dataset.index)].nome_campanha = event.target.value; };
-        });
+        // Etapa 3 --------------------------------------------------------------------------------
+        const backBtn = document.querySelector("#wizardBack3");
+        if (backBtn) backBtn.onclick = () => { s.step = 2; s.error = ""; renderImport(); };
+
+        if (s.destino === "email_marketing") {
+          document.querySelectorAll("[data-analise-field]").forEach((input) => {
+            input.oninput = (event) => {
+              const index = Number(event.target.dataset.analiseIndex);
+              const field = event.target.dataset.analiseField;
+              s.emailPreview.analiseEstrategica[index][field] = event.target.value;
+            };
+          });
+          const confirmBtn = document.querySelector("#wizardConfirmImport");
+          if (confirmBtn) confirmBtn.onclick = confirmEmailImport;
+          return;
+        }
+
         const confirmBtn = document.querySelector("#wizardConfirmImport");
-        if (confirmBtn) confirmBtn.onclick = confirmImport;
+        if (confirmBtn) confirmBtn.onclick = confirmLegacyImport;
       }
 
       // Normaliza um cabecalho de coluna (CSV ou XLSX) pro mesmo formato de chave usado em
@@ -7135,25 +7282,138 @@
         return { rows };
       }
 
+      // Sinonimos de cabecalho que indicam "esta aba/planilha e um relatorio de disparo de e-mail
+      // marketing" - usado pra decidir quais abas de um XLSX viram disparos (nem toda aba de um
+      // relatorio de e-mail marketing tem dados tabulares: dashboards visuais, notas, resumos
+      // ficam de fora mesmo passando pela heuristica de melhor linha de cabecalho).
+      const DISPARO_HEADER_HINTS = ["enviados", "entregues", "abertura", "clique", "assunto", "disparo", "bounce"];
+
+      function looksLikeDisparoSheet(headerRow) {
+        const normalizadas = (headerRow || []).map((cell) => normalizeHeaderKey(cell));
+        return normalizadas.some((col) => DISPARO_HEADER_HINTS.some((hint) => col.includes(hint)));
+      }
+
+      function mapDisparoRow(row, nomeDisparoFallback) {
+        return {
+          nome_disparo: String(row.nome_disparo || row.disparo || row.envio || nomeDisparoFallback || "Disparo").trim() || nomeDisparoFallback,
+          data_hora: normalizeDateTime(row.data_hora || row.data_e_hora || row.data_envio || row.enviado_em || row.data_referencia) || null,
+          assunto_email: row.assunto_email || row.assunto_do_e_mail || row.assunto || row.subject || null,
+          segmentacao: row.segmentacao || row.lista || row.publico || row.audience || null,
+          enviados: num(row.enviados || row.sent),
+          entregues: num(row.entregues || row.delivered || row.recebidos),
+          aberturas_unicas: rawNum(row.aberturas_unicas ?? row.aberturas ?? row.opens_unicos ?? row.unique_opens),
+          cliques_unicos: rawNum(row.cliques_unicos ?? row.cliques ?? row.clicks_unicos ?? row.unique_clicks),
+          bounces: rawNum(row.bounces ?? row.bounce ?? row.emails_retornados),
+          engajados: rawNum(row.engajados ?? row.engaged),
+          desengajados: rawNum(row.desengajados ?? row.descadastros ?? row.unsubscribed ?? row.disengaged),
+          invalidos: rawNum(row.invalidos ?? row.invalid ?? row.emails_invalidos),
+          indeterminados: rawNum(row.indeterminados ?? row.indeterminate ?? row.indefinidos)
+        };
+      }
+
+      // Parser de campanha de e-mail marketing: 1 planilha = 1 campanha com N disparos. Diferente
+      // de parseSpreadsheetFile() (que escolhe SO a melhor aba e descarta o resto), aqui TODAS as
+      // abas que parecem relatorio de disparo viram disparos:
+      //   - 2+ abas qualificadas -> cada aba e 1 disparo (nome = nome da aba, a menos que a propria
+      //     aba tenha coluna nome_disparo/disparo preenchida - nesse caso cada linha da aba vira um
+      //     disparo separado, "NomeDaAba #1", "NomeDaAba #2"... pra nao perder dado silenciosamente).
+      //   - 1 aba qualificada com N linhas -> cada linha e 1 disparo.
+      //   - CSV nao tem conceito de aba -> sempre 1 linha = 1 disparo.
+      async function parseEmailCampaignWorkbook(file) {
+        const name = file.name.toLowerCase();
+
+        if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
+          const XLSX = await import("https://esm.sh/xlsx@0.18.5");
+          const buffer = await file.arrayBuffer();
+          const workbook = XLSX.read(buffer, { type: "array" });
+
+          const abasQualificadas = [];
+          for (const sheetName of workbook.SheetNames) {
+            const linhasAba = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, raw: false, defval: "" });
+            if (!linhasAba.length) continue;
+            const headerIdx = findBestHeaderRow(linhasAba);
+            const headerRow = linhasAba[headerIdx] || [];
+            if (!looksLikeDisparoSheet(headerRow)) continue;
+            const columns = headerRow.map(normalizeHeaderKey);
+            const rows = linhasAba.slice(headerIdx + 1)
+              .filter((linha) => linha.some((cell) => String(cell ?? "").trim() !== ""))
+              .map((linha) => Object.fromEntries(columns.map((col, index) => [col, String(linha[index] ?? "").trim()])));
+            if (rows.length) abasQualificadas.push({ sheetName, rows });
+          }
+
+          if (!abasQualificadas.length) return { disparos: [] };
+
+          if (abasQualificadas.length > 1) {
+            const disparos = [];
+            for (const aba of abasQualificadas) {
+              aba.rows.forEach((row, index) => {
+                const nomeFallback = aba.rows.length > 1 ? `${aba.sheetName} #${index + 1}` : aba.sheetName;
+                disparos.push(mapDisparoRow(row, nomeFallback));
+              });
+            }
+            return { disparos };
+          }
+
+          const unica = abasQualificadas[0];
+          const disparos = unica.rows.map((row, index) => mapDisparoRow(row, `Disparo ${index + 1}`));
+          return { disparos };
+        }
+
+        const text = await readCsvText(file);
+        const todasLinhas = text.split(/\r?\n/).filter(Boolean);
+        if (!todasLinhas.length) return { disparos: [] };
+        const sep = todasLinhas[0].includes(";") ? ";" : ",";
+        const matriz = todasLinhas.map((linha) => linha.split(sep));
+        const headerIdx = findBestHeaderRow(matriz);
+        const columns = matriz[headerIdx].map(normalizeHeaderKey);
+        const rows = matriz.slice(headerIdx + 1)
+          .filter((linha) => linha.some((cell) => String(cell ?? "").trim() !== ""))
+          .map((linha) => Object.fromEntries(columns.map((col, index) => [col, (linha[index] ?? "").trim()])));
+
+        const disparos = rows.map((row, index) => mapDisparoRow(row, `Disparo ${index + 1}`));
+        return { disparos };
+      }
+
       async function handleWizardFile(file) {
         if (!file) return;
         const s = importWizardState;
+
+        if (!s.nomeCampanha.trim()) {
+          s.error = "Preencha o nome da campanha antes de enviar o arquivo.";
+          renderImport();
+          return;
+        }
+
         s.fileName = file.name;
-        s.step = 4;
+        s.step = 3;
         s.parsing = true;
         s.error = "";
         s.previewRows = [];
+        s.emailPreview = null;
         renderImport();
 
         try {
-          const { rows } = await parseSpreadsheetFile(file);
-          s.previewRows = rows.map((row) => mapRow(s.source, s.marca, row, file.name));
+          if (s.destino === "email_marketing") {
+            const { disparos } = await parseEmailCampaignWorkbook(file);
+            const disparosComTaxas = disparos.map(computeDisparoRates);
+            s.emailPreview = {
+              disparos: disparosComTaxas,
+              analiseEstrategica: gerarAnaliseEstrategica(disparosComTaxas)
+            };
+            if (!disparosComTaxas.length) {
+              s.error = `Nenhum disparo reconhecido em ${file.name}. Confira se a planilha tem colunas como enviados/entregues/aberturas/cliques.`;
+            }
+          } else {
+            const source = resolveSource(s);
+            const { rows } = await parseSpreadsheetFile(file);
+            s.previewRows = rows.map((row) => mapRow(source, s.marca, row, file.name));
+          }
           s.parsing = false;
           renderImport();
         } catch (error) {
           s.parsing = false;
           s.error = safeErrorMessage(error, "Não foi possível ler o arquivo.");
-          s.step = 3;
+          s.step = 2;
           renderImport();
         }
       }
@@ -7278,15 +7538,16 @@
         }
       }
 
-      // Confirma a Etapa 4 do wizard: grava importWizardState.previewRows (ja mapeadas, e com
-      // eventuais edicoes de nome_campanha) no Supabase em lotes. Mesma logica/chunking que a
-      // antiga importRows() tinha, só que a fonte dos dados agora é o preview já revisado pelo
-      // Admin, não as linhas cruas recém-parseadas.
-      async function confirmImport() {
+      // Confirma a Etapa 3 do wizard para os destinos legados (Cartoes Proprios/Midia Paga/Outras
+      // Origens): grava importWizardState.previewRows (ja mapeadas) no Supabase em lotes. Mesma
+      // logica/chunking de sempre - inalterada, so passou a resolver a tabela via resolveSource(s)
+      // em vez de s.source direto.
+      async function confirmLegacyImport() {
         const s = importWizardState;
-        const table = sourceTables[s.source];
+        const source = resolveSource(s);
+        const table = sourceTables[source];
         const mapped = s.previewRows;
-        const chunkSize = s.source === "credsystem_propostas" ? 100 : 300;
+        const chunkSize = source === "credsystem_propostas" ? 100 : 300;
         let imported = 0;
 
         s.saving = true;
@@ -7297,9 +7558,8 @@
 
         const conflictColumns = {
           credsystem_propostas: "marca,id_cod_proposta",
-          credsystem_emissoes: "marca,id_cod_cartao",
-          rd_station: "marca,id_campanha,data_referencia"
-        }[s.source];
+          credsystem_emissoes: "marca,id_cod_cartao"
+        }[source];
 
         for (let start = 0; start < mapped.length; start += chunkSize) {
           const chunk = mapped.slice(start, start + chunkSize);
@@ -7331,6 +7591,71 @@
         const finalMessage = `${imported} linhas processadas em ${table}.`;
         saveImportLog(finalMessage, "success");
         saveLastImportTimestamp(table);
+        resetImportWizard();
+        renderImport(finalMessage);
+      }
+
+      // Confirma a Etapa 3 do wizard para o destino "E-mail Marketing": salva campanha + disparos +
+      // analise estrategica numa unica chamada RPC atomica (rpc_salvar_campanha_email, migration
+      // 20260818_033) - se qualquer insert falhar no meio, tudo e revertido no banco, entao nao ha
+      // "campanha orfa sem disparos" pra tratar aqui (diferente do fluxo legado acima, que grava em
+      // chunks e pode parar no meio).
+      async function confirmEmailImport() {
+        const s = importWizardState;
+        const { disparos, analiseEstrategica } = s.emailPreview;
+
+        s.saving = true;
+        s.error = "";
+        s.importStatusMessage = "Salvando campanha, disparos e análise estratégica...";
+        refreshImportWizard();
+        saveImportLog(`Importação iniciada: campanha "${s.nomeCampanha}" com ${disparos.length} disparo(s).`);
+
+        const payloadDisparos = disparos.map((d) => ({
+          data_hora: d.data_hora,
+          nome_disparo: d.nome_disparo,
+          assunto_email: d.assunto_email,
+          segmentacao: d.segmentacao,
+          enviados: d.enviados,
+          entregues: d.entregues,
+          aberturas_unicas: d.aberturas_unicas,
+          cliques_unicos: d.cliques_unicos,
+          bounces: d.bounces,
+          engajados: d.engajados,
+          desengajados: d.desengajados,
+          invalidos: d.invalidos,
+          indeterminados: d.indeterminados
+        }));
+        const payloadAnalise = analiseEstrategica.map((a) => ({
+          prioridade: a.prioridade,
+          tema: a.tema,
+          diagnostico: a.diagnostico,
+          evidencia: a.evidencia,
+          acao_recomendada: a.acao_recomendada,
+          kpi_principal: a.kpi_principal
+        }));
+
+        const { error } = await supabase.rpc("rpc_salvar_campanha_email", {
+          p_marca: s.marca,
+          p_destino_canal: s.canalDisparo,
+          p_tipo_disparo: s.tipoDisparo,
+          p_nome_campanha: s.nomeCampanha,
+          p_disparos: payloadDisparos,
+          p_analise: payloadAnalise
+        });
+
+        if (error) {
+          const message = `Falha ao salvar a campanha: ${safeErrorMessage(error)}`;
+          s.saving = false;
+          s.error = message;
+          s.importStatusMessage = "";
+          saveImportLog(message, "error");
+          refreshImportWizard();
+          return;
+        }
+
+        const finalMessage = `Campanha "${s.nomeCampanha}" salva com ${disparos.length} disparo(s).`;
+        saveImportLog(finalMessage, "success");
+        saveLastImportTimestamp("campanha_disparos");
         resetImportWizard();
         renderImport(finalMessage);
       }
