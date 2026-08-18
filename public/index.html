@@ -131,9 +131,12 @@
       .podium-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; font-size: 11px; color: #64748b; text-align: center; }
       .podium-metrics strong { display: block; color: #1f2937; font-size: 14px; margin-top: 3px; font-variant-numeric: tabular-nums; }
       @media (max-width: 700px) { .podium { grid-template-columns: 1fr; } .podium-card.rank-1 { order: 1; } .podium-card.rank-2 { order: 2; } .podium-card.rank-3 { order: 3; } }
-      .table-wrap { overflow-x: auto; }
-      .bars { display: grid; gap: 16px; }
-      .bar-row { display: grid; grid-template-columns: 220px 1fr 80px; gap: 16px; align-items: center; }
+      .table-wrap { overflow-x: auto; max-width: 100%; }
+      .cell-clip { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+      input.cell-clip { max-width: 260px; text-overflow: ellipsis; }
+      .bars { display: grid; gap: 16px; min-width: 0; }
+      .bar-row { display: grid; grid-template-columns: 220px 1fr 80px; gap: 16px; align-items: center; min-width: 0; }
+      .bar-row strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
       .track { height: 12px; border-radius: 999px; background: #e7eeff; overflow: hidden; }
       .fill { height: 100%; background: var(--accent); border-radius: inherit; }
       .insight-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
@@ -3434,20 +3437,24 @@
         return `<span class="status-pill ${classe}">${escapeHtml(prioridade)}</span>`;
       }
 
-      // Bloco 1: Visao Geral & KPIs Consolidados
+      // Bloco 1: Visao Geral & KPIs Consolidados. Usa kpiWithDelta() (mesmo componente/classes
+      // "card kpi" de Redes Sociais e Anuncios/Meta Ads, ver kpiWithDelta() e o grid de KPIs de
+      // renderSocialBI/renderMetaAds) em vez de kpi() puro, pra manter fonte/espacamento/borda/
+      // sombra/icone identicos aos das outras telas - sem linha de delta (nao ha "periodo
+      // anterior" com sentido pra uma campanha/disparo unico selecionado).
       function emailPreviewOverviewHtml(disparos) {
         const agg = weightedDisparosAggregate(disparos);
         return `<div class="grid kpis">
-          ${kpi("Disparos", fmt.format(disparos.length), "campaign")}
-          ${kpi("Enviados", fmt.format(agg.enviados), "outgoing_mail")}
-          ${kpi("Entregues", fmt.format(agg.entregues), "mail")}
-          ${kpi("Taxa de Entrega", `${agg.taxaEntrega.toFixed(2).replace(".", ",")}%`, "verified")}
-          ${kpi("Aberturas Únicas", fmt.format(Math.round(agg.aberturas)), "mark_email_read")}
-          ${kpi("Taxa de Abertura", `${agg.taxaAbertura.toFixed(2).replace(".", ",")}%`, "visibility")}
-          ${kpi("Cliques Únicos", fmt.format(Math.round(agg.cliques)), "ads_click")}
-          ${kpi("CTR", `${agg.ctr.toFixed(2).replace(".", ",")}%`, "touch_app")}
-          ${kpi("CTOR", `${agg.ctor.toFixed(2).replace(".", ",")}%`, "target")}
-          ${kpi("Bounces", fmt.format(Math.round(agg.bounces)), "report")}
+          ${kpiWithDelta("Disparos", fmt.format(disparos.length), "campaign")}
+          ${kpiWithDelta("Enviados", fmt.format(agg.enviados), "outgoing_mail")}
+          ${kpiWithDelta("Entregues", fmt.format(agg.entregues), "mail")}
+          ${kpiWithDelta("Taxa de Entrega", `${agg.taxaEntrega.toFixed(2).replace(".", ",")}%`, "verified")}
+          ${kpiWithDelta("Aberturas Únicas", fmt.format(Math.round(agg.aberturas)), "mark_email_read")}
+          ${kpiWithDelta("Taxa de Abertura", `${agg.taxaAbertura.toFixed(2).replace(".", ",")}%`, "visibility")}
+          ${kpiWithDelta("Cliques Únicos", fmt.format(Math.round(agg.cliques)), "ads_click")}
+          ${kpiWithDelta("CTR", `${agg.ctr.toFixed(2).replace(".", ",")}%`, "touch_app")}
+          ${kpiWithDelta("CTOR", `${agg.ctor.toFixed(2).replace(".", ",")}%`, "target")}
+          ${kpiWithDelta("Bounces", fmt.format(Math.round(agg.bounces)), "report")}
         </div>`;
       }
 
@@ -3517,9 +3524,9 @@
           <th>Data/Hora</th><th>Disparo</th><th>Assunto/Copy</th><th>Segmentação</th><th>Enviados</th><th>Entregues</th><th>Taxa de Entrega</th><th>Aberturas Únicas</th><th>Taxa de Abertura</th><th>Cliques Únicos</th><th>CTR</th><th>CTOR</th><th>Bounces</th><th>Taxa de Bounce</th><th>Engajados</th><th>Desengajados</th><th>Inválidos</th>
         </tr></thead><tbody>${disparos.map((d) => `<tr>
           <td>${formatDateTime(d.data_hora)}</td>
-          <td>${escapeHtml(d.nome_disparo)}</td>
-          <td>${escapeHtml(d.assunto_email || "-")}</td>
-          <td>${escapeHtml(d.segmentacao || "-")}</td>
+          <td><span class="cell-clip" title="${escapeHtml(d.nome_disparo)}">${escapeHtml(d.nome_disparo)}</span></td>
+          <td><span class="cell-clip" title="${escapeHtml(d.assunto_email || "-")}">${escapeHtml(d.assunto_email || "-")}</span></td>
+          <td><span class="cell-clip" title="${escapeHtml(d.segmentacao || "-")}">${escapeHtml(d.segmentacao || "-")}</span></td>
           <td>${fmt.format(num(d.enviados))}</td>
           <td>${fmt.format(num(d.entregues))}</td>
           <td>${d.taxa_entrega != null ? `${num(d.taxa_entrega).toFixed(2).replace(".", ",")}%` : "—"}</td>
@@ -3546,11 +3553,11 @@
           <th>Prioridade</th><th>Tema</th><th>Diagnóstico</th><th>Evidência</th><th>Ação Recomendada</th><th>KPI Principal</th>
         </tr></thead><tbody>${analiseEstrategica.map((a, index) => `<tr>
           <td>${prioridadePillHtml(a.prioridade)}</td>
-          <td>${escapeHtml(a.tema)}</td>
-          <td>${editable ? `<input type="text" data-analise-field="diagnostico" data-analise-index="${index}" value="${escapeHtml(a.diagnostico)}" style="width:100%" />` : escapeHtml(a.diagnostico)}</td>
-          <td>${escapeHtml(a.evidencia)}</td>
-          <td>${editable ? `<input type="text" data-analise-field="acao_recomendada" data-analise-index="${index}" value="${escapeHtml(a.acao_recomendada)}" style="width:100%" />` : escapeHtml(a.acao_recomendada)}</td>
-          <td>${escapeHtml(a.kpi_principal)}</td>
+          <td><span class="cell-clip" title="${escapeHtml(a.tema)}">${escapeHtml(a.tema)}</span></td>
+          <td>${editable ? `<input type="text" class="cell-clip" data-analise-field="diagnostico" data-analise-index="${index}" value="${escapeHtml(a.diagnostico)}" title="${escapeHtml(a.diagnostico)}" />` : `<span class="cell-clip" title="${escapeHtml(a.diagnostico)}">${escapeHtml(a.diagnostico)}</span>`}</td>
+          <td><span class="cell-clip" title="${escapeHtml(a.evidencia)}">${escapeHtml(a.evidencia)}</span></td>
+          <td>${editable ? `<input type="text" class="cell-clip" data-analise-field="acao_recomendada" data-analise-index="${index}" value="${escapeHtml(a.acao_recomendada)}" title="${escapeHtml(a.acao_recomendada)}" />` : `<span class="cell-clip" title="${escapeHtml(a.acao_recomendada)}">${escapeHtml(a.acao_recomendada)}</span>`}</td>
+          <td><span class="cell-clip" title="${escapeHtml(a.kpi_principal)}">${escapeHtml(a.kpi_principal)}</span></td>
         </tr>`).join("") || `<tr><td colspan="6">Sem itens de análise.</td></tr>`}</tbody></table></div>`;
       }
 
@@ -3587,22 +3594,27 @@
         if (!state.emailSelectedCampanhaId && campanhasSalvas[0]) state.emailSelectedCampanhaId = campanhasSalvas[0].id;
         const campanhaSelecionada = campanhasSalvas.find((c) => c.id === state.emailSelectedCampanhaId) || campanhasSalvas[0] || null;
         if (campanhaSelecionada) state.emailSelectedCampanhaId = campanhaSelecionada.id;
+        const ultimaImportacao = lastImportTimestamp(["campanha_disparos"]);
 
+        // Sem botao "Atualizar": marca/periodo/campanha disparam renderEmailBI()/
+        // loadCampanhaDrillDown() direto na troca (ver wireEmailInteractions), sempre buscando
+        // dado fresco - mesmo padrao ja usado em Redes Sociais/Anuncios (indicador passivo em vez
+        // de botao manual, ver ultimaAtualizacaoHtml()).
         return `
           <div class="page-head">
             <div><div class="eyebrow">Campanhas importadas</div><h2>Email Marketing</h2><p class="muted">Campanhas, disparos, qualidade de base e análise estratégica por marca e período.</p></div>
             <div class="filters">
               ${marcaPillsHtml()}
+              <span class="pill" style="cursor:default"><span class="material-symbols-outlined" style="font-size:16px;vertical-align:-3px;margin-right:4px">sync</span>Última importação: ${escapeHtml(formatDateTime(ultimaImportacao))}</span>
               ${periodoDropdownHtml()}
-              <button id="refresh">Atualizar</button>
             </div>
           </div>
-          ${emailPreviewOverviewHtml(disparos)}
+          <div id="emailKpiRow">${emailPreviewOverviewHtml(disparos)}</div>
           <section class="card">
             <div class="page-head" style="align-items:start">
               <div>
                 <h3>Histórico de campanhas</h3>
-                <p class="muted">Selecione uma campanha salva para ver o comparativo entre disparos, qualidade de base e análise estratégica.</p>
+                <p class="muted">Selecione uma campanha salva para ver os KPIs, o comparativo entre disparos, qualidade de base e análise estratégica dela.</p>
               </div>
               <div class="filters">
                 <select id="emailCampanhaSelect">${campanhasSalvas.map((c) => `<option value="${escapeHtml(c.id)}" ${c.id === state.emailSelectedCampanhaId ? "selected" : ""}>${escapeHtml(c.nome_campanha)} · ${c.marca}</option>`).join("") || `<option value="">Nenhuma campanha importada</option>`}</select>
@@ -3614,25 +3626,27 @@
 
       function paintEmailDrillDownHtml(disparos, analiseEstrategica) {
         if (!disparos.length) return `<p class="muted">Esta campanha ainda não tem disparos importados.</p>`;
-        return `
-          <h4 style="margin-top:20px">Comparativo entre Disparos</h4>
-          ${emailPreviewComparativoHtml(disparos)}
-          <h4 style="margin-top:20px">Qualidade da Base</h4>
-          ${emailPreviewQualidadeBaseHtml(disparos)}
-          <h4 style="margin-top:20px">Eficiência do Clique (CTR × CTOR)</h4>
-          ${emailPreviewCtrCtorHtml(disparos)}
-          <h4 style="margin-top:20px">Tabela de Disparos</h4>
-          ${emailPreviewDisparosTableHtml(disparos)}
-          <h4 style="margin-top:20px">Quadro de Análise Estratégica</h4>
-          ${emailPreviewAnaliseEstrategicaHtml(analiseEstrategica, { editable: false })}
-        `;
+        return `<div class="grid" style="gap:16px;margin-top:16px;min-width:0">
+          <section class="card"><h4>Comparativo entre Disparos</h4>${emailPreviewComparativoHtml(disparos)}</section>
+          <section class="card"><h4>Qualidade da Base</h4>${emailPreviewQualidadeBaseHtml(disparos)}</section>
+          <section class="card"><h4>Eficiência do Clique (CTR × CTOR)</h4>${emailPreviewCtrCtorHtml(disparos)}</section>
+          <section class="card"><h4>Tabela de Disparos</h4>${emailPreviewDisparosTableHtml(disparos)}</section>
+          <section class="card"><h4>Quadro de Análise Estratégica</h4>${emailPreviewAnaliseEstrategicaHtml(analiseEstrategica, { editable: false })}</section>
+        </div>`;
       }
 
+      // Busca os disparos/analise da campanha selecionada e atualiza DOIS pontos da tela: o card
+      // de drill-down (#emailDrillDown, blocos 2-7) e os KPIs do topo (#emailKpiRow, bloco 1) -
+      // os cards superiores passam a refletir a campanha selecionada, nao mais o periodo inteiro
+      // agregado (pedido explicito: "cards superiores devem refletir a soma dos disparos dessa
+      // campanha").
       async function loadCampanhaDrillDown(campanhaId) {
         const drillDown = document.querySelector("#emailDrillDown");
+        const kpiRow = document.querySelector("#emailKpiRow");
         if (!drillDown) return;
         if (!campanhaId) {
           drillDown.innerHTML = `<p class="muted">Nenhuma campanha selecionada.</p>`;
+          if (kpiRow) kpiRow.innerHTML = emailPreviewOverviewHtml([]);
           return;
         }
         try {
@@ -3642,17 +3656,20 @@
           ]);
           if (disparosResult.error) throw disparosResult.error;
           if (analiseResult.error) throw analiseResult.error;
-          drillDown.innerHTML = paintEmailDrillDownHtml(disparosResult.data || [], analiseResult.data || []);
+          const disparosCampanha = disparosResult.data || [];
+          if (kpiRow) kpiRow.innerHTML = emailPreviewOverviewHtml(disparosCampanha);
+          drillDown.innerHTML = paintEmailDrillDownHtml(disparosCampanha, analiseResult.data || []);
         } catch (error) {
           drillDown.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
         }
       }
 
       function wireEmailInteractions() {
+        // Sem botao "Atualizar" (removido): marca/periodo mudam a cacheKey e sempre buscam de
+        // novo (renderEmailBI roda com force:true, ver abaixo); a campanha dispara seu proprio
+        // fetch reativo direto no onchange, sem precisar de um botao manual.
         wireMarcaPills(() => { state.emailSelectedCampanhaId = null; renderEmailBI(); });
         wirePeriodoDropdown(() => { state.emailSelectedCampanhaId = null; renderEmailBI(); });
-        const refreshBtn = document.querySelector("#refresh");
-        if (refreshBtn) refreshBtn.onclick = () => renderEmailBI({ force: true });
         const campanhaSelect = document.querySelector("#emailCampanhaSelect");
         if (campanhaSelect) {
           campanhaSelect.onchange = (event) => {
@@ -3663,12 +3680,15 @@
         }
       }
 
-      async function renderEmailBI({ force = false } = {}) {
+      async function renderEmailBI() {
         const key = marcaPeriodoCacheKey();
         await renderCachedPage({
           pageName: "email",
           cacheKey: key,
-          force,
+          // Sempre busca fresco (nao respeita o staleTime de 5min do cache generico) - sem botao
+          // "Atualizar" pra escapar de um cache desatualizado, uma campanha importada agora pelo
+          // wizard precisa aparecer na hora ao voltar pra esta tela, nao so depois de 5min.
+          force: true,
           isStillActive: () => state.page === "email" && marcaPeriodoCacheKey() === key,
           fetchModel: fetchEmailModel,
           paintHtml: paintEmailHtml,
@@ -7131,16 +7151,16 @@
 
         const { disparos, analiseEstrategica } = s.emailPreview;
 
-        return `<div class="grid" style="gap:20px">
+        return `<div class="grid" style="gap:20px;min-width:0">
           <p class="muted"><b>${escapeHtml(s.nomeCampanha)}</b> · ${escapeHtml(s.marca)} · ${escapeHtml(s.canalDisparo)} · ${disparos.length} disparo(s) em ${escapeHtml(s.fileName)}</p>
 
-          <div><h4>1. Visão Geral &amp; KPIs Consolidados</h4>${emailPreviewOverviewHtml(disparos)}</div>
-          <div><h4>2. Comparativo entre Disparos</h4>${emailPreviewComparativoHtml(disparos)}</div>
-          <div><h4>3. Qualidade da Base</h4>${emailPreviewQualidadeBaseHtml(disparos)}</div>
-          <div><h4>4. Eficiência do Clique (CTR × CTOR)</h4>${emailPreviewCtrCtorHtml(disparos)}</div>
-          <div><h4>5. Leitura de Desempenho &amp; Gargalo Principal</h4>${emailPreviewLeituraDesempenhoHtml(disparos, analiseEstrategica)}</div>
-          <div><h4>6. Tabela Completa de Disparos</h4>${emailPreviewDisparosTableHtml(disparos)}</div>
-          <div><h4>7. Quadro de Análise Estratégica</h4>${emailPreviewAnaliseEstrategicaHtml(analiseEstrategica, { editable: true })}</div>
+          <section class="card"><h4>1. Visão Geral &amp; KPIs Consolidados</h4>${emailPreviewOverviewHtml(disparos)}</section>
+          <section class="card"><h4>2. Comparativo entre Disparos</h4>${emailPreviewComparativoHtml(disparos)}</section>
+          <section class="card"><h4>3. Qualidade da Base</h4>${emailPreviewQualidadeBaseHtml(disparos)}</section>
+          <section class="card"><h4>4. Eficiência do Clique (CTR × CTOR)</h4>${emailPreviewCtrCtorHtml(disparos)}</section>
+          <section class="card"><h4>5. Leitura de Desempenho &amp; Gargalo Principal</h4>${emailPreviewLeituraDesempenhoHtml(disparos, analiseEstrategica)}</section>
+          <section class="card"><h4>6. Tabela Completa de Disparos</h4>${emailPreviewDisparosTableHtml(disparos)}</section>
+          <section class="card"><h4>7. Quadro de Análise Estratégica</h4>${emailPreviewAnaliseEstrategicaHtml(analiseEstrategica, { editable: true })}</section>
 
           ${s.error ? `<div class="alert error">${escapeHtml(s.error)}</div>` : ""}
           ${s.importStatusMessage ? `<div class="alert">${escapeHtml(s.importStatusMessage)}</div>` : ""}
@@ -7282,43 +7302,139 @@
         return { rows };
       }
 
-      // Sinonimos de cabecalho que indicam "esta aba/planilha e um relatorio de disparo de e-mail
-      // marketing" - usado pra decidir quais abas de um XLSX viram disparos (nem toda aba de um
-      // relatorio de e-mail marketing tem dados tabulares: dashboards visuais, notas, resumos
-      // ficam de fora mesmo passando pela heuristica de melhor linha de cabecalho).
-      const DISPARO_HEADER_HINTS = ["enviados", "entregues", "abertura", "clique", "assunto", "disparo", "bounce"];
+      // Nomes de aba que indicam "isto e a tabela de disparos de verdade" (prioridade maxima -
+      // muito mais confiavel que heuristica de cabecalho, que pode "achar" celulas parecidas com
+      // enviados/entregues dentro de uma aba de Dashboard Executivo ou Calculos). Nomes que
+      // indicam o oposto (aba decorativa/de apoio, NUNCA vira disparo mesmo que passe pela
+      // heuristica de cabecalho).
+      const DISPARO_SHEET_NAME_PREFERRED = ["campanha", "disparo", "envio"];
+      const DISPARO_SHEET_NAME_EXCLUDED = ["dashboard", "executivo", "calculo", "cálculo", "nota", "metodologia", "resumo", "capa", "instru", "legenda", "glossario", "glossário"];
 
+      // Exige as DUAS colunas-chave de um relatorio de disparo real (enviados + um segundo sinal
+      // de entrega/engajamento/copy) - uma unica palavra batendo (ex: "abertura" aparecendo como
+      // rotulo solto numa aba de calculos) nao e o suficiente pra qualificar a aba.
       function looksLikeDisparoSheet(headerRow) {
         const normalizadas = (headerRow || []).map((cell) => normalizeHeaderKey(cell));
-        return normalizadas.some((col) => DISPARO_HEADER_HINTS.some((hint) => col.includes(hint)));
+        const temEnviados = normalizadas.some((col) => col.includes("enviados"));
+        const temSegundoSinal = normalizadas.some((col) => col.includes("entregues") || col.includes("abertura") || col.includes("assunto") || col.includes("disparo"));
+        return temEnviados && temSegundoSinal;
+      }
+
+      // Marca "fim da tabela de dados": a linha de TOTAL/TAXAS PONDERADAS (ou media ponderada) e
+      // qualquer nota de rodape que comece com "*". A leitura para ESTRITAMENTE antes dessa linha
+      // (nao so pula ela - tudo que vem depois, no mesmo formato, tambem e ignorado).
+      const DISPARO_STOP_ROW_PATTERN = /^\*|total\s*\/?\s*taxas?\s+pondera|^totais?\b|^m[eé]dia\s+pondera/i;
+
+      function isStopRow(linhaRaw) {
+        const texto = (linhaRaw || []).map((cell) => String(cell ?? "").trim()).filter(Boolean).join(" ").trim();
+        return texto !== "" && DISPARO_STOP_ROW_PATTERN.test(texto);
+      }
+
+      // Corta a matriz de linhas na primeira linha de TOTAL/nota (inclusive) - tudo antes disso
+      // sao as linhas de dados de verdade da tabela.
+      function truncateAtStopRow(linhas) {
+        const resultado = [];
+        for (const linha of linhas) {
+          if (isStopRow(linha)) break;
+          resultado.push(linha);
+        }
+        return resultado;
+      }
+
+      // Valida se uma linha ja mapeada e um disparo de verdade: precisa ter nome (e o nome nao
+      // pode ser, por si so, um marcador de total/nota que escapou de truncateAtStopRow) e algum
+      // sinal real de dado - data reconhecida OU qualquer metrica de volume/engajamento informada.
+      // NAO exige enviados/entregues > 0: um disparo com cliques zerados ou 100% de bounce e um
+      // disparo real (dado ruim, mas dado), nao lixo de planilha - so descarta linha realmente
+      // vazia (sobra de celula mesclada de aba decorativa).
+      function isValidDisparoRow(disparo) {
+        const nome = String(disparo.nome_disparo || "").trim();
+        if (!nome || DISPARO_STOP_ROW_PATTERN.test(nome)) return false;
+        return (
+          disparo.data_hora != null ||
+          num(disparo.enviados) > 0 ||
+          num(disparo.entregues) > 0 ||
+          disparo.aberturas_unicas != null ||
+          disparo.cliques_unicos != null ||
+          disparo.bounces != null
+        );
+      }
+
+      // Parser de numero pt-BR pros campos de contagem do disparo: "." como separador de milhar e
+      // "," como separador decimal (ex: "1.234" = mil duzentos e trinta e quatro; "44,44" = 44,44)
+      // - formato comum em relatorios brasileiros de e-mail marketing exportados do Excel. num()/
+      // rawNum() (usados pelo resto do app) nao fazem essa conversao - ficam reservados pros
+      // formatos que os outros importadores ja esperam (numero puro ou decimal com ponto); usar
+      // num() aqui fazia "44,44" virar NaN -> 0, derrubando enviados/entregues pra zero e
+      // descartando disparos reais no filtro antigo.
+      function parseNumeroDisparo(v) {
+        if (v === undefined || v === null) return null;
+        const raw = String(v).trim();
+        if (raw === "") return null;
+        const normalizado = raw.replace(/\.(?=\d{3}(?:\D|$))/g, "").replace(",", ".").replace(/[^\d.-]/g, "");
+        if (normalizado === "" || normalizado === "-") return null;
+        const parsed = Number(normalizado);
+        return Number.isFinite(parsed) ? parsed : null;
+      }
+      const numDisparo = (v) => parseNumeroDisparo(v) ?? 0;
+      const rawNumDisparo = (v) => parseNumeroDisparo(v);
+
+      // Data do disparo com o mesmo parser generico de normalizeDateTime(), mais um caso extra:
+      // relatorios de e-mail marketing costumam trazer so dia/mes (ex: "17/07", sem ano) - assume
+      // o ano corrente, unico dado plausivel disponivel client-side.
+      function normalizeDisparoDateTime(value) {
+        if (!value) return null;
+        const raw = String(value).trim();
+        if (!raw) return null;
+
+        const curtoMatch = raw.match(/^(\d{2})\/(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+        if (curtoMatch) {
+          const [, day, month, hour = "00", minute = "00", second = "00"] = curtoMatch;
+          const ano = new Date().getFullYear();
+          return `${ano}-${month}-${day}T${hour}:${minute}:${second}`;
+        }
+
+        return normalizeDateTime(raw);
       }
 
       function mapDisparoRow(row, nomeDisparoFallback) {
         return {
-          nome_disparo: String(row.nome_disparo || row.disparo || row.envio || nomeDisparoFallback || "Disparo").trim() || nomeDisparoFallback,
-          data_hora: normalizeDateTime(row.data_hora || row.data_e_hora || row.data_envio || row.enviado_em || row.data_referencia) || null,
+          nome_disparo: String(row.nome_disparo || row.disparo || row.envio || row.campanha || nomeDisparoFallback || "Disparo").trim() || nomeDisparoFallback,
+          data_hora: normalizeDisparoDateTime(row.data_hora || row.data_e_hora || row.data_envio || row.enviado_em || row.data || row.data_referencia),
           assunto_email: row.assunto_email || row.assunto_do_e_mail || row.assunto || row.subject || null,
           segmentacao: row.segmentacao || row.lista || row.publico || row.audience || null,
-          enviados: num(row.enviados || row.sent),
-          entregues: num(row.entregues || row.delivered || row.recebidos),
-          aberturas_unicas: rawNum(row.aberturas_unicas ?? row.aberturas ?? row.opens_unicos ?? row.unique_opens),
-          cliques_unicos: rawNum(row.cliques_unicos ?? row.cliques ?? row.clicks_unicos ?? row.unique_clicks),
-          bounces: rawNum(row.bounces ?? row.bounce ?? row.emails_retornados),
-          engajados: rawNum(row.engajados ?? row.engaged),
-          desengajados: rawNum(row.desengajados ?? row.descadastros ?? row.unsubscribed ?? row.disengaged),
-          invalidos: rawNum(row.invalidos ?? row.invalid ?? row.emails_invalidos),
-          indeterminados: rawNum(row.indeterminados ?? row.indeterminate ?? row.indefinidos)
+          enviados: numDisparo(row.enviados || row.sent),
+          entregues: numDisparo(row.entregues || row.delivered || row.recebidos),
+          aberturas_unicas: rawNumDisparo(row.aberturas_unicas ?? row.aberturas ?? row.opens_unicos ?? row.unique_opens),
+          cliques_unicos: rawNumDisparo(row.cliques_unicos ?? row.cliques ?? row.clicks_unicos ?? row.unique_clicks),
+          bounces: rawNumDisparo(row.bounces ?? row.bounce ?? row.emails_retornados),
+          engajados: rawNumDisparo(row.engajados ?? row.engaged),
+          desengajados: rawNumDisparo(row.desengajados ?? row.descadastros ?? row.unsubscribed ?? row.disengaged),
+          invalidos: rawNumDisparo(row.invalidos ?? row.invalid ?? row.emails_invalidos),
+          indeterminados: rawNumDisparo(row.indeterminados ?? row.indeterminate ?? row.indefinidos)
         };
       }
 
-      // Parser de campanha de e-mail marketing: 1 planilha = 1 campanha com N disparos. Diferente
-      // de parseSpreadsheetFile() (que escolhe SO a melhor aba e descarta o resto), aqui TODAS as
-      // abas que parecem relatorio de disparo viram disparos:
-      //   - 2+ abas qualificadas -> cada aba e 1 disparo (nome = nome da aba, a menos que a propria
-      //     aba tenha coluna nome_disparo/disparo preenchida - nesse caso cada linha da aba vira um
-      //     disparo separado, "NomeDaAba #1", "NomeDaAba #2"... pra nao perder dado silenciosamente).
-      //   - 1 aba qualificada com N linhas -> cada linha e 1 disparo.
-      //   - CSV nao tem conceito de aba -> sempre 1 linha = 1 disparo.
+      // So converte em objeto as linhas ANTES do marcador de TOTAL/nota (truncateAtStopRow) - a
+      // leitura para estritamente ali, nao processa nada depois.
+      function sheetRowsToObjects(linhasAba, headerIdx) {
+        const columns = (linhasAba[headerIdx] || []).map(normalizeHeaderKey);
+        const linhasDados = truncateAtStopRow(linhasAba.slice(headerIdx + 1))
+          .filter((linha) => linha.some((cell) => String(cell ?? "").trim() !== ""));
+        return linhasDados.map((linha) => Object.fromEntries(columns.map((col, index) => [col, String(linha[index] ?? "").trim()])));
+      }
+
+      // Parser de campanha de e-mail marketing: 1 planilha = 1 campanha, e a tabela de disparos
+      // vem de UMA UNICA aba (nunca trata "varias abas qualificadas" como "varios disparos" - foi
+      // exatamente essa heuristica antiga que confundia abas de Dashboard Executivo/Calculos com
+      // disparos reais). Prioridade de escolha da aba:
+      //   1. Nome da aba bate com campanha/disparo/envio (e nao esta na lista de exclusao) -> usa
+      //      essa aba direto, sem nem rodar a heuristica de cabecalho.
+      //   2. Senao, roda a heuristica de cabecalho (looksLikeDisparoSheet, agora exigindo 2 sinais)
+      //      em todas as abas NAO excluidas por nome, fica com a de maior pontuacao.
+      // A leitura de linhas para estritamente antes do marcador de TOTAL/nota (truncateAtStopRow,
+      // dentro de sheetRowsToObjects) e o que sobra e validado por isValidDisparoRow, nos dois
+      // formatos (XLSX e CSV).
       async function parseEmailCampaignWorkbook(file) {
         const name = file.name.toLowerCase();
 
@@ -7327,35 +7443,40 @@
           const buffer = await file.arrayBuffer();
           const workbook = XLSX.read(buffer, { type: "array" });
 
-          const abasQualificadas = [];
-          for (const sheetName of workbook.SheetNames) {
-            const linhasAba = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, raw: false, defval: "" });
-            if (!linhasAba.length) continue;
-            const headerIdx = findBestHeaderRow(linhasAba);
-            const headerRow = linhasAba[headerIdx] || [];
-            if (!looksLikeDisparoSheet(headerRow)) continue;
-            const columns = headerRow.map(normalizeHeaderKey);
-            const rows = linhasAba.slice(headerIdx + 1)
-              .filter((linha) => linha.some((cell) => String(cell ?? "").trim() !== ""))
-              .map((linha) => Object.fromEntries(columns.map((col, index) => [col, String(linha[index] ?? "").trim()])));
-            if (rows.length) abasQualificadas.push({ sheetName, rows });
-          }
+          const sheetsElegiveis = workbook.SheetNames.filter((sheetName) => {
+            const norm = normalizeHeaderKey(sheetName);
+            return !DISPARO_SHEET_NAME_EXCLUDED.some((k) => norm.includes(normalizeHeaderKey(k)));
+          });
 
-          if (!abasQualificadas.length) return { disparos: [] };
+          let sheetEscolhida = sheetsElegiveis.find((sheetName) => {
+            const norm = normalizeHeaderKey(sheetName);
+            return DISPARO_SHEET_NAME_PREFERRED.some((k) => norm.includes(k));
+          }) || null;
 
-          if (abasQualificadas.length > 1) {
-            const disparos = [];
-            for (const aba of abasQualificadas) {
-              aba.rows.forEach((row, index) => {
-                const nomeFallback = aba.rows.length > 1 ? `${aba.sheetName} #${index + 1}` : aba.sheetName;
-                disparos.push(mapDisparoRow(row, nomeFallback));
-              });
+          if (!sheetEscolhida) {
+            let melhorScore = -1;
+            for (const sheetName of sheetsElegiveis) {
+              const linhasAba = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, raw: false, defval: "" });
+              if (!linhasAba.length) continue;
+              const headerIdx = findBestHeaderRow(linhasAba);
+              const headerRow = linhasAba[headerIdx] || [];
+              if (!looksLikeDisparoSheet(headerRow)) continue;
+              const score = new Set(headerRow.map((cell) => normalizeHeaderKey(cell)).filter(Boolean)).size;
+              if (score > melhorScore) {
+                melhorScore = score;
+                sheetEscolhida = sheetName;
+              }
             }
-            return { disparos };
           }
 
-          const unica = abasQualificadas[0];
-          const disparos = unica.rows.map((row, index) => mapDisparoRow(row, `Disparo ${index + 1}`));
+          if (!sheetEscolhida) return { disparos: [] };
+
+          const linhasAba = XLSX.utils.sheet_to_json(workbook.Sheets[sheetEscolhida], { header: 1, raw: false, defval: "" });
+          const headerIdx = findBestHeaderRow(linhasAba);
+          const rows = sheetRowsToObjects(linhasAba, headerIdx);
+          const disparos = rows
+            .map((row, index) => mapDisparoRow(row, `Disparo ${index + 1}`))
+            .filter(isValidDisparoRow);
           return { disparos };
         }
 
@@ -7365,12 +7486,11 @@
         const sep = todasLinhas[0].includes(";") ? ";" : ",";
         const matriz = todasLinhas.map((linha) => linha.split(sep));
         const headerIdx = findBestHeaderRow(matriz);
-        const columns = matriz[headerIdx].map(normalizeHeaderKey);
-        const rows = matriz.slice(headerIdx + 1)
-          .filter((linha) => linha.some((cell) => String(cell ?? "").trim() !== ""))
-          .map((linha) => Object.fromEntries(columns.map((col, index) => [col, (linha[index] ?? "").trim()])));
+        const rows = sheetRowsToObjects(matriz, headerIdx);
 
-        const disparos = rows.map((row, index) => mapDisparoRow(row, `Disparo ${index + 1}`));
+        const disparos = rows
+          .map((row, index) => mapDisparoRow(row, `Disparo ${index + 1}`))
+          .filter(isValidDisparoRow);
         return { disparos };
       }
 

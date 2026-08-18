@@ -428,4 +428,11 @@ comment on view public.vw_campanha_disparos_resumo is
 grant select on public.vw_campanha_disparos_resumo to authenticated;
 revoke all on public.vw_campanha_disparos_resumo from anon;
 
+-- PostgREST cacheia o schema e nao percebe sozinho a RPC nova (rpc_salvar_campanha_email) nem as
+-- tabelas/view criadas aqui - sem isso, supabase.rpc("rpc_salvar_campanha_email", ...) do frontend
+-- falha com "function not found" ate o cache expirar sozinho. Mesmo padrao ja usado nas migrations
+-- 20260714_010 e 20260803_014 sempre que se cria algo novo que o frontend consome via
+-- supabase.rpc()/.from().
+notify pgrst, 'reload schema';
+
 commit;
