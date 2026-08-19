@@ -400,7 +400,7 @@
         social_format_metrics: "Social Format Metrics"
       };
 
-      let state = { session: null, perfil: null, page: "dashboard", marca: "Todas", periodo: "30d", periodoDe: "", periodoAte: "", periodoMenuOpen: false, rows: [], rd: [], meta: [], metaSeguidoresSnapshot: [], ads: [], google: null, dashboardConsolidadoMetric: "credito", propostas: [], bi: null, channels: null, email: null, emailSelectedCampanhaId: null, social: null, socialFormat: null, socialTab: "geral", connections: [], bestTimes: null, socialCompareMetric: "alcance", socialEficienciaTab: "frequencia", compareA: { de: "", ate: "" }, compareB: { de: "", ate: "" }, adsStatusFilter: "todas", adsObjetivoFilter: "todos", adsCrossMetric: "alcance", adsSortColumn: "investimento", adsSortDirection: "desc", topbarMenuOpen: false };
+      let state = { session: null, perfil: null, page: "dashboard", marca: "Todas", periodo: "30d", periodoDe: "", periodoAte: "", periodoMenuOpen: false, rows: [], emailDisparos: [], meta: [], metaSeguidoresSnapshot: [], ads: [], google: null, dashboardConsolidadoMetric: "credito", propostas: [], bi: null, channels: null, email: null, emailSelectedCampanhaId: null, social: null, socialFormat: null, socialTab: "geral", connections: [], bestTimes: null, socialCompareMetric: "alcance", socialEficienciaTab: "frequencia", compareA: { de: "", ate: "" }, compareB: { de: "", ate: "" }, adsStatusFilter: "todas", adsObjetivoFilter: "todos", adsCrossMetric: "alcance", adsSortColumn: "investimento", adsSortDirection: "desc", topbarMenuOpen: false };
 
       // Cache "estilo React Query" para o Dashboard Geral: guarda o ultimo modelo montado por
       // marca+periodo por 5min (staleTime) e reaproveita na hora ao trocar de aba (keepPreviousData),
@@ -751,10 +751,10 @@
         if (date) q = q.gte("data_emissao", date);
         const until = toDate();
         if (until) q = q.lte("data_emissao", until);
-        let rdQuery = supabase.from("stage_rd_station_marketing").select("marca,enviados,taxa_abertura,taxa_clique,data_referencia").limit(500);
-        if (state.marca !== "Todas") rdQuery = rdQuery.eq("marca", state.marca);
-        if (date) rdQuery = rdQuery.gte("data_referencia", date);
-        if (until) rdQuery = rdQuery.lte("data_referencia", until);
+        let disparosEmailQuery = supabase.from("campanha_disparos").select("marca,enviados,entregues,aberturas_unicas,cliques_unicos,bounces,engajados,desengajados,invalidos,indeterminados,data_hora").limit(2000);
+        if (state.marca !== "Todas") disparosEmailQuery = disparosEmailQuery.eq("marca", state.marca);
+        if (date) disparosEmailQuery = disparosEmailQuery.gte("data_hora", date);
+        if (until) disparosEmailQuery = disparosEmailQuery.lte("data_hora", until);
         let metaQuery = supabase.from("stage_meta_business_analytics").select("marca,alcance_facebook,engajamento_total,data_referencia").limit(500);
         if (state.marca !== "Todas") metaQuery = metaQuery.eq("marca", state.marca);
         if (date) metaQuery = metaQuery.gte("data_referencia", date);
@@ -769,9 +769,9 @@
         // e mantem "ads" apontando pro fetchAllRows de stage_meta_ads_metrics, que antes de corrigir
         // esse desalinhamento estava recebendo o resultado do loadGoogleBI (sempre undefined) e
         // descartando silenciosamente os dados reais de investimento/cliques/etc.
-        const [cards, rd, meta, seguidoresSnapshot, propostas, , ads] = await Promise.all([
+        const [cards, disparosEmail, meta, seguidoresSnapshot, propostas, , ads] = await Promise.all([
           q,
-          rdQuery,
+          disparosEmailQuery,
           metaQuery,
           seguidoresQuery,
           fetchAllRows("stage_credsystem_propostas", "marca,proposta_aprov,proposta_rejei,motivo,dt_proposta", state.marca, "dt_proposta"),
@@ -779,11 +779,11 @@
           fetchAllRows("stage_meta_ads_metrics", "marca,investimento,impressoes,cliques,conversoes,data_referencia", state.marca, "data_referencia").catch(() => [])
         ]);
         if (cards.error) throw cards.error;
-        if (rd.error) throw rd.error;
+        if (disparosEmail.error) throw disparosEmail.error;
         if (meta.error) throw meta.error;
         state.metaSeguidoresSnapshot = seguidoresSnapshot.data || [];
         state.rows = cards.data || [];
-        state.rd = rd.data || [];
+        state.emailDisparos = disparosEmail.data || [];
         state.meta = meta.data || [];
         state.propostas = propostas || [];
         state.ads = ads || [];
@@ -1550,13 +1550,18 @@
         ]);
 
         const rows = state.rows;
+        // Pesos, nao media simples: mesma logica de weightedDisparosAggregate() da aba Email
+        // Marketing (soma bruta de entregues/aberturas/cliques antes de dividir), pra nao dar peso
+        // igual a um disparo de 40 envios e um de 40 mil.
+        const emailAgg = weightedDisparosAggregate(state.emailDisparos);
         const summary = {
           total: rows.length,
           ativos: rows.filter((r) => r.data_ativacao).length,
           ticket: avg(rows.map((r) => num(r.valor_compra_inicial))),
-          campanhas: state.rd.length,
-          abertura: avg(state.rd.map((r) => num(r.taxa_abertura))),
-          clique: avg(state.rd.map((r) => num(r.taxa_clique))),
+          disparosEmail: state.emailDisparos.length,
+          entreguesEmail: emailAgg.entregues,
+          abertura: emailAgg.taxaAbertura,
+          clique: emailAgg.ctr,
           alcance: state.meta.reduce((s, r) => s + num(r.alcance_facebook), 0),
           engajamento: state.meta.reduce((s, r) => s + num(r.engajamento_total), 0),
           propostas: state.propostas.length,
@@ -1568,7 +1573,7 @@
         };
         summary.taxaAprovacao = summary.propostas ? (summary.aprovadas / summary.propostas) * 100 : 0;
         const cartaoLastImport = lastImportTimestamp(["dados_cartoes_credsystem", "stage_credsystem_propostas"]);
-        const emailLastImport = lastImportTimestamp(["stage_rd_station_marketing"]);
+        const emailLastImport = lastImportTimestamp(["campanha_disparos"]);
         summary.cpcMedio = summary.cliquesAds ? summary.investimentoAds / summary.cliquesAds : 0;
         summary.ctr = summary.impressoesAds ? (summary.cliquesAds / summary.impressoesAds) * 100 : 0;
         summary.conversoesAds = state.ads.reduce((s, r) => s + num(r.conversoes), 0);
@@ -1697,11 +1702,12 @@
             <section class="card">
               <h3>📧 E-mail Marketing &amp; CRM</h3>
               <div class="grid kpis" style="margin-top:16px">
-                ${kpiWithDelta("Disparos", fmt.format(summary.campanhas), "campaign", kpiFooterAnteriorHtml(summary.campanhas, summaryAnterior?.campanhas))}
-                ${kpiWithDelta("Taxa de abertura", `${summary.abertura.toFixed(2).replace(".", ",")}%`, "mail", kpiFooterAnteriorHtml(summary.abertura, summaryAnterior?.abertura, { formatar: (v) => `${v.toFixed(2).replace(".", ",")}%` }))}
+                ${kpiWithDelta("Disparos", fmt.format(summary.disparosEmail), "campaign", kpiFooterAnteriorHtml(summary.disparosEmail, summaryAnterior?.disparosEmail))}
+                ${kpiWithDelta("Entregues", fmt.format(summary.entreguesEmail), "mail", kpiFooterAnteriorHtml(summary.entreguesEmail, summaryAnterior?.entreguesEmail))}
+                ${kpiWithDelta("Taxa de abertura", `${summary.abertura.toFixed(2).replace(".", ",")}%`, "visibility", kpiFooterAnteriorHtml(summary.abertura, summaryAnterior?.abertura, { formatar: (v) => `${v.toFixed(2).replace(".", ",")}%` }))}
                 ${kpiWithDelta("Taxa de clique", `${summary.clique.toFixed(2).replace(".", ",")}%`, "ads_click", kpiFooterAnteriorHtml(summary.clique, summaryAnterior?.clique, { formatar: (v) => `${v.toFixed(2).replace(".", ",")}%` }))}
               </div>
-              <p class="module-last-sync">🕒 Sincronizado via RD Station: ${escapeHtml(formatDateTime(emailLastImport))}</p>
+              <p class="module-last-sync">🕒 Sincronizado via Supabase: ${escapeHtml(formatDateTime(emailLastImport))}</p>
             </section>
             <section class="card">
               <h3>📣 Tráfego Pago / Anúncios</h3>
@@ -2167,25 +2173,31 @@
       // Totais dos 4 canais do Dashboard Geral (Cartao, E-mail, Anuncios, Redes Sociais) num
       // periodo [from, to] arbitrario - usado tanto pro periodo atual quanto pro anterior, pra
       // calcular as variacoes % (badges MoM) e o resumo executivo com a mesma logica dos dois lados.
+      // E-mail usa campanha_disparos.data_hora (disparo real, granular) em vez de "Ultima Campanha
+      // por Marca" (usada na aba Email Marketing dedicada, ver fetchUltimasCampanhasPorMarca) -
+      // aqui o card precisa de um "periodo anterior" comparavel pro badge MoM, igual aos outros 3
+      // canais, entao volta a ser filtravel por data como qualquer um deles.
       async function loadDashboardPeriodSummary(marcaFiltro, from, to) {
-        const [cards, propostas, rd, meta, ads] = await Promise.all([
+        const [cards, propostas, disparosEmail, meta, ads] = await Promise.all([
           fetchRowsInRange("dados_cartoes_credsystem", "data_ativacao,valor_compra_inicial", marcaFiltro, "data_emissao", from, to),
           fetchRowsInRange("stage_credsystem_propostas", "proposta_aprov,proposta_rejei", marcaFiltro, "dt_proposta", from, to),
-          fetchRowsInRange("stage_rd_station_marketing", "taxa_abertura,taxa_clique", marcaFiltro, "data_referencia", from, to),
+          fetchRowsInRange("campanha_disparos", "enviados,entregues,aberturas_unicas,cliques_unicos,bounces", marcaFiltro, "data_hora", from, to),
           fetchRowsInRange("stage_meta_business_analytics", "alcance_facebook,engajamento_total", marcaFiltro, "data_referencia", from, to),
           loadAdsPeriodTotals(marcaFiltro, from, to)
         ]);
         const totalPropostas = propostas.length;
         const aprovadas = propostas.reduce((s, r) => s + num(r.proposta_aprov), 0);
+        const emailAgg = weightedDisparosAggregate(disparosEmail);
         return {
           ativos: cards.filter((r) => r.data_ativacao).length,
           ticket: avg(cards.map((r) => num(r.valor_compra_inicial))),
           propostas: totalPropostas,
           aprovadas,
           taxaAprovacao: totalPropostas ? (aprovadas / totalPropostas) * 100 : 0,
-          campanhas: rd.length,
-          abertura: avg(rd.map((r) => num(r.taxa_abertura))),
-          clique: avg(rd.map((r) => num(r.taxa_clique))),
+          disparosEmail: disparosEmail.length,
+          entreguesEmail: emailAgg.entregues,
+          abertura: emailAgg.taxaAbertura,
+          clique: emailAgg.ctr,
           alcance: meta.reduce((s, r) => s + num(r.alcance_facebook), 0),
           engajamento: meta.reduce((s, r) => s + num(r.engajamento_total), 0),
           investimentoAds: ads.investimento,
@@ -3462,11 +3474,55 @@
         return disparos.filter((d) => d[field] != null).map((d) => [d.nome_disparo, { percentual: num(d[field]) }]);
       }
 
+      // Grafico de coluna vertical (SVG) por categoria - mesmo padrao visual de
+      // socialCompareBarChartHtml (Redes Sociais) e adsGroupedBarChartHtml (Anuncios), generalizado
+      // pra numero variavel de categorias (disparos de uma campanha no preview do wizard, ou as 3
+      // marcas no dashboard - ver emailPreview*Html vs emailMarca*Html). "cor" aceita uma string
+      // (cor fixa pra todas as barras) ou uma funcao (categoria) => cor (usada no dashboard pra
+      // colorir cada barra pela cor oficial da marca, ver corPorMarca). Categoria costuma ser longa
+      // demais pro eixo X - trunca no rotulo abaixo da barra e mantem o nome completo no tooltip
+      // (data-tooltip, mesmo mecanismo dos outros graficos).
+      function disparoBarChartHtml(entradas, cor = "#ec4899") {
+        if (!entradas.length) return `<p class="muted" style="margin:0">Sem dado suficiente.</p>`;
+        const corDaCategoria = typeof cor === "function" ? cor : () => cor;
+        const maxV = Math.max(1, ...entradas.map(([, v]) => v.percentual));
+
+        const w = 640, h = 260, padL = 20, padR = 20, padT = 28, padB = 50;
+        const groupW = (w - padL - padR) / entradas.length;
+        const barW = Math.min(72, groupW * 0.5);
+
+        const bars = entradas.map(([categoria, v], i) => {
+          const barH = maxV ? (v.percentual / maxV) * (h - padT - padB) : 0;
+          const x = padL + i * groupW + (groupW - barW) / 2;
+          const y = h - padB - barH;
+          const corBarra = corDaCategoria(categoria);
+          const rotuloEixo = categoria.length > 16 ? `${categoria.slice(0, 15)}…` : categoria;
+          const valorFmt = `${v.percentual.toFixed(1).replace(".", ",")}%`;
+          const tooltip = `<strong>${escapeHtml(categoria)}</strong><br>${escapeHtml(valorFmt)}`.replaceAll("\"", "&quot;");
+          return `<rect class="chart-point" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(0.5, barH).toFixed(1)}" rx="6" fill="${corBarra}" data-tooltip="${tooltip}"></rect>
+            <text x="${(x + barW / 2).toFixed(1)}" y="${(y - 8).toFixed(1)}" font-size="12" font-weight="700" fill="${corBarra}" text-anchor="middle">${escapeHtml(valorFmt)}</text>
+            <text x="${(x + barW / 2).toFixed(1)}" y="${(h - padB + 18).toFixed(1)}" font-size="11" fill="#64748b" text-anchor="middle">${escapeHtml(rotuloEixo)}</text>`;
+        }).join("");
+
+        return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:280px" role="img" aria-label="Comparativo">
+          <line x1="${padL}" y1="${h - padB}" x2="${w - padR}" y2="${h - padB}" stroke="#e2e8f0" stroke-width="1"/>
+          ${bars}
+        </svg>`;
+      }
+
+      // Cor do grafico segue a marca da campanha (mesmo padrao de cor-por-marca usado em Redes
+      // Sociais/Anuncios); fallback rosa (cor do icone "mail" do menu Email Marketing) quando a
+      // marca nao esta em CORES_MARCA.
+      function disparoBarChartCor(disparos) {
+        return CORES_MARCA[disparos[0]?.marca] || "#ec4899";
+      }
+
       // Bloco 2: Comparativo entre Disparos (Entrega x Abertura)
       function emailPreviewComparativoHtml(disparos) {
+        const cor = disparoBarChartCor(disparos);
         return `<div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
-          <div><h4>Taxa de Entrega por disparo</h4>${barListHtml(disparosMetricBarEntradas(disparos, "taxa_entrega"))}</div>
-          <div><h4>Taxa de Abertura por disparo</h4>${barListHtml(disparosMetricBarEntradas(disparos, "taxa_abertura"))}</div>
+          <div><h4>Taxa de Entrega por disparo</h4>${disparoBarChartHtml(disparosMetricBarEntradas(disparos, "taxa_entrega"), cor)}</div>
+          <div><h4>Taxa de Abertura por disparo</h4>${disparoBarChartHtml(disparosMetricBarEntradas(disparos, "taxa_abertura"), cor)}</div>
         </div>`;
       }
 
@@ -3479,19 +3535,21 @@
       }
 
       function emailPreviewQualidadeBaseHtml(disparos) {
+        const cor = disparoBarChartCor(disparos);
         return `<div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
-          <div><h4>Engajados (% da base)</h4>${barListHtml(disparosQualidadeBarEntradas(disparos, "engajados"))}</div>
-          <div><h4>Desengajados (% da base)</h4>${barListHtml(disparosQualidadeBarEntradas(disparos, "desengajados"))}</div>
-          <div><h4>Inválidos (% da base)</h4>${barListHtml(disparosQualidadeBarEntradas(disparos, "invalidos"))}</div>
-          <div><h4>Indeterminados (% da base)</h4>${barListHtml(disparosQualidadeBarEntradas(disparos, "indeterminados"))}</div>
+          <div><h4>Engajados (% da base)</h4>${disparoBarChartHtml(disparosQualidadeBarEntradas(disparos, "engajados"), cor)}</div>
+          <div><h4>Desengajados (% da base)</h4>${disparoBarChartHtml(disparosQualidadeBarEntradas(disparos, "desengajados"), cor)}</div>
+          <div><h4>Inválidos (% da base)</h4>${disparoBarChartHtml(disparosQualidadeBarEntradas(disparos, "invalidos"), cor)}</div>
+          <div><h4>Indeterminados (% da base)</h4>${disparoBarChartHtml(disparosQualidadeBarEntradas(disparos, "indeterminados"), cor)}</div>
         </div>`;
       }
 
       // Bloco 4: Eficiencia do Clique (CTR x CTOR)
       function emailPreviewCtrCtorHtml(disparos) {
+        const cor = disparoBarChartCor(disparos);
         return `<div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
-          <div><h4>CTR por disparo</h4>${barListHtml(disparosMetricBarEntradas(disparos, "ctr"))}</div>
-          <div><h4>CTOR por disparo</h4>${barListHtml(disparosMetricBarEntradas(disparos, "ctor"))}</div>
+          <div><h4>CTR por disparo</h4>${disparoBarChartHtml(disparosMetricBarEntradas(disparos, "ctr"), cor)}</div>
+          <div><h4>CTOR por disparo</h4>${disparoBarChartHtml(disparosMetricBarEntradas(disparos, "ctor"), cor)}</div>
         </div>`;
       }
 
@@ -3562,45 +3620,346 @@
       }
 
       // ---- Dashboard "E-mail Marketing" (renderCachedPage, mesmo molde de renderCredsystemBI) ----
+      // Dois modos, escolhidos pelo filtro de marca do topo (ver fetchEmailModel/paintEmailHtml):
+      //   "Todas"        -> Comparativo Multimarca: as 3 ultimas campanhas (uma por marca) lado a
+      //                      lado (Tesoura de Ouro vs Magazine da Economia vs Free Center Calcados).
+      //   marca especifica -> Comparativo Historico da Marca: as ate 3 ultimas campanhas DAQUELA
+      //                      marca, comparadas entre si (Campanha A vs B vs C). Com 1 campanha so
+      //                      (sem o que comparar), cai pro detalhamento por disparo dessa campanha -
+      //                      ver emailHistoricoMarcaSectionHtml.
+      // Em ambos os modos o card de KPIs do topo soma/pondera os disparos das campanhas mostradas
+      // na secao abaixo (3 marcas, ou ate 3 campanhas da marca selecionada).
 
-      async function fetchEmailModel() {
-        let disparosQuery = supabase
-          .from("vw_campanha_disparos_resumo")
-          .select("*")
-          .order("data_hora", { ascending: false });
-        if (state.marca !== "Todas") disparosQuery = disparosQuery.eq("marca", state.marca);
-        const de = fromDate();
-        const ate = toDate();
-        if (de) disparosQuery = disparosQuery.gte("data_hora", de);
-        if (ate) disparosQuery = disparosQuery.lte("data_hora", ate);
-
-        let campanhasQuery = supabase
-          .from("campanhas_email")
-          .select("id,nome_campanha,marca,data_importacao")
-          .order("data_importacao", { ascending: false });
-        if (state.marca !== "Todas") campanhasQuery = campanhasQuery.eq("marca", state.marca);
-
-        const [disparosResult, campanhasResult] = await Promise.all([disparosQuery, campanhasQuery]);
-        if (disparosResult.error) throw disparosResult.error;
-        if (campanhasResult.error) throw campanhasResult.error;
-
-        return {
-          disparos: disparosResult.data || [],
-          campanhasSalvas: campanhasResult.data || []
-        };
+      // Busca a campanha mais recente (por data_importacao) de cada uma das 3 marcas. Marca sem
+      // nenhuma campanha importada ainda entra com campanha: null (o banner e os graficos tratam
+      // esse caso mostrando "sem campanha importada"/omitindo a marca).
+      async function fetchUltimasCampanhasPorMarca() {
+        const marcas = Object.keys(CORES_MARCA);
+        const resultados = await Promise.all(marcas.map((marca) =>
+          supabase
+            .from("campanhas_email")
+            .select("id,nome_campanha,marca,data_importacao")
+            .eq("marca", marca)
+            .order("data_importacao", { ascending: false })
+            .limit(1)
+        ));
+        return marcas.map((marca, index) => {
+          const { data, error } = resultados[index];
+          if (error) throw error;
+          return { marca, campanha: (data && data[0]) || null };
+        });
       }
 
-      function paintEmailHtml({ disparos, campanhasSalvas }) {
-        if (!state.emailSelectedCampanhaId && campanhasSalvas[0]) state.emailSelectedCampanhaId = campanhasSalvas[0].id;
-        const campanhaSelecionada = campanhasSalvas.find((c) => c.id === state.emailSelectedCampanhaId) || campanhasSalvas[0] || null;
-        if (campanhaSelecionada) state.emailSelectedCampanhaId = campanhaSelecionada.id;
-        const ultimaImportacao = lastImportTimestamp(["campanha_disparos"]);
+      // Cache do ultimo model buscado (fora do pageCache generico, que so guarda o HTML montado) -
+      // permite trocar a campanha selecionada no seletor do modo "marca" sem precisar de fetch novo:
+      // os disparos/analise das ate 3 campanhas ja estao todos em memoria (ver
+      // renderEmailCampanhaDetalhe/wireEmailInteractions).
+      let emailModeloAtual = null;
 
-        // Sem botao "Atualizar": marca/periodo/campanha disparam renderEmailBI()/
-        // loadCampanhaDrillDown() direto na troca (ver wireEmailInteractions), sempre buscando
-        // dado fresco - mesmo padrao ja usado em Redes Sociais/Anuncios (indicador passivo em vez
-        // de botao manual, ver ultimaAtualizacaoHtml()).
-        return `
+      async function fetchEmailModel() {
+        if (state.marca === "Todas") {
+          const ultimasPorMarca = await fetchUltimasCampanhasPorMarca();
+          const idsConsolidados = ultimasPorMarca.map((u) => u.campanha?.id).filter(Boolean);
+
+          const [disparosResult, analiseResult] = await Promise.all([
+            idsConsolidados.length
+              ? supabase.from("campanha_disparos").select("*").in("campanha_id", idsConsolidados).order("data_hora")
+              : Promise.resolve({ data: [], error: null }),
+            idsConsolidados.length
+              ? supabase.from("campanha_analise_estrategica").select("*").in("campanha_id", idsConsolidados)
+              : Promise.resolve({ data: [], error: null })
+          ]);
+          if (disparosResult.error) throw disparosResult.error;
+          if (analiseResult.error) throw analiseResult.error;
+
+          emailModeloAtual = {
+            modo: "todas",
+            ultimasPorMarca,
+            disparosConsolidados: disparosResult.data || [],
+            analiseConsolidada: analiseResult.data || []
+          };
+          return emailModeloAtual;
+        }
+
+        const campanhasResult = await supabase
+          .from("campanhas_email")
+          .select("id,nome_campanha,marca,data_importacao")
+          .eq("marca", state.marca)
+          .order("data_importacao", { ascending: false })
+          .limit(3);
+        if (campanhasResult.error) throw campanhasResult.error;
+        const campanhas = campanhasResult.data || [];
+        const ids = campanhas.map((c) => c.id);
+
+        const [disparosResult, analiseResult] = await Promise.all([
+          ids.length
+            ? supabase.from("campanha_disparos").select("*").in("campanha_id", ids).order("data_hora")
+            : Promise.resolve({ data: [], error: null }),
+          ids.length
+            ? supabase.from("campanha_analise_estrategica").select("*").in("campanha_id", ids)
+            : Promise.resolve({ data: [], error: null })
+        ]);
+        if (disparosResult.error) throw disparosResult.error;
+        if (analiseResult.error) throw analiseResult.error;
+
+        emailModeloAtual = {
+          modo: "marca",
+          campanhas,
+          disparos: disparosResult.data || [],
+          analise: analiseResult.data || []
+        };
+        return emailModeloAtual;
+      }
+
+      // Banner de transparencia - lista as 3 campanhas (uma por marca) que entraram no
+      // somatorio/media ponderada dos KPIs do topo. So aparece quando state.marca === "Todas"
+      // (ver paintEmailHtml); some ao filtrar uma marca especifica, onde os KPIs passam a refletir
+      // so a ultima campanha dessa marca.
+      function emailConsolidacaoBannerHtml(ultimasPorMarca) {
+        return `<div class="card" style="background:#fdf2f8;border-color:#fbcfe8;margin-bottom:16px">
+          <p style="margin:0 0 10px;font-weight:700;color:#831843">📌 Visão Consolidada — Última Campanha de Cada Marca</p>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            ${ultimasPorMarca.map(({ marca, campanha }) => `
+              <span class="pill" style="cursor:default;background:white">
+                <b style="color:${CORES_MARCA[marca] || "#831843"}">${escapeHtml(marca)}:</b>
+                ${campanha ? ` ${escapeHtml(campanha.nome_campanha)} · ${escapeHtml(formatDateTime(campanha.data_importacao))}` : ` <span class="muted">sem campanha importada</span>`}
+              </span>`).join("")}
+          </div>
+        </div>`;
+      }
+
+      // Agrupa os disparos consolidados (3 ultimas campanhas) por marca - base dos
+      // graficos/tabela/analise da secao "Comparativo de Desempenho entre Marcas". So marcas com
+      // pelo menos 1 disparo entram nos graficos (evita barra zerada pra marca sem campanha ainda).
+      function disparosPorMarca(disparos) {
+        return Object.keys(CORES_MARCA)
+          .map((marca) => ({ marca, disparos: disparos.filter((d) => d.marca === marca) }))
+          .filter((g) => g.disparos.length);
+      }
+
+      function marcaBarEntradas(disparos, metricFn) {
+        return disparosPorMarca(disparos).map((g) => [g.marca, { percentual: round2(metricFn(weightedDisparosAggregate(g.disparos))) }]);
+      }
+
+      function marcaQualidadeBarEntradas(disparos, field) {
+        return disparosPorMarca(disparos).map((g) => {
+          const agg = weightedDisparosAggregate(g.disparos);
+          return [g.marca, { percentual: agg.enviados > 0 ? round2((agg[field] / agg.enviados) * 100) : 0 }];
+        });
+      }
+
+      function corPorMarca(marca) {
+        return CORES_MARCA[marca] || "#64748b";
+      }
+
+      // Bloco 2: Comparativo entre Disparos, por marca (Entrega x Abertura) - cada barra usa a cor
+      // oficial da marca (corPorMarca), pra bater com Redes Sociais/Anuncios.
+      function emailMarcaComparativoHtml(disparos) {
+        return `<div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+          <div><h4>Taxa de Entrega por marca</h4>${disparoBarChartHtml(marcaBarEntradas(disparos, (a) => a.taxaEntrega), corPorMarca)}</div>
+          <div><h4>Taxa de Abertura por marca</h4>${disparoBarChartHtml(marcaBarEntradas(disparos, (a) => a.taxaAbertura), corPorMarca)}</div>
+        </div>`;
+      }
+
+      // Bloco 3: Qualidade da Base, por marca (% do volume enviado de cada marca)
+      function emailMarcaQualidadeBaseHtml(disparos) {
+        return `<div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+          <div><h4>Engajados (% da base) por marca</h4>${disparoBarChartHtml(marcaQualidadeBarEntradas(disparos, "engajados"), corPorMarca)}</div>
+          <div><h4>Desengajados (% da base) por marca</h4>${disparoBarChartHtml(marcaQualidadeBarEntradas(disparos, "desengajados"), corPorMarca)}</div>
+          <div><h4>Inválidos (% da base) por marca</h4>${disparoBarChartHtml(marcaQualidadeBarEntradas(disparos, "invalidos"), corPorMarca)}</div>
+          <div><h4>Indeterminados (% da base) por marca</h4>${disparoBarChartHtml(marcaQualidadeBarEntradas(disparos, "indeterminados"), corPorMarca)}</div>
+        </div>`;
+      }
+
+      // Bloco 4: Eficiencia do Clique, por marca (CTR x CTOR)
+      function emailMarcaCtrCtorHtml(disparos) {
+        return `<div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+          <div><h4>CTR por marca</h4>${disparoBarChartHtml(marcaBarEntradas(disparos, (a) => a.ctr), corPorMarca)}</div>
+          <div><h4>CTOR por marca</h4>${disparoBarChartHtml(marcaBarEntradas(disparos, (a) => a.ctor), corPorMarca)}</div>
+        </div>`;
+      }
+
+      // Bloco 5: tabela unificada dos disparos das 3 campanhas (ja vem ordenada por data_hora do
+      // fetchEmailModel), com badge de marca na frente - mesmas colunas de
+      // emailPreviewDisparosTableHtml (preview do wizard, 1 campanha so).
+      function emailMarcaDisparosTableHtml(disparos) {
+        return `<div class="table-wrap" style="margin-top:16px"><table><thead><tr>
+          <th>Marca</th><th>Data/Hora</th><th>Disparo</th><th>Assunto/Copy</th><th>Segmentação</th><th>Enviados</th><th>Entregues</th><th>Taxa de Entrega</th><th>Aberturas Únicas</th><th>Taxa de Abertura</th><th>Cliques Únicos</th><th>CTR</th><th>CTOR</th><th>Bounces</th><th>Taxa de Bounce</th><th>Engajados</th><th>Desengajados</th><th>Inválidos</th>
+        </tr></thead><tbody>${disparos.map((d) => `<tr>
+          <td><span class="marca-chip ${marcaChipClass(d.marca)}">${escapeHtml(d.marca)}</span></td>
+          <td>${formatDateTime(d.data_hora)}</td>
+          <td><span class="cell-clip" title="${escapeHtml(d.nome_disparo)}">${escapeHtml(d.nome_disparo)}</span></td>
+          <td><span class="cell-clip" title="${escapeHtml(d.assunto_email || "-")}">${escapeHtml(d.assunto_email || "-")}</span></td>
+          <td><span class="cell-clip" title="${escapeHtml(d.segmentacao || "-")}">${escapeHtml(d.segmentacao || "-")}</span></td>
+          <td>${fmt.format(num(d.enviados))}</td>
+          <td>${fmt.format(num(d.entregues))}</td>
+          <td>${d.taxa_entrega != null ? `${num(d.taxa_entrega).toFixed(2).replace(".", ",")}%` : "—"}</td>
+          <td>${d.aberturas_unicas != null ? fmt.format(num(d.aberturas_unicas)) : "—"}</td>
+          <td>${d.taxa_abertura != null ? `${num(d.taxa_abertura).toFixed(2).replace(".", ",")}%` : "—"}</td>
+          <td>${d.cliques_unicos != null ? fmt.format(num(d.cliques_unicos)) : "—"}</td>
+          <td>${d.ctr != null ? `${num(d.ctr).toFixed(2).replace(".", ",")}%` : "—"}</td>
+          <td>${d.ctor != null ? `${num(d.ctor).toFixed(2).replace(".", ",")}%` : "—"}</td>
+          <td>${d.bounces != null ? fmt.format(num(d.bounces)) : "—"}</td>
+          <td>${d.taxa_bounce != null ? `${num(d.taxa_bounce).toFixed(2).replace(".", ",")}%` : "—"}</td>
+          <td>${d.engajados != null ? fmt.format(num(d.engajados)) : "—"}</td>
+          <td>${d.desengajados != null ? fmt.format(num(d.desengajados)) : "—"}</td>
+          <td>${d.invalidos != null ? fmt.format(num(d.invalidos)) : "—"}</td>
+        </tr>`).join("") || `<tr><td colspan="18">Sem disparos.</td></tr>`}</tbody></table></div>`;
+      }
+
+      // Bloco 6: Quadro de Analise Estrategica consolidado das 3 campanhas, com badge de marca -
+      // ordenado por prioridade (Alta -> Media -> Baixa) e depois por marca, pra ler os pontos mais
+      // urgentes primeiro, de qualquer marca.
+      const EMAIL_ORDEM_PRIORIDADE = { Alta: 0, Media: 1, Baixa: 2 };
+      function emailMarcaAnaliseEstrategicaHtml(analiseConsolidada) {
+        const ordenada = [...analiseConsolidada].sort((a, b) =>
+          (EMAIL_ORDEM_PRIORIDADE[a.prioridade] ?? 3) - (EMAIL_ORDEM_PRIORIDADE[b.prioridade] ?? 3) || a.marca.localeCompare(b.marca)
+        );
+        return `<div class="table-wrap" style="margin-top:16px"><table><thead><tr>
+          <th>Marca</th><th>Prioridade</th><th>Tema</th><th>Diagnóstico</th><th>Evidência</th><th>Ação Recomendada</th><th>KPI Principal</th>
+        </tr></thead><tbody>${ordenada.map((a) => `<tr>
+          <td><span class="marca-chip ${marcaChipClass(a.marca)}">${escapeHtml(a.marca)}</span></td>
+          <td>${prioridadePillHtml(a.prioridade)}</td>
+          <td><span class="cell-clip" title="${escapeHtml(a.tema)}">${escapeHtml(a.tema)}</span></td>
+          <td><span class="cell-clip" title="${escapeHtml(a.diagnostico)}">${escapeHtml(a.diagnostico)}</span></td>
+          <td><span class="cell-clip" title="${escapeHtml(a.evidencia)}">${escapeHtml(a.evidencia)}</span></td>
+          <td><span class="cell-clip" title="${escapeHtml(a.acao_recomendada)}">${escapeHtml(a.acao_recomendada)}</span></td>
+          <td><span class="cell-clip" title="${escapeHtml(a.kpi_principal)}">${escapeHtml(a.kpi_principal)}</span></td>
+        </tr>`).join("") || `<tr><td colspan="7">Sem itens de análise.</td></tr>`}</tbody></table></div>`;
+      }
+
+      function emailMarcaComparativoSectionHtml(disparos, analiseConsolidada) {
+        if (!disparos.length) {
+          return `<p class="muted">Nenhuma campanha de e-mail marketing importada ainda. Use "Importar Planilhas" para começar.</p>`;
+        }
+        return `<div class="grid" style="gap:16px;margin-top:16px;min-width:0">
+          <section class="card"><h4>Comparativo entre Disparos</h4>${emailMarcaComparativoHtml(disparos)}</section>
+          <section class="card"><h4>Qualidade da Base</h4>${emailMarcaQualidadeBaseHtml(disparos)}</section>
+          <section class="card"><h4>Eficiência do Clique (CTR × CTOR)</h4>${emailMarcaCtrCtorHtml(disparos)}</section>
+          <section class="card"><h4>Tabela de Disparos</h4>${emailMarcaDisparosTableHtml(disparos)}</section>
+          <section class="card"><h4>Quadro de Análise Estratégica</h4>${emailMarcaAnaliseEstrategicaHtml(analiseConsolidada)}</section>
+        </div>`;
+      }
+
+      // ---- Modo "marca especifica": comparativo entre as ate 3 ultimas campanhas DA MARCA ----
+
+      // Agrupa os disparos das ate 3 campanhas da marca por campanha - base dos graficos "Campanha
+      // A vs B vs C". So campanhas com pelo menos 1 disparo entram (nao deveria acontecer, ja que
+      // toda campanha salva pela RPC atomica tem disparo, mas evita barra zerada por seguranca).
+      function disparosPorCampanha(campanhas, disparos) {
+        return campanhas
+          .map((c) => ({ campanha: c, disparos: disparos.filter((d) => d.campanha_id === c.id) }))
+          .filter((g) => g.disparos.length);
+      }
+
+      function campanhaBarEntradas(campanhas, disparos, metricFn) {
+        return disparosPorCampanha(campanhas, disparos).map((g) => [g.campanha.nome_campanha, { percentual: round2(metricFn(weightedDisparosAggregate(g.disparos))) }]);
+      }
+
+      function campanhaQualidadeBarEntradas(campanhas, disparos, field) {
+        return disparosPorCampanha(campanhas, disparos).map((g) => {
+          const agg = weightedDisparosAggregate(g.disparos);
+          return [g.campanha.nome_campanha, { percentual: agg.enviados > 0 ? round2((agg[field] / agg.enviados) * 100) : 0 }];
+        });
+      }
+
+      // Todas as campanhas do grafico sao da MESMA marca - uma cor so (a da marca), diferenciando
+      // as barras pelo nome da campanha no eixo X, nao por cor (diferente do modo "Todas", onde a
+      // cor e o que diferencia marca de marca).
+      function emailCampanhaComparativoHtml(campanhas, disparos) {
+        const cor = corPorMarca(campanhas[0]?.marca);
+        return `<div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+          <div><h4>Taxa de Entrega por campanha</h4>${disparoBarChartHtml(campanhaBarEntradas(campanhas, disparos, (a) => a.taxaEntrega), cor)}</div>
+          <div><h4>Taxa de Abertura por campanha</h4>${disparoBarChartHtml(campanhaBarEntradas(campanhas, disparos, (a) => a.taxaAbertura), cor)}</div>
+        </div>`;
+      }
+
+      function emailCampanhaQualidadeBaseHtml(campanhas, disparos) {
+        const cor = corPorMarca(campanhas[0]?.marca);
+        return `<div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+          <div><h4>Engajados (% da base) por campanha</h4>${disparoBarChartHtml(campanhaQualidadeBarEntradas(campanhas, disparos, "engajados"), cor)}</div>
+          <div><h4>Desengajados (% da base) por campanha</h4>${disparoBarChartHtml(campanhaQualidadeBarEntradas(campanhas, disparos, "desengajados"), cor)}</div>
+          <div><h4>Inválidos (% da base) por campanha</h4>${disparoBarChartHtml(campanhaQualidadeBarEntradas(campanhas, disparos, "invalidos"), cor)}</div>
+          <div><h4>Indeterminados (% da base) por campanha</h4>${disparoBarChartHtml(campanhaQualidadeBarEntradas(campanhas, disparos, "indeterminados"), cor)}</div>
+        </div>`;
+      }
+
+      function emailCampanhaCtrCtorHtml(campanhas, disparos) {
+        const cor = corPorMarca(campanhas[0]?.marca);
+        return `<div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+          <div><h4>CTR por campanha</h4>${disparoBarChartHtml(campanhaBarEntradas(campanhas, disparos, (a) => a.ctr), cor)}</div>
+          <div><h4>CTOR por campanha</h4>${disparoBarChartHtml(campanhaBarEntradas(campanhas, disparos, (a) => a.ctor), cor)}</div>
+        </div>`;
+      }
+
+      // Detalhamento por disparo da campanha selecionada no seletor - reaproveita as funcoes
+      // emailPreview*Html (mesmas do preview do wizard, granularidade de disparo dentro de 1
+      // campanha), agora alimentadas com os dados ja salvos dessa campanha em vez do preview.
+      function emailCampanhaDetalheHtml(disparosCampanha, analiseCampanha) {
+        if (!disparosCampanha.length) return `<p class="muted">Esta campanha ainda não tem disparos importados.</p>`;
+        return `<div class="grid" style="gap:16px;margin-top:16px;min-width:0">
+          <section class="card"><h4>Comparativo entre Disparos</h4>${emailPreviewComparativoHtml(disparosCampanha)}</section>
+          <section class="card"><h4>Qualidade da Base</h4>${emailPreviewQualidadeBaseHtml(disparosCampanha)}</section>
+          <section class="card"><h4>Eficiência do Clique (CTR × CTOR)</h4>${emailPreviewCtrCtorHtml(disparosCampanha)}</section>
+          <section class="card"><h4>Tabela de Disparos</h4>${emailPreviewDisparosTableHtml(disparosCampanha)}</section>
+          <section class="card"><h4>Quadro de Análise Estratégica</h4>${emailPreviewAnaliseEstrategicaHtml(analiseCampanha, { editable: false })}</section>
+        </div>`;
+      }
+
+      // Secao completa do modo "marca especifica": com 2-3 campanhas, mostra o comparativo entre
+      // elas (Campanha A vs B vs C) + o seletor pra abrir o detalhamento de uma; com so 1 campanha
+      // (regra explicita: nao mostrar comparativo com barra zerada/inexistente), pula direto pro
+      // detalhamento por disparo dessa unica campanha - o seletor continua visivel (so com essa
+      // opcao) pra quando uma 2a campanha da marca for importada.
+      function emailHistoricoMarcaSectionHtml(campanhas, disparos, analise) {
+        if (!campanhas.length) {
+          return `<p class="muted">Nenhuma campanha de e-mail marketing importada ainda para esta marca. Use "Importar Planilhas" para começar.</p>`;
+        }
+        if (!campanhas.some((c) => c.id === state.emailSelectedCampanhaId)) {
+          state.emailSelectedCampanhaId = campanhas[0].id;
+        }
+        const campanhaSelecionada = campanhas.find((c) => c.id === state.emailSelectedCampanhaId);
+        const disparosCampanha = disparos.filter((d) => d.campanha_id === campanhaSelecionada.id);
+        const analiseCampanha = analise.filter((a) => a.campanha_id === campanhaSelecionada.id);
+
+        const comparativoEntreCampanhas = campanhas.length > 1
+          ? `<section class="card"><h4>Comparativo entre Campanhas</h4>${emailCampanhaComparativoHtml(campanhas, disparos)}</section>
+             <section class="card"><h4>Qualidade da Base por Campanha</h4>${emailCampanhaQualidadeBaseHtml(campanhas, disparos)}</section>
+             <section class="card"><h4>Eficiência do Clique por Campanha (CTR × CTOR)</h4>${emailCampanhaCtrCtorHtml(campanhas, disparos)}</section>`
+          : "";
+
+        return `<div style="margin-top:16px">
+          <div class="page-head" style="align-items:start">
+            <div>
+              <h4 style="margin:0">Detalhamento por Disparo</h4>
+              <p class="muted">Selecione uma das últimas ${campanhas.length} campanha(s) desta marca para ver o comparativo entre os disparos dela.</p>
+            </div>
+            <div class="filters">
+              <select id="emailCampanhaSelect">${campanhas.map((c) => `<option value="${escapeHtml(c.id)}" ${c.id === campanhaSelecionada.id ? "selected" : ""}>${escapeHtml(c.nome_campanha)} · ${escapeHtml(formatDateTime(c.data_importacao))}</option>`).join("")}</select>
+            </div>
+          </div>
+          <div class="grid" style="gap:16px;margin-top:16px;min-width:0">
+            ${comparativoEntreCampanhas}
+          </div>
+          <div id="emailCampanhaDetalhe">${emailCampanhaDetalheHtml(disparosCampanha, analiseCampanha)}</div>
+        </div>`;
+      }
+
+      // Troca a campanha selecionada no seletor do modo "marca" sem fetch novo - os dados das ate
+      // 3 campanhas ja estao todos em emailModeloAtual (ver fetchEmailModel).
+      function renderEmailCampanhaDetalhe() {
+        if (!emailModeloAtual || emailModeloAtual.modo !== "marca") return;
+        const alvo = document.querySelector("#emailCampanhaDetalhe");
+        if (!alvo) return;
+        const { disparos, analise } = emailModeloAtual;
+        const disparosCampanha = disparos.filter((d) => d.campanha_id === state.emailSelectedCampanhaId);
+        const analiseCampanha = analise.filter((a) => a.campanha_id === state.emailSelectedCampanhaId);
+        alvo.innerHTML = emailCampanhaDetalheHtml(disparosCampanha, analiseCampanha);
+      }
+
+      function paintEmailHtml(model) {
+        const ultimaImportacao = lastImportTimestamp(["campanha_disparos"]);
+        const cabecalho = `
           <div class="page-head">
             <div><div class="eyebrow">Campanhas importadas</div><h2>Email Marketing</h2><p class="muted">Campanhas, disparos, qualidade de base e análise estratégica por marca e período.</p></div>
             <div class="filters">
@@ -3608,75 +3967,57 @@
               <span class="pill" style="cursor:default"><span class="material-symbols-outlined" style="font-size:16px;vertical-align:-3px;margin-right:4px">sync</span>Última importação: ${escapeHtml(formatDateTime(ultimaImportacao))}</span>
               ${periodoDropdownHtml()}
             </div>
-          </div>
+          </div>`;
+        // Sem botao "Atualizar": marca dispara renderEmailBI() direto na troca (ver
+        // wireEmailInteractions), sempre buscando dado fresco - mesmo padrao ja usado em Redes
+        // Sociais/Anuncios (indicador passivo em vez de botao manual, ver ultimaAtualizacaoHtml()).
+        // O filtro de periodo fica na tela por consistencia visual com as outras paginas, mas nao
+        // filtra mais nada aqui: a regra "Ultima(s) Campanha(s)" e sempre a(s) mais recente(s) de
+        // verdade, independente de qualquer janela de datas.
+
+        if (model.modo === "todas") {
+          const { ultimasPorMarca, disparosConsolidados, analiseConsolidada } = model;
+          return `${cabecalho}
+            ${emailConsolidacaoBannerHtml(ultimasPorMarca)}
+            <div id="emailKpiRow">${emailPreviewOverviewHtml(disparosConsolidados)}</div>
+            <section class="card">
+              <div class="page-head" style="align-items:start">
+                <div>
+                  <h3>Comparativo de Desempenho entre Marcas</h3>
+                  <p class="muted">Consolidado dos disparos das últimas campanhas ativas de cada marca.</p>
+                </div>
+              </div>
+              ${emailMarcaComparativoSectionHtml(disparosConsolidados, analiseConsolidada)}
+            </section>`;
+        }
+
+        const { campanhas, disparos, analise } = model;
+        return `${cabecalho}
           <div id="emailKpiRow">${emailPreviewOverviewHtml(disparos)}</div>
           <section class="card">
             <div class="page-head" style="align-items:start">
               <div>
-                <h3>Histórico de campanhas</h3>
-                <p class="muted">Selecione uma campanha salva para ver os KPIs, o comparativo entre disparos, qualidade de base e análise estratégica dela.</p>
-              </div>
-              <div class="filters">
-                <select id="emailCampanhaSelect">${campanhasSalvas.map((c) => `<option value="${escapeHtml(c.id)}" ${c.id === state.emailSelectedCampanhaId ? "selected" : ""}>${escapeHtml(c.nome_campanha)} · ${c.marca}</option>`).join("") || `<option value="">Nenhuma campanha importada</option>`}</select>
+                <h3>Comparativo Histórico de Campanhas da Marca</h3>
+                <p class="muted">Até 3 últimas campanhas importadas de ${escapeHtml(state.marca)}, comparadas entre si.</p>
               </div>
             </div>
-            <div id="emailDrillDown">${campanhaSelecionada ? `<p class="muted">Carregando disparos da campanha...</p>` : `<p class="muted">Nenhuma campanha de e-mail marketing importada ainda para este filtro. Use "Importar Planilhas" para começar.</p>`}</div>
+            ${emailHistoricoMarcaSectionHtml(campanhas, disparos, analise)}
           </section>`;
-      }
-
-      function paintEmailDrillDownHtml(disparos, analiseEstrategica) {
-        if (!disparos.length) return `<p class="muted">Esta campanha ainda não tem disparos importados.</p>`;
-        return `<div class="grid" style="gap:16px;margin-top:16px;min-width:0">
-          <section class="card"><h4>Comparativo entre Disparos</h4>${emailPreviewComparativoHtml(disparos)}</section>
-          <section class="card"><h4>Qualidade da Base</h4>${emailPreviewQualidadeBaseHtml(disparos)}</section>
-          <section class="card"><h4>Eficiência do Clique (CTR × CTOR)</h4>${emailPreviewCtrCtorHtml(disparos)}</section>
-          <section class="card"><h4>Tabela de Disparos</h4>${emailPreviewDisparosTableHtml(disparos)}</section>
-          <section class="card"><h4>Quadro de Análise Estratégica</h4>${emailPreviewAnaliseEstrategicaHtml(analiseEstrategica, { editable: false })}</section>
-        </div>`;
-      }
-
-      // Busca os disparos/analise da campanha selecionada e atualiza DOIS pontos da tela: o card
-      // de drill-down (#emailDrillDown, blocos 2-7) e os KPIs do topo (#emailKpiRow, bloco 1) -
-      // os cards superiores passam a refletir a campanha selecionada, nao mais o periodo inteiro
-      // agregado (pedido explicito: "cards superiores devem refletir a soma dos disparos dessa
-      // campanha").
-      async function loadCampanhaDrillDown(campanhaId) {
-        const drillDown = document.querySelector("#emailDrillDown");
-        const kpiRow = document.querySelector("#emailKpiRow");
-        if (!drillDown) return;
-        if (!campanhaId) {
-          drillDown.innerHTML = `<p class="muted">Nenhuma campanha selecionada.</p>`;
-          if (kpiRow) kpiRow.innerHTML = emailPreviewOverviewHtml([]);
-          return;
-        }
-        try {
-          const [disparosResult, analiseResult] = await Promise.all([
-            supabase.from("campanha_disparos").select("*").eq("campanha_id", campanhaId).order("data_hora"),
-            supabase.from("campanha_analise_estrategica").select("*").eq("campanha_id", campanhaId)
-          ]);
-          if (disparosResult.error) throw disparosResult.error;
-          if (analiseResult.error) throw analiseResult.error;
-          const disparosCampanha = disparosResult.data || [];
-          if (kpiRow) kpiRow.innerHTML = emailPreviewOverviewHtml(disparosCampanha);
-          drillDown.innerHTML = paintEmailDrillDownHtml(disparosCampanha, analiseResult.data || []);
-        } catch (error) {
-          drillDown.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
-        }
       }
 
       function wireEmailInteractions() {
         // Sem botao "Atualizar" (removido): marca/periodo mudam a cacheKey e sempre buscam de
-        // novo (renderEmailBI roda com force:true, ver abaixo); a campanha dispara seu proprio
-        // fetch reativo direto no onchange, sem precisar de um botao manual.
+        // novo (renderEmailBI roda com force:true, ver abaixo). No modo "marca", trocar a campanha
+        // no seletor so re-renderiza o detalhamento (renderEmailCampanhaDetalhe, sincrono, sem
+        // fetch novo - os dados das ate 3 campanhas ja estao todos em emailModeloAtual).
         wireMarcaPills(() => { state.emailSelectedCampanhaId = null; renderEmailBI(); });
-        wirePeriodoDropdown(() => { state.emailSelectedCampanhaId = null; renderEmailBI(); });
+        wirePeriodoDropdown(() => renderEmailBI());
         const campanhaSelect = document.querySelector("#emailCampanhaSelect");
         if (campanhaSelect) {
           campanhaSelect.onchange = (event) => {
             state.emailSelectedCampanhaId = event.target.value;
-            loadCampanhaDrillDown(state.emailSelectedCampanhaId);
+            renderEmailCampanhaDetalhe();
           };
-          if (state.emailSelectedCampanhaId) loadCampanhaDrillDown(state.emailSelectedCampanhaId);
         }
       }
 
@@ -7134,10 +7475,11 @@
       }
 
       // Etapa 3 do destino "E-mail Marketing": os 7 blocos de preview pedidos, todos alimentados
-      // por s.emailPreview.disparos/analiseEstrategica (montados em handleWizardFile). As mesmas
-      // funcoes emailPreview*Html sao reaproveitadas sem alteracao pelo drill-down do dashboard de
-      // E-mail Marketing (ver renderEmailBI) - so muda a origem do array (recem-parseado aqui,
-      // vindo do banco la).
+      // por s.emailPreview.disparos/analiseEstrategica (montados em handleWizardFile). As funcoes
+      // emailPreview*Html sao exclusivas deste preview (1 campanha ainda nao salva, antes do
+      // "Importar para Supabase") - o dashboard de E-mail Marketing (renderEmailBI) usa as
+      // variantes emailMarca*Html (agregadas por marca, nao por disparo), ja que ele sempre compara
+      // as 3 ultimas campanhas lado a lado ("Comparativo Multimarca Direto"), nunca uma so.
       function importStep3EmailHtml() {
         const s = importWizardState;
         if (s.parsing) return `<div class="alert">Lendo ${escapeHtml(s.fileName)}...</div>`;
@@ -7360,10 +7702,17 @@
         );
       }
 
-      // Parser de numero pt-BR pros campos de contagem do disparo: "." como separador de milhar e
-      // "," como separador decimal (ex: "1.234" = mil duzentos e trinta e quatro; "44,44" = 44,44)
-      // - formato comum em relatorios brasileiros de e-mail marketing exportados do Excel. num()/
-      // rawNum() (usados pelo resto do app) nao fazem essa conversao - ficam reservados pros
+      // Parser de numero pros campos de contagem do disparo: aceita tanto o formato brasileiro
+      // ("." como separador de milhar, "," como decimal - ex: "1.234" = mil duzentos e trinta e
+      // quatro; "44,44" = 44,44) quanto o formato internacional que alguns relatorios de e-mail
+      // marketing exportam ("," como separador de milhar - ex: "1,785" = mil setecentos e oitenta
+      // e cinco, nao 1,785). Sem tratar os dois, um "1,785" internacional virava 1.785 (fracao) e
+      // quebrava a coluna integer no banco (incidente 18/08/2026, campanha "Pais - 2026" com
+      // enviados/desengajados na casa dos milhares). Distincao: separador (ponto OU virgula)
+      // seguido de exatamente 3 digitos e fim-de-string/nao-digito e sempre milhar (em qualquer
+      // dos dois formatos, decimal de contagem de e-mail nunca tem exatamente 3 casas seguidas de
+      // nada depois); qualquer virgula que sobra depois disso e decimal de verdade (ex: "44,44").
+      // num()/rawNum() (usados pelo resto do app) nao fazem essa conversao - ficam reservados pros
       // formatos que os outros importadores ja esperam (numero puro ou decimal com ponto); usar
       // num() aqui fazia "44,44" virar NaN -> 0, derrubando enviados/entregues pra zero e
       // descartando disparos reais no filtro antigo.
@@ -7371,7 +7720,10 @@
         if (v === undefined || v === null) return null;
         const raw = String(v).trim();
         if (raw === "") return null;
-        const normalizado = raw.replace(/\.(?=\d{3}(?:\D|$))/g, "").replace(",", ".").replace(/[^\d.-]/g, "");
+        const normalizado = raw
+          .replace(/[.,](?=\d{3}(?:\D|$))/g, "")
+          .replace(",", ".")
+          .replace(/[^\d.-]/g, "");
         if (normalizado === "" || normalizado === "-") return null;
         const parsed = Number(normalizado);
         return Number.isFinite(parsed) ? parsed : null;
