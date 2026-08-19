@@ -4504,15 +4504,20 @@
       bindDiagnosticoModal();
 
       // Modal "Perfil do Usuario": nome/avatar/cargo oficial ficam livres para o proprio
-      // usuario editar; nivel de acesso, marcas atribuidas e status da conta so mudam para
-      // Admin/Gestor (a RLS de public.perfis_marcas e o trigger em public.perfis bloqueiam
-      // essas colunas no backend mesmo que alguem burle a UI, entao o disabled aqui e so
-      // conveniencia visual - a trava de verdade esta no banco).
+      // usuario editar; status da conta muda para Admin/Gestor. Nivel de acesso (cargo) e
+      // marcas atribuidas sao decisao de acesso, nao de auto-edicao: restritos a Admin (a RLS
+      // de public.perfis_marcas e o trigger em public.perfis bloqueiam essas colunas no backend
+      // mesmo que alguem burle a UI, entao o disabled aqui e so conveniencia visual - a trava de
+      // verdade esta no banco, ver migration 20260819_034).
       const marcasDisponiveis = ["Tesoura de Ouro", "Magazine da Economia", "Free Center Calçados"];
       const cargosDisponiveis = ["Admin", "Gestor", "Coordenador", "Analista"];
 
       function isPrivilegiado() {
         return state.perfil?.cargo === "Admin" || state.perfil?.cargo === "Gestor";
+      }
+
+      function podeAtribuirCargoMarca() {
+        return state.perfil?.cargo === "Admin";
       }
 
       let profileModalState = null;
@@ -4549,6 +4554,7 @@
       function profileModalPanelHtml() {
         const p = state.perfil;
         const privilegiado = isPrivilegiado();
+        const podeAtribuir = podeAtribuirCargoMarca();
         const marcas = profileModalState.marcas;
         const todasMarcadas = marcasDisponiveis.every((m) => marcas.includes(m));
 
@@ -4583,25 +4589,25 @@
             </label>
 
             <label>Nível de acesso
-              <select name="cargo" ${privilegiado ? "" : "disabled"}>
+              <select name="cargo" ${podeAtribuir ? "" : "disabled"}>
                 ${cargosDisponiveis.map((c) => `<option value="${c}" ${p.cargo === c ? "selected" : ""}>${c}</option>`).join("")}
               </select>
             </label>
-            ${!privilegiado ? `<p class="field-hint" style="margin-top:-10px">Somente Admin/Gestor pode alterar o nível de acesso.</p>` : ""}
+            ${!podeAtribuir ? `<p class="field-hint" style="margin-top:-10px">Somente Admin pode alterar o nível de acesso.</p>` : ""}
 
             <div>
               <p class="modal-section-title">Marcas atribuídas</p>
               <div class="marca-checks" style="margin-top:8px">
-                <label class="marca-check ${privilegiado ? "" : "disabled"}">
-                  <input type="checkbox" data-marca-all ${todasMarcadas ? "checked" : ""} ${privilegiado ? "" : "disabled"} />
+                <label class="marca-check ${podeAtribuir ? "" : "disabled"}">
+                  <input type="checkbox" data-marca-all ${todasMarcadas ? "checked" : ""} ${podeAtribuir ? "" : "disabled"} />
                   Todas
                 </label>
-                ${marcasDisponiveis.map((m) => `<label class="marca-check ${privilegiado ? "" : "disabled"}">
-                  <input type="checkbox" data-marca="${escapeHtml(m)}" ${marcas.includes(m) ? "checked" : ""} ${privilegiado ? "" : "disabled"} />
+                ${marcasDisponiveis.map((m) => `<label class="marca-check ${podeAtribuir ? "" : "disabled"}">
+                  <input type="checkbox" data-marca="${escapeHtml(m)}" ${marcas.includes(m) ? "checked" : ""} ${podeAtribuir ? "" : "disabled"} />
                   ${escapeHtml(m)}
                 </label>`).join("")}
               </div>
-              <p class="field-hint">${privilegiado ? "Necessário selecionar ao menos uma marca." : "Somente Admin/Gestor pode alterar as marcas atribuídas."}</p>
+              <p class="field-hint">${podeAtribuir ? "Necessário selecionar ao menos uma marca." : "Somente Admin pode alterar as marcas atribuídas."}</p>
             </div>
 
             <div class="switch-row">
@@ -4718,11 +4724,12 @@
         const notifAlerta = form.querySelector('input[name="notif_alerta_performance"]').checked;
         const marcas = profileModalState.marcas;
         const privilegiado = isPrivilegiado();
+        const podeAtribuir = podeAtribuirCargoMarca();
 
         const errors = [];
         if (!nome) errors.push("Informe o nome completo.");
         if (!cargo) errors.push("Selecione o nível de acesso.");
-        if (privilegiado && marcas.length === 0) errors.push("Selecione ao menos uma marca atribuída.");
+        if (podeAtribuir && marcas.length === 0) errors.push("Selecione ao menos uma marca atribuída.");
 
         if (errors.length) {
           profileModalState.error = errors.join(" ");
@@ -4743,13 +4750,15 @@
             notif_alerta_performance: notifAlerta
           };
           if (privilegiado) {
-            payload.cargo = cargo;
             payload.ativo = ativo;
+          }
+          if (podeAtribuir) {
+            payload.cargo = cargo;
           }
           const { error: updateError } = await supabase.from("perfis").update(payload).eq("id", state.perfil.id);
           if (updateError) throw updateError;
 
-          if (privilegiado) {
+          if (podeAtribuir) {
             const atuais = await supabase.from("perfis_marcas").select("marca").eq("perfil_id", state.perfil.id);
             const atuaisMarcas = (atuais.data || []).map((r) => r.marca);
             const paraAdicionar = marcas.filter((m) => !atuaisMarcas.includes(m));
