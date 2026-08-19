@@ -1485,6 +1485,7 @@
           <div class="modal-overlay" id="creativoModal" hidden></div>
           <div class="modal-overlay" id="inviteUserModal" hidden></div>
           <div class="modal-overlay" id="editAccessModal" hidden></div>
+          <div class="modal-overlay" id="resetPasswordModal" hidden></div>
           <div class="modal-overlay" id="deleteUserModal" hidden></div>`;
         document.querySelector("#logout").onclick = signOut;
         document.querySelector("#editProfile").onclick = openProfileModal;
@@ -8341,6 +8342,21 @@
         if (origem === "whatsapp") return `<span class="origem-pill origem-whatsapp">WhatsApp</span>`;
         return `<span class="origem-pill origem-desconhecida">—</span>`;
       }
+
+      // Senha inicial/de reset e sempre gerada aleatoria (crypto.getRandomValues, nao Math.random)
+      // e so entao mostrada editavel pro Admin - nunca um valor fixo repetido entre contas, que
+      // deixaria qualquer conta nova/resetada vulneravel a um chute obvio antes do usuario logar.
+      function gerarSenhaAleatoria(tamanho = 10) {
+        const alfabeto = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+        const valores = new Uint32Array(tamanho);
+        crypto.getRandomValues(valores);
+        return Array.from(valores, (v) => alfabeto[v % alfabeto.length]).join("");
+      }
+
+      async function copiarDadosAcesso(email, senha) {
+        const texto = `Acesse a plataforma GTO Insights: https://gtoinsights.netlify.app/ | E-mail: ${email} | Senha: ${senha}`;
+        await navigator.clipboard.writeText(texto);
+      }
       function userInitials(name) {
         const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
         if (!parts.length) return "?";
@@ -8498,7 +8514,7 @@
         document.querySelector("#inviteUsuario").onclick = () => openInviteModal();
         document.querySelectorAll(".editar-acesso").forEach((btn) => { btn.onclick = () => openEditAccessModal(btn.dataset.id); });
         document.querySelectorAll(".toggle-ativo").forEach((input) => { input.onchange = () => toggleUsuarioAtivo(input.dataset.id, input.checked); });
-        document.querySelectorAll(".resetar-senha").forEach((btn) => { btn.onclick = () => enviarRedefinicaoSenha(btn.dataset.id); });
+        document.querySelectorAll(".resetar-senha").forEach((btn) => { btn.onclick = () => openResetPasswordModal(btn.dataset.id); });
         document.querySelectorAll(".resetar-mfa").forEach((btn) => { btn.onclick = () => resetarMfaUsuario(btn.dataset.id); });
         document.querySelectorAll(".reenviar-convite").forEach((btn) => { btn.onclick = () => openInviteModal(btn.dataset.id); });
         document.querySelectorAll(".excluir-usuario").forEach((btn) => { btn.onclick = () => openDeleteUserModal(btn.dataset.id); });
@@ -8542,6 +8558,147 @@
         await renderUsuarios(`Autenticação em duas etapas reiniciada para ${usuario?.nome || usuario?.email || "o usuário"}.`);
       }
 
+      // Modal "Redefinir senha" --------------------------------------------------------------------
+      // Duas opcoes: (1) e-mail de redefinicao via resetPasswordForEmail, igual ao fluxo publico de
+      // login; (2) redefinicao manual - o Admin digita/gera a senha aqui e ela e aplicada via Edge
+      // Function admin-set-password (service_role, unico jeito de chamar auth.admin.updateUserById -
+      // essa API nunca pode rodar no client). Senha sempre pre-preenchida aleatoria, nunca um valor
+      // fixo repetido entre resets.
+      let resetPasswordModalState = null;
+
+      function openResetPasswordModal(id) {
+        const overlay = document.querySelector("#resetPasswordModal");
+        const usuario = (state.usuarios || []).find((u) => u.id === id);
+        if (!overlay || !usuario) return;
+        resetPasswordModalState = { usuario, modo: "opcoes", novaSenha: gerarSenhaAleatoria(), saving: false, error: "", info: "" };
+        overlay.innerHTML = resetPasswordModalPanelHtml();
+        overlay.hidden = false;
+        wireResetPasswordModal();
+      }
+
+      function closeResetPasswordModal() {
+        const overlay = document.querySelector("#resetPasswordModal");
+        if (overlay) { overlay.hidden = true; overlay.innerHTML = ""; }
+        resetPasswordModalState = null;
+      }
+
+      function resetPasswordModalPanelHtml() {
+        const s = resetPasswordModalState;
+        return `<div class="modal-panel">
+          <div class="modal-header">
+            <div><p style="margin:0 0 4px;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Redefinir senha</p><h3 style="margin:0;font-size:17px">${escapeHtml(s.usuario.nome || s.usuario.email)}</h3></div>
+            <button type="button" class="modal-close" id="resetPasswordModalClose"><span class="material-symbols-outlined">close</span></button>
+          </div>
+          <div class="modal-body">
+            ${s.modo === "opcoes" ? `
+              <p class="muted">Escolha como redefinir a senha de ${escapeHtml(s.usuario.email)}.</p>
+              <div class="actions" style="flex-direction:column;align-items:stretch;gap:8px">
+                <button type="button" id="resetOpcaoEmail">Enviar e-mail de redefinição para o usuário</button>
+                <button type="button" class="secondary" id="resetOpcaoManual">Redefinir senha manualmente aqui no painel</button>
+              </div>
+            ` : `
+              <label>Nova senha
+                <div style="display:flex;gap:8px">
+                  <input id="resetNovaSenhaInput" type="text" minlength="8" maxlength="72" value="${escapeHtml(s.novaSenha)}" style="flex:1" />
+                  <button type="button" class="secondary" id="resetGerarSenha">Gerar nova</button>
+                </div>
+              </label>
+              <p class="field-hint" style="margin-top:-10px">Gerada aleatoriamente - pode editar antes de salvar. O usuário poderá trocá-la depois de entrar.</p>
+            `}
+            ${s.error ? `<div class="alert error">${escapeHtml(s.error)}</div>` : ""}
+            ${s.info ? `<div class="alert success">${escapeHtml(s.info)}</div>` : ""}
+            <div class="actions" style="justify-content:flex-end">
+              ${s.modo === "manual" ? `<button type="button" class="secondary" id="resetCopiarDados">Copiar dados de acesso</button>` : ""}
+              <button type="button" class="secondary" id="resetCancelar">${s.modo === "manual" ? "Voltar" : "Fechar"}</button>
+              ${s.modo === "manual" ? `<button type="button" id="resetSalvarSenha" ${s.saving ? "disabled" : ""}>${s.saving ? "Salvando..." : "Salvar nova senha"}</button>` : ""}
+            </div>
+          </div>
+        </div>`;
+      }
+
+      function refreshResetPasswordModal() {
+        const overlay = document.querySelector("#resetPasswordModal");
+        if (!overlay || overlay.hidden || !resetPasswordModalState) return;
+        overlay.innerHTML = resetPasswordModalPanelHtml();
+        wireResetPasswordModal();
+      }
+
+      function wireResetPasswordModal() {
+        const overlay = document.querySelector("#resetPasswordModal");
+        const s = resetPasswordModalState;
+        overlay.querySelector("#resetPasswordModalClose").onclick = closeResetPasswordModal;
+        overlay.onclick = (event) => { if (event.target.id === "resetPasswordModal") closeResetPasswordModal(); };
+
+        if (s.modo === "opcoes") {
+          overlay.querySelector("#resetOpcaoEmail").onclick = async () => {
+            const usuarioId = s.usuario.id;
+            closeResetPasswordModal();
+            await enviarRedefinicaoSenha(usuarioId);
+          };
+          overlay.querySelector("#resetOpcaoManual").onclick = () => {
+            s.modo = "manual";
+            s.error = "";
+            s.info = "";
+            refreshResetPasswordModal();
+          };
+          overlay.querySelector("#resetCancelar").onclick = closeResetPasswordModal;
+          return;
+        }
+
+        overlay.querySelector("#resetNovaSenhaInput").oninput = (event) => { s.novaSenha = event.target.value; };
+        overlay.querySelector("#resetGerarSenha").onclick = () => {
+          s.novaSenha = gerarSenhaAleatoria();
+          refreshResetPasswordModal();
+        };
+        overlay.querySelector("#resetCopiarDados").onclick = async () => {
+          try {
+            await copiarDadosAcesso(s.usuario.email, s.novaSenha);
+            s.info = "Dados de acesso copiados para a área de transferência.";
+            s.error = "";
+          } catch {
+            s.error = "Não foi possível copiar automaticamente - copie manualmente.";
+          }
+          refreshResetPasswordModal();
+        };
+        overlay.querySelector("#resetCancelar").onclick = () => {
+          s.modo = "opcoes";
+          s.error = "";
+          s.info = "";
+          refreshResetPasswordModal();
+        };
+        overlay.querySelector("#resetSalvarSenha").onclick = submitResetSenhaManual;
+      }
+
+      async function submitResetSenhaManual() {
+        const s = resetPasswordModalState;
+        if (!s || s.novaSenha.length < 8) {
+          s.error = "A senha precisa ter ao menos 8 caracteres.";
+          refreshResetPasswordModal();
+          return;
+        }
+        s.saving = true;
+        s.error = "";
+        refreshResetPasswordModal();
+
+        const { data, error } = await supabase.functions.invoke("admin-set-password", { body: { usuario_id: s.usuario.id, nova_senha: s.novaSenha } });
+        if (error) {
+          s.saving = false;
+          s.error = safeErrorMessage(error, "Não foi possível redefinir a senha.");
+          refreshResetPasswordModal();
+          return;
+        }
+        if (data?.error) {
+          s.saving = false;
+          s.error = data.error;
+          refreshResetPasswordModal();
+          return;
+        }
+
+        const email = s.usuario.email;
+        closeResetPasswordModal();
+        await renderUsuarios(`Senha redefinida manualmente para ${email}.`);
+      }
+
       // Modal "Convidar usuario" ------------------------------------------------------------------
       // Fluxo em 2 etapas: (1) dados do convidado -> cria a conta via generateLink e grava
       // cargo/marcas/telefone/ativo com a sessao do Admin; (2) editor de mensagens com abas
@@ -8577,6 +8734,7 @@
           telefoneDigits: usuarioExistente?.telefone || "",
           cargo: usuarioExistente?.cargo || "Analista",
           marcas: usuarioExistente ? [...usuarioExistente.marcas] : [],
+          senhaInicial: gerarSenhaAleatoria(),
           saving: false, error: "", info: "",
           usuarioId: null, actionLink: null, activeTab: "email",
           assuntoEmail: "", corpoEmail: "", corpoWhatsapp: ""
@@ -8620,6 +8778,13 @@
           ${s.editingId ? `<p class="field-hint" style="margin-top:-10px">E-mail não pode ser alterado no reenvio - crie um novo convite se precisar trocar.</p>` : ""}
           <label>Telefone / WhatsApp<input name="telefone" type="tel" inputmode="numeric" placeholder="(11) 91234-5678" maxlength="16" value="${escapeHtml(maskTelefoneBR(s.telefoneDigits))}" /></label>
           <p class="field-hint" style="margin-top:-10px">Opcional, mas necessário pra disparar o convite pelo WhatsApp na próxima etapa.</p>
+          <label>Senha inicial
+            <div style="display:flex;gap:8px">
+              <input name="senha_inicial" type="text" minlength="8" maxlength="72" required value="${escapeHtml(s.senhaInicial)}" style="flex:1" />
+              <button type="button" class="secondary" id="inviteGerarSenha">Gerar nova</button>
+            </div>
+          </label>
+          <p class="field-hint" style="margin-top:-10px">Gerada aleatoriamente - pode editar antes de salvar. O usuário poderá trocá-la depois de entrar.</p>
           <label>Cargo
             <select name="cargo">${cargosDisponiveis.map((c) => `<option value="${c}" ${s.cargo === c ? "selected" : ""}>${c}</option>`).join("")}</select>
           </label>
@@ -8644,6 +8809,9 @@
       function inviteStep2Html(s) {
         const temTelefone = s.telefoneDigits.length >= 10;
         return `<div class="modal-body">
+          <div class="actions" style="justify-content:flex-start;margin:0 0 12px">
+            <button type="button" class="secondary" id="inviteCopiarDados"><span class="material-symbols-outlined" style="vertical-align:middle;font-size:18px">content_copy</span> Copiar dados de acesso</button>
+          </div>
           <div class="message-tabs">
             <button type="button" class="message-tab ${s.activeTab === "email" ? "active" : ""}" data-invite-tab="email">E-mail</button>
             <button type="button" class="message-tab ${s.activeTab === "whatsapp" ? "active" : ""}" data-invite-tab="whatsapp">WhatsApp</button>
@@ -8700,6 +8868,13 @@
           overlay.querySelector("input[name='email']").oninput = (event) => {
             inviteModalState.email = event.target.value;
           };
+          overlay.querySelector("input[name='senha_inicial']").oninput = (event) => {
+            inviteModalState.senhaInicial = event.target.value;
+          };
+          overlay.querySelector("#inviteGerarSenha").onclick = () => {
+            inviteModalState.senhaInicial = gerarSenhaAleatoria();
+            refreshInviteModal();
+          };
           const telefoneInput = overlay.querySelector("input[name='telefone']");
           telefoneInput.oninput = (event) => {
             inviteModalState.telefoneDigits = event.target.value.replace(/\D/g, "").slice(0, 11);
@@ -8721,6 +8896,16 @@
 
         // Etapa 2 - editor de mensagens -------------------------------------------------------------
         overlay.querySelector("#inviteClose").onclick = closeInviteModal;
+        overlay.querySelector("#inviteCopiarDados").onclick = async () => {
+          try {
+            await copiarDadosAcesso(inviteModalState.email, inviteModalState.senhaInicial);
+            inviteModalState.info = "Dados de acesso copiados para a área de transferência.";
+            inviteModalState.error = "";
+          } catch {
+            inviteModalState.error = "Não foi possível copiar automaticamente - copie manualmente.";
+          }
+          refreshInviteModal();
+        };
         overlay.querySelectorAll("[data-invite-tab]").forEach((btn) => {
           btn.onclick = () => {
             syncStep2Textarea();
@@ -8796,12 +8981,14 @@
         const nome = (data.get("nome") || "").toString().trim();
         const email = (data.get("email") || "").toString().trim().toLowerCase();
         const cargo = (data.get("cargo") || "Analista").toString();
+        const senhaInicial = (data.get("senha_inicial") || "").toString();
         const marcas = inviteModalState.marcas;
         const telefoneDigits = inviteModalState.telefoneDigits;
 
         const errors = [];
         if (!nome) errors.push("Informe o nome completo.");
         if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push("Informe um e-mail corporativo válido.");
+        if (senhaInicial.length < 8) errors.push("A senha inicial precisa ter ao menos 8 caracteres.");
         if (telefoneDigits && ![10, 11].includes(telefoneDigits.length)) errors.push("Telefone inválido - informe DDD + número.");
         if (CARGOS_QUE_EXIGEM_MARCA.includes(cargo) && marcas.length === 0) errors.push("Selecione ao menos uma marca permitida para este cargo.");
 
@@ -8816,7 +9003,7 @@
         refreshInviteModal();
 
         try {
-          const { data: inviteResult, error: inviteError } = await supabase.functions.invoke("admin-invite-user", { body: { nome, email } });
+          const { data: inviteResult, error: inviteError } = await supabase.functions.invoke("admin-invite-user", { body: { nome, email, senha_inicial: senhaInicial } });
           if (inviteError) throw inviteError;
           if (inviteResult?.error) throw new Error(inviteResult.error);
           const novoId = inviteResult.id;
@@ -8831,6 +9018,7 @@
           inviteModalState.nome = nome;
           inviteModalState.email = email;
           inviteModalState.cargo = cargo;
+          inviteModalState.senhaInicial = senhaInicial;
           inviteModalState.usuarioId = novoId;
           inviteModalState.actionLink = inviteResult.action_link || null;
           inviteModalState.assuntoEmail = "Convite para acessar o GTO Insights";

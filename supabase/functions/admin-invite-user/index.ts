@@ -11,6 +11,7 @@ import {
 
 const CARGOS_PERMITIDOS = ["Admin"];
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const SENHA_MIN_LENGTH = 8;
 
 // Cria o convite (ou reenvia, se o e-mail ja pertencer a um usuario pendente) e devolve o link
 // (auth.admin.generateLink exige service_role, nunca pode rodar no client) SEM disparar nenhum
@@ -18,6 +19,13 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // Mensagens": abre rascunho de e-mail via mailto: ou de WhatsApp via wa.me, com o link e o texto
 // que o Admin editou). Por isso generateLink({type:'invite'}) no lugar de inviteUserByEmail (que
 // sempre manda o template fixo do Supabase Auth na hora).
+//
+// senha_inicial: alem do link, a conta ja sai com uma senha utilizavel de imediato (fluxo de
+// onboarding por WhatsApp/e-mail direto, sem depender do convidado clicar no link) - gerada
+// aleatoria no front (crypto.getRandomValues) e so entao editavel pelo Admin, nunca um valor
+// fixo repetido entre contas. email_confirm:true junto pra a conta ficar utilizavel na hora com
+// email+senha, sem exigir confirmacao de e-mail (o convidado ainda pode preferir o link, que
+// continua sendo gerado e devolvido normalmente).
 //
 // Cargo/ativo/marcas/telefone do perfil convidado NAO sao gravados aqui: o trigger
 // trg_auth_users_criar_perfil ja cria a linha em public.perfis (cargo "Analista", ativo=false)
@@ -38,12 +46,16 @@ Deno.serve(withCors(async (req) => {
     const body = await req.json().catch(() => ({}));
     const email = String(body.email || "").trim().toLowerCase();
     const nome = String(body.nome || "").trim();
+    const senhaInicial = String(body.senha_inicial || "");
 
     if (!email || !EMAIL_REGEX.test(email) || email.length > 254) {
       return jsonResponse({ error: "Informe um e-mail corporativo valido." }, 400);
     }
     if (!nome || nome.length > 120) {
       return jsonResponse({ error: "Informe o nome completo." }, 400);
+    }
+    if (senhaInicial.length < SENHA_MIN_LENGTH || senhaInicial.length > 72) {
+      return jsonResponse({ error: `A senha inicial precisa ter entre ${SENHA_MIN_LENGTH} e 72 caracteres.` }, 400);
     }
 
     const supabase = getAdminClient();
@@ -65,6 +77,12 @@ Deno.serve(withCors(async (req) => {
     }
 
     if (!generated.data.user?.id) throw new Error("Convite criado, mas o usuario nao retornou id.");
+
+    const { error: senhaError } = await supabase.auth.admin.updateUserById(generated.data.user.id, {
+      password: senhaInicial,
+      email_confirm: true,
+    });
+    if (senhaError) throw senhaError;
 
     return jsonResponse({
       ok: true,
