@@ -3682,26 +3682,41 @@
       // renderEmailCampanhaDetalhe/wireEmailInteractions).
       let emailModeloAtual = null;
 
+      // Busca os disparos de uma lista de campanhas respeitando o filtro de Periodo da tela (mesma
+      // logica de fromDate()/toDate() + .gte/.lte em data_hora ja usada por fetchPaginated) - sem
+      // isso, os KPIs desta tela somavam TODOS os disparos das ultimas campanhas, independente do
+      // Periodo selecionado no dropdown (que ficava so de enfeite, sem nenhum efeito no resultado) e
+      // por isso podiam nao bater com o card "E-mail Marketing & CRM" do Dashboard Geral, que sempre
+      // filtrou campanha_disparos pelo periodo (ver loadDashboardPeriodSummary).
+      async function fetchDisparosDoPeriodo(campanhaIds) {
+        if (!campanhaIds.length) return [];
+        let query = supabase.from("campanha_disparos").select("*").in("campanha_id", campanhaIds).order("data_hora");
+        const de = fromDate();
+        const ate = toDate();
+        if (de) query = query.gte("data_hora", de);
+        if (ate) query = query.lte("data_hora", ate);
+        const { data, error } = await query;
+        if (error) throw error;
+        return data || [];
+      }
+
       async function fetchEmailModel() {
         if (state.marca === "Todas") {
           const ultimasPorMarca = await fetchUltimasCampanhasPorMarca();
           const idsConsolidados = ultimasPorMarca.map((u) => u.campanha?.id).filter(Boolean);
 
-          const [disparosResult, analiseResult] = await Promise.all([
-            idsConsolidados.length
-              ? supabase.from("campanha_disparos").select("*").in("campanha_id", idsConsolidados).order("data_hora")
-              : Promise.resolve({ data: [], error: null }),
+          const [disparosConsolidados, analiseResult] = await Promise.all([
+            fetchDisparosDoPeriodo(idsConsolidados),
             idsConsolidados.length
               ? supabase.from("campanha_analise_estrategica").select("*").in("campanha_id", idsConsolidados)
               : Promise.resolve({ data: [], error: null })
           ]);
-          if (disparosResult.error) throw disparosResult.error;
           if (analiseResult.error) throw analiseResult.error;
 
           emailModeloAtual = {
             modo: "todas",
             ultimasPorMarca,
-            disparosConsolidados: disparosResult.data || [],
+            disparosConsolidados,
             analiseConsolidada: analiseResult.data || []
           };
           return emailModeloAtual;
@@ -3717,21 +3732,18 @@
         const campanhas = campanhasResult.data || [];
         const ids = campanhas.map((c) => c.id);
 
-        const [disparosResult, analiseResult] = await Promise.all([
-          ids.length
-            ? supabase.from("campanha_disparos").select("*").in("campanha_id", ids).order("data_hora")
-            : Promise.resolve({ data: [], error: null }),
+        const [disparos, analiseResult] = await Promise.all([
+          fetchDisparosDoPeriodo(ids),
           ids.length
             ? supabase.from("campanha_analise_estrategica").select("*").in("campanha_id", ids)
             : Promise.resolve({ data: [], error: null })
         ]);
-        if (disparosResult.error) throw disparosResult.error;
         if (analiseResult.error) throw analiseResult.error;
 
         emailModeloAtual = {
           modo: "marca",
           campanhas,
-          disparos: disparosResult.data || [],
+          disparos,
           analise: analiseResult.data || []
         };
         return emailModeloAtual;
