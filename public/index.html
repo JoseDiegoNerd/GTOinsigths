@@ -1486,7 +1486,8 @@
           <div class="modal-overlay" id="inviteUserModal" hidden></div>
           <div class="modal-overlay" id="editAccessModal" hidden></div>
           <div class="modal-overlay" id="resetPasswordModal" hidden></div>
-          <div class="modal-overlay" id="deleteUserModal" hidden></div>`;
+          <div class="modal-overlay" id="deleteUserModal" hidden></div>
+          <div class="modal-overlay" id="deleteCampanhaModal" hidden></div>`;
         document.querySelector("#logout").onclick = signOut;
         document.querySelector("#editProfile").onclick = openProfileModal;
         wireTopbarProfileMenu();
@@ -7290,6 +7291,10 @@
       // Social Format Metrics, que nao tem lugar nos 3 destinos pedidos.
       let importWizardState = null;
 
+      // Estado da secao "Historico e Gerenciamento de Uploads" (abaixo do wizard, mesma tela) - rows
+      // null = ainda nao carregado (renderImport dispara loadImportHistorico na primeira vez).
+      let importHistoricoState = { rows: null, loading: false, error: "" };
+
       const destinoLabels = {
         email_marketing: "E-mail Marketing",
         cartoes_proprios: "Cartões Próprios",
@@ -7356,8 +7361,11 @@
               ${s.step === 1 ? importStep1Html() : s.step === 2 ? importStep2Html() : importStep3Html()}
             </div>
           </section>
-          ${lastImportLogHtml()}`;
+          ${lastImportLogHtml()}
+          <div id="importHistorico">${importHistoricoSectionHtml()}</div>`;
         wireImportWizard();
+        wireImportHistorico();
+        if (importHistoricoState.rows === null && !importHistoricoState.loading) loadImportHistorico();
       }
 
       function refreshImportWizard() {
@@ -8140,6 +8148,164 @@
         saveLastImportTimestamp("campanha_disparos");
         resetImportWizard();
         renderImport(finalMessage);
+      }
+
+      // Historico e Gerenciamento de Uploads --------------------------------------------------------
+      // Lista todas as campanhas de email marketing ja salvas (tabela campanhas_email), com quem
+      // importou (join em perfis via criado_por) e um botao de exclusao em cascata. Mora na mesma tela
+      // do wizard (abaixo dele), pintada dentro de #importHistorico por renderImport().
+      async function loadImportHistorico() {
+        importHistoricoState = { ...importHistoricoState, loading: true, error: "" };
+        paintImportHistorico();
+
+        const { data, error } = await supabase
+          .from("campanhas_email")
+          .select("id, marca, nome_campanha, destino_canal, data_importacao, criado_por, perfis:criado_por(nome, email)")
+          .order("data_importacao", { ascending: false });
+
+        importHistoricoState = error
+          ? { rows: null, loading: false, error: safeErrorMessage(error, "Não foi possível carregar o histórico de importações.") }
+          : { rows: data || [], loading: false, error: "" };
+        paintImportHistorico();
+      }
+
+      function paintImportHistorico() {
+        const container = document.querySelector("#importHistorico");
+        if (!container) return;
+        container.innerHTML = importHistoricoSectionHtml();
+        wireImportHistorico();
+      }
+
+      function importHistoricoSectionHtml() {
+        const s = importHistoricoState;
+        return `<section class="card" style="margin-top:24px">
+          <div class="page-head" style="margin-bottom:0">
+            <div><div class="eyebrow">Planilhas já importadas</div><h3 style="margin:4px 0 0">Histórico e Gerenciamento de Uploads</h3></div>
+            <button type="button" class="secondary" id="refreshImportHistorico" ${s.loading ? "disabled" : ""}>Atualizar</button>
+          </div>
+          <div style="margin-top:16px">
+            ${s.loading && !s.rows ? `<div class="alert">Carregando histórico...</div>` : ""}
+            ${s.error ? `<div class="alert error">${escapeHtml(s.error)}</div>` : ""}
+            ${!s.error && s.rows ? importHistoricoTableHtml(s.rows) : ""}
+          </div>
+        </section>`;
+      }
+
+      function importHistoricoTableHtml(rows) {
+        if (!rows.length) return `<p class="muted">Nenhuma campanha importada ainda.</p>`;
+        return `<div class="table-wrap">
+          <table>
+            <thead><tr><th>Marca</th><th>Nome da Campanha</th><th>Canal</th><th>Data da Importação</th><th>Usuário que Importou</th><th>Ações</th></tr></thead>
+            <tbody>${rows.map(importHistoricoRowHtml).join("")}</tbody>
+          </table>
+        </div>`;
+      }
+
+      function importHistoricoRowHtml(campanha) {
+        const importador = campanha.perfis?.nome || campanha.perfis?.email || "—";
+        return `<tr data-campanha-id="${escapeHtml(campanha.id)}">
+          <td><span class="marca-chip ${marcaChipClass(campanha.marca)}">${escapeHtml(campanha.marca)}</span></td>
+          <td>${escapeHtml(campanha.nome_campanha)}</td>
+          <td>${escapeHtml(campanha.destino_canal || "—")}</td>
+          <td>${escapeHtml(formatDateTime(campanha.data_importacao))}</td>
+          <td>${escapeHtml(importador)}</td>
+          <td>
+            <div class="row-actions">
+              <button type="button" class="danger excluir-campanha" data-id="${escapeHtml(campanha.id)}" data-nome="${escapeHtml(campanha.nome_campanha)}" title="Excluir campanha">
+                <span class="material-symbols-outlined" style="vertical-align:middle;font-size:18px">delete</span>
+              </button>
+            </div>
+          </td>
+        </tr>`;
+      }
+
+      function wireImportHistorico() {
+        const refreshBtn = document.querySelector("#refreshImportHistorico");
+        if (refreshBtn) refreshBtn.onclick = loadImportHistorico;
+        document.querySelectorAll(".excluir-campanha").forEach((btn) => {
+          btn.onclick = () => openDeleteCampanhaModal(btn.dataset.id, btn.dataset.nome);
+        });
+      }
+
+      // Modal "Excluir campanha" - mesmo padrao visual/estrutural do modal "Excluir usuario"
+      // (openDeleteUserModal/wireDeleteUserModal la embaixo), so trocando a chamada final por
+      // rpc_excluir_campanha_email (migration 20260820_035) em vez da Edge Function admin-delete-user.
+      let deleteCampanhaModalState = null;
+
+      function openDeleteCampanhaModal(campanhaId, nomeCampanha) {
+        const overlay = document.querySelector("#deleteCampanhaModal");
+        if (!overlay) return;
+        deleteCampanhaModalState = { campanhaId, nomeCampanha, saving: false, error: "" };
+        overlay.innerHTML = deleteCampanhaModalPanelHtml();
+        overlay.hidden = false;
+        wireDeleteCampanhaModal();
+      }
+
+      function closeDeleteCampanhaModal() {
+        const overlay = document.querySelector("#deleteCampanhaModal");
+        if (overlay) { overlay.hidden = true; overlay.innerHTML = ""; }
+        deleteCampanhaModalState = null;
+      }
+
+      function deleteCampanhaModalPanelHtml() {
+        const s = deleteCampanhaModalState;
+        return `<div class="modal-panel">
+          <div class="modal-header">
+            <div><p style="margin:0 0 4px;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Ação irreversível</p><h3 style="margin:0;font-size:17px">Excluir campanha</h3></div>
+            <button type="button" class="modal-close" id="deleteCampanhaModalClose"><span class="material-symbols-outlined">close</span></button>
+          </div>
+          <div class="modal-body">
+            <p>Tem certeza que deseja apagar a campanha <strong>${escapeHtml(s.nomeCampanha)}</strong>? Esta ação removerá todos os disparos associados a este upload.</p>
+            ${s.error ? `<div class="alert error">${escapeHtml(s.error)}</div>` : ""}
+            <div class="actions" style="justify-content:flex-end">
+              <button type="button" class="secondary" id="deleteCampanhaCancel">Cancelar</button>
+              <button type="button" class="danger" id="deleteCampanhaConfirm" ${s.saving ? "disabled" : ""}>${s.saving ? "Excluindo..." : "Excluir"}</button>
+            </div>
+          </div>
+        </div>`;
+      }
+
+      function refreshDeleteCampanhaModal() {
+        const overlay = document.querySelector("#deleteCampanhaModal");
+        if (!overlay || overlay.hidden || !deleteCampanhaModalState) return;
+        overlay.innerHTML = deleteCampanhaModalPanelHtml();
+        wireDeleteCampanhaModal();
+      }
+
+      function wireDeleteCampanhaModal() {
+        const overlay = document.querySelector("#deleteCampanhaModal");
+        overlay.querySelector("#deleteCampanhaModalClose").onclick = closeDeleteCampanhaModal;
+        overlay.querySelector("#deleteCampanhaCancel").onclick = closeDeleteCampanhaModal;
+        overlay.onclick = (event) => { if (event.target.id === "deleteCampanhaModal") closeDeleteCampanhaModal(); };
+        overlay.querySelector("#deleteCampanhaConfirm").onclick = confirmDeleteCampanha;
+      }
+
+      async function confirmDeleteCampanha() {
+        if (!deleteCampanhaModalState) return;
+        const s = deleteCampanhaModalState;
+        s.saving = true;
+        s.error = "";
+        refreshDeleteCampanhaModal();
+
+        const { error } = await supabase.rpc("rpc_excluir_campanha_email", { p_campanha_id: s.campanhaId });
+        if (error) {
+          s.saving = false;
+          s.error = safeErrorMessage(error, "Não foi possível excluir esta campanha.");
+          refreshDeleteCampanhaModal();
+          return;
+        }
+
+        // Campanha excluida no banco (cascade ja removeu disparos/analise) - limpa os caches "estilo
+        // React Query" do Dashboard de Email Marketing (pageCaches "email") e do Dashboard Geral
+        // (dashboardCache) pra nao mostrar dados orfaos por ate 5min (PAGE_STALE_TIME/
+        // DASHBOARD_STALE_TIME), recarrega a lista local e repinta a tela com a mensagem de sucesso.
+        pageCaches.delete("email");
+        dashboardCache.clear();
+
+        const nomeExcluido = s.nomeCampanha;
+        await loadImportHistorico();
+        closeDeleteCampanhaModal();
+        renderImport(`Campanha "${nomeExcluido}" excluída com sucesso.`);
       }
 
       function mapRow(source, marca, r, fileName) {
