@@ -4085,6 +4085,8 @@
           to: toDate()
         }).catch(() => new Map());
 
+        const prevRange = previousPeriodRange();
+
         // "Novos seguidores" do card de resumo usa o MESMO historico de seguidores do grafico
         // "Evolucao de seguidores" logo abaixo (entradas - saidas, ver totalEntradasSaidas) em vez
         // do campo seguidores_conquistados dos posts (stage_social_format_metrics): a Meta
@@ -4094,7 +4096,6 @@
         let seguidoresLiquido = null;
         if (isInstagram) {
           const { entradas, saidas } = totalEntradasSaidas(followerSeriesPorMarca);
-          const prevRange = previousPeriodRange();
           let anterior = null;
           if (prevRange) {
             const seriePeriodoAnterior = await loadFollowerHistoryPorMarca(followerField, {
@@ -4106,6 +4107,15 @@
             anterior = prev.entradas - prev.saidas;
           }
           seguidoresLiquido = { atual: entradas - saidas, anterior };
+        }
+
+        // "Postagens" comparado ao mesmo intervalo do mes anterior: conta linhas brutas da
+        // rede/marca em stage_social_format_metrics no periodo anterior - mesma fonte que gera
+        // totals.registros do periodo atual, so sem passar pela agregacao por formato/tema.
+        let postagensAnterior = null;
+        if (prevRange) {
+          const prevRows = await fetchRowsInRange("stage_social_format_metrics", "rede_social", state.marca, "data_referencia", prevRange.from, prevRange.to).catch(() => []);
+          postagensAnterior = prevRows.filter((r) => r.rede_social === rede).length;
         }
 
         const reelsFormato = isInstagram ? "instagram_reels" : "facebook_reels";
@@ -4128,7 +4138,7 @@
           </div>
           ${socialTabsHtml(isInstagram ? "instagram" : "facebook")}
           ${rows.length ? "" : `<div class="alert">Ainda não há métricas granulares de ${rede}. Confirme a página correta em <strong>Conexões</strong> e clique em <strong>Sincronizar confirmadas</strong>.</div>`}
-          ${isInstagram ? instagramSummaryHtml(totals, seguidoresLiquido) : facebookSummaryHtml(totals)}
+          ${isInstagram ? instagramSummaryHtml(totals, seguidoresLiquido, postagensAnterior) : facebookSummaryHtml(totals, postagensAnterior)}
           ${followerEvolutionSectionHtml(followerSeriesPorMarca, `Seguidores ${title}`, rows, rede)}
           ${topBottomPostsHtml(rows, reelsFormato, "Reels")}
           ${topBottomPostsHtml(rows, feedFormato, "Feed")}
@@ -4353,10 +4363,10 @@
       // supabase/functions/meta-sync-insights/index.ts) e percentual_assistido_final nunca chegou a
       // ser implementado (nenhuma metrica da Meta e mapeada pra essa coluna). Mostrar "0,00"/"0,0%"/0
       // pra dado que a API nunca envia era enganoso; melhor nao exibir o card do que fingir um valor.
-      function instagramSummaryHtml(t, seguidoresLiquido) {
+      function instagramSummaryHtml(t, seguidoresLiquido, postagensAnterior) {
         const novosSeguidoresValor = `${seguidoresLiquido.atual > 0 ? "+" : ""}${fmt.format(seguidoresLiquido.atual)}`;
         return `<div class="grid kpis">
-          ${kpi("Registros", fmt.format(t.registros), "dataset")}
+          ${kpiWithDelta("Postagens", fmt.format(t.registros), "dataset", kpiFooterAnteriorHtml(t.registros, postagensAnterior))}
           ${kpi("Views Reels", fmt.format(t.views), "play_circle")}
           ${kpi("Cliques no Link/Perfil", fmt.format(t.linkClicks), "ads_click")}
           ${kpi("Tempo medio", numOrDash(t.watchTime, 1, "s"), "timer")}
@@ -4368,10 +4378,10 @@
         </div>`;
       }
 
-      function facebookSummaryHtml(t) {
+      function facebookSummaryHtml(t, postagensAnterior) {
         const frequencia = t.alcance ? t.impressoes / t.alcance : null;
         return `<div class="grid kpis">
-          ${kpi("Registros", fmt.format(t.registros), "dataset")}
+          ${kpiWithDelta("Postagens", fmt.format(t.registros), "dataset", kpiFooterAnteriorHtml(t.registros, postagensAnterior))}
           ${kpi("Views unicas", fmt.format(t.mediaViews), "play_circle")}
           ${kpi("Frequência média", numOrDash(frequencia, 2), "repeat")}
           ${kpi("Cliques no Link/Perfil", fmt.format(t.linkClicks), "ads_click")}
