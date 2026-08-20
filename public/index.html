@@ -4312,18 +4312,14 @@
       function instagramTotals(rows) {
         return {
           registros: rows.reduce((s, r) => s + num(r.total_registros), 0),
-          alcance: rows.reduce((s, r) => s + num(r.alcance), 0),
-          impressoes: rows.reduce((s, r) => s + num(r.impressoes), 0),
           views: rows.reduce((s, r) => s + num(r.total_visualizacoes), 0),
           watchTime: avgOrNull(rows, "tempo_medio_visualizacao"),
           skipRate: avgOrNull(rows, "taxa_rejeicao_inicial"),
-          completion: avgOrNull(rows, "percentual_assistido_final"),
           nonFollowers: avgOrNull(rows, "alcance_nao_seguidores_pct"),
           shares: rows.reduce((s, r) => s + num(r.compartilhamentos), 0),
           saves: rows.reduce((s, r) => s + num(r.salvamentos), 0),
           dms: rows.reduce((s, r) => s + num(r.respostas_dm), 0),
-          linkClicks: rows.reduce((s, r) => s + num(r.cliques_sticker_link), 0),
-          profileVisits: rows.reduce((s, r) => s + num(r.visitas_perfil), 0)
+          linkClicks: rows.reduce((s, r) => s + num(r.cliques_sticker_link), 0)
         };
       }
 
@@ -4343,21 +4339,24 @@
         };
       }
 
+      // Frequencia media (impressoes/alcance), Assistiu ate o fim (percentual_assistido_final) e
+      // Visitas ao perfil (visitas_perfil) foram removidos deste resumo: nao sao obtiveis pela
+      // integracao Instagram Graph API atual - "impressions" e "profile_visits" foram tirados da
+      // lista de metricas pedida pela sync (Meta rejeita as duas com erro #100 para esta conta, ver
+      // supabase/functions/meta-sync-insights/index.ts) e percentual_assistido_final nunca chegou a
+      // ser implementado (nenhuma metrica da Meta e mapeada pra essa coluna). Mostrar "0,00"/"0,0%"/0
+      // pra dado que a API nunca envia era enganoso; melhor nao exibir o card do que fingir um valor.
       function instagramSummaryHtml(t, seguidoresLiquido) {
-        const frequencia = t.alcance ? t.impressoes / t.alcance : null;
         const novosSeguidoresValor = `${seguidoresLiquido.atual > 0 ? "+" : ""}${fmt.format(seguidoresLiquido.atual)}`;
         return `<div class="grid kpis">
           ${kpi("Registros", fmt.format(t.registros), "dataset")}
           ${kpi("Views Reels", fmt.format(t.views), "play_circle")}
-          ${kpi("Frequência média", numOrDash(frequencia, 2), "repeat")}
           ${kpi("Cliques no Link/Perfil", fmt.format(t.linkClicks), "ads_click")}
           ${kpi("Tempo medio", numOrDash(t.watchTime, 1, "s"), "timer")}
           ${kpi("Skip rate 3s", pctOrDash(t.skipRate), "move_selection_left")}
-          ${kpi("Assistiu ate o fim", pctOrDash(t.completion), "task_alt")}
           ${kpi("Nao seguidores", pctOrDash(t.nonFollowers), "travel_explore")}
           ${kpi("Compartilhamentos", fmt.format(t.shares), "share")}
           ${kpi("Salvamentos", fmt.format(t.saves), "bookmark")}
-          ${kpi("Visitas ao perfil", fmt.format(t.profileVisits), "person_search")}
           ${kpiWithDelta("Novos seguidores", novosSeguidoresValor, "person_add", kpiFooterAnteriorHtml(seguidoresLiquido.atual, seguidoresLiquido.anterior))}
         </div>`;
       }
