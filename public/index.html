@@ -4084,6 +4084,30 @@
           from: fromDate(),
           to: toDate()
         }).catch(() => new Map());
+
+        // "Novos seguidores" do card de resumo usa o MESMO historico de seguidores do grafico
+        // "Evolucao de seguidores" logo abaixo (entradas - saidas, ver totalEntradasSaidas) em vez
+        // do campo seguidores_conquistados dos posts (stage_social_format_metrics): a Meta
+        // normalmente nao preenche esse campo por post, entao o card ficava sempre zerado mesmo com
+        // entradas/saidas reais aparecendo no grafico ao lado. So calculado para Instagram, unico
+        // lugar que exibe esse KPI (facebookSummaryHtml nao tem card de novos seguidores).
+        let seguidoresLiquido = null;
+        if (isInstagram) {
+          const { entradas, saidas } = totalEntradasSaidas(followerSeriesPorMarca);
+          const prevRange = previousPeriodRange();
+          let anterior = null;
+          if (prevRange) {
+            const seriePeriodoAnterior = await loadFollowerHistoryPorMarca(followerField, {
+              marcaFiltro: state.marca,
+              from: prevRange.from,
+              to: prevRange.to
+            }).catch(() => new Map());
+            const prev = totalEntradasSaidas(seriePeriodoAnterior);
+            anterior = prev.entradas - prev.saidas;
+          }
+          seguidoresLiquido = { atual: entradas - saidas, anterior };
+        }
+
         const reelsFormato = isInstagram ? "instagram_reels" : "facebook_reels";
         const feedFormato = isInstagram ? "instagram_feed" : "facebook_feed";
         const demografia = state.marca !== "Todas"
@@ -4104,7 +4128,7 @@
           </div>
           ${socialTabsHtml(isInstagram ? "instagram" : "facebook")}
           ${rows.length ? "" : `<div class="alert">Ainda não há métricas granulares de ${rede}. Confirme a página correta em <strong>Conexões</strong> e clique em <strong>Sincronizar confirmadas</strong>.</div>`}
-          ${isInstagram ? instagramSummaryHtml(totals) : facebookSummaryHtml(totals)}
+          ${isInstagram ? instagramSummaryHtml(totals, seguidoresLiquido) : facebookSummaryHtml(totals)}
           ${followerEvolutionSectionHtml(followerSeriesPorMarca, `Seguidores ${title}`, rows, rede)}
           ${topBottomPostsHtml(rows, reelsFormato, "Reels")}
           ${topBottomPostsHtml(rows, feedFormato, "Feed")}
@@ -4299,8 +4323,7 @@
           saves: rows.reduce((s, r) => s + num(r.salvamentos), 0),
           dms: rows.reduce((s, r) => s + num(r.respostas_dm), 0),
           linkClicks: rows.reduce((s, r) => s + num(r.cliques_sticker_link), 0),
-          profileVisits: rows.reduce((s, r) => s + num(r.visitas_perfil), 0),
-          newFollowers: rows.reduce((s, r) => s + num(r.seguidores_conquistados), 0)
+          profileVisits: rows.reduce((s, r) => s + num(r.visitas_perfil), 0)
         };
       }
 
@@ -4320,8 +4343,9 @@
         };
       }
 
-      function instagramSummaryHtml(t) {
+      function instagramSummaryHtml(t, seguidoresLiquido) {
         const frequencia = t.alcance ? t.impressoes / t.alcance : null;
+        const novosSeguidoresValor = `${seguidoresLiquido.atual > 0 ? "+" : ""}${fmt.format(seguidoresLiquido.atual)}`;
         return `<div class="grid kpis">
           ${kpi("Registros", fmt.format(t.registros), "dataset")}
           ${kpi("Views Reels", fmt.format(t.views), "play_circle")}
@@ -4334,7 +4358,7 @@
           ${kpi("Compartilhamentos", fmt.format(t.shares), "share")}
           ${kpi("Salvamentos", fmt.format(t.saves), "bookmark")}
           ${kpi("Visitas ao perfil", fmt.format(t.profileVisits), "person_search")}
-          ${kpi("Novos seguidores", fmt.format(t.newFollowers), "person_add")}
+          ${kpiWithDelta("Novos seguidores", novosSeguidoresValor, "person_add", kpiFooterAnteriorHtml(seguidoresLiquido.atual, seguidoresLiquido.anterior))}
         </div>`;
       }
 
