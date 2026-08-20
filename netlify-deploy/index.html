@@ -189,6 +189,10 @@
       .segmented { display: inline-flex; background: #eef2ff; border-radius: 999px; padding: 4px; gap: 2px; }
       .segmented button { background: transparent; color: #475569; padding: 8px 16px; border-radius: 999px; font-size: 13px; }
       .segmented button.active { background: white; color: var(--accent); box-shadow: 0 1px 3px rgba(15,23,42,.12); }
+      .subtabs { display: inline-flex; justify-self: start; align-self: start; width: fit-content; background: #f1f5f9; border-radius: 12px; padding: 4px; gap: 4px; }
+      .subtabs button { background: transparent; color: #475569; padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; transition: background-color .15s ease, color .15s ease; }
+      .subtabs button:hover { color: #0f172a; }
+      .subtabs button.active { background: white; color: #2563eb; box-shadow: 0 1px 2px rgba(15,23,42,.08); }
       .dropdown { position: relative; }
       .dropdown-menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 10; background: white; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 16px 32px rgba(15,23,42,.14); padding: 8px; display: grid; gap: 2px; min-width: 200px; max-width: min(280px, calc(100vw - 32px)); }
       .dropdown-item { display: block; width: 100%; text-align: left; background: transparent; color: #334155; font-weight: 600; font-size: 13px; padding: 8px 12px; border-radius: 8px; }
@@ -9539,7 +9543,7 @@
           ["enviar", `<span class="material-symbols-outlined" style="font-size:16px">add_circle</span> <span>Enviar Sugestão</span>`],
           ["mural", `<span class="material-symbols-outlined" style="font-size:16px">forum</span> <span>Mural da Equipe</span>`]
         ];
-        return `<div class="segmented">${tabs.map(([key, label]) => `<button type="button" class="sugestoes-tab ${active === key ? "active" : ""}" data-tab="${key}" style="display:inline-flex;align-items:center;gap:6px">${label}</button>`).join("")}</div>`;
+        return `<div class="subtabs">${tabs.map(([key, label]) => `<button type="button" class="sugestoes-tab ${active === key ? "active" : ""}" data-tab="${key}" style="display:inline-flex;align-items:center;gap:6px">${label}</button>`).join("")}</div>`;
       }
 
       function wireSugestoesTabs() {
@@ -9719,7 +9723,7 @@
         const s = sugestoesMuralState;
         if (s.error) return `<div class="alert error">${escapeHtml(s.error)}<div class="actions" style="margin-top:10px"><button type="button" class="secondary" id="retrySugestoesMural">Tentar novamente</button></div></div>`;
         if (s.rows === null) return `<div class="alert">Carregando sugestões...</div>`;
-        if (!s.rows.length) return `<div class="alert">Nenhuma sugestão registrada ainda. Seja o primeiro a compartilhar uma ideia!</div>`;
+        if (!s.rows.length) return `<div class="alert">Nenhuma sugestão enviada ainda. Seja o primeiro a colaborar!</div>`;
         return `<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(340px,1fr))">${s.rows.map(sugestaoCardHtml).join("")}</div>`;
       }
 
