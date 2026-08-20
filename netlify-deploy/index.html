@@ -8213,16 +8213,23 @@
       }
 
       // Historico e Gerenciamento de Uploads --------------------------------------------------------
-      // Lista todas as campanhas de email marketing ja salvas (tabela campanhas_email), com quem
-      // importou (join em perfis via criado_por) e um botao de exclusao em cascata. Mora na mesma tela
-      // do wizard (abaixo dele), pintada dentro de #importHistorico por renderImport().
+      // Lista todas as campanhas de email marketing ja salvas (tabela campanhas_email), com o total
+      // de disparos de cada uma e um botao de exclusao em cascata. Mora na mesma tela do wizard
+      // (abaixo dele), pintada dentro de #importHistorico por renderImport().
+      //
+      // O select NAO usa embed pra "quem importou" (criado_por -> perfis): criado_por tem FK pra
+      // auth.users(id), nao pra perfis(id) - mesmo perfis.id tambem referenciando auth.users(id), o
+      // PostgREST so resolve `perfis:criado_por(...)` se existir uma FK direta entre as duas tabelas
+      // no schema cache, entao esse embed sempre falhava (erro tipo "PGRST200 - could not find a
+      // relationship"), pra qualquer usuario, independente de RLS. campanha_disparos(count) abaixo
+      // e seguro porque campanha_disparos.campanha_id tem FK direta pra campanhas_email(id).
       async function loadImportHistorico() {
         importHistoricoState = { ...importHistoricoState, loading: true, error: "" };
         paintImportHistorico();
 
         const { data, error } = await supabase
           .from("campanhas_email")
-          .select("id, marca, nome_campanha, destino_canal, data_importacao, criado_por, perfis:criado_por(nome, email)")
+          .select("id, marca, nome_campanha, data_importacao, campanha_disparos(count)")
           .order("data_importacao", { ascending: false });
 
         importHistoricoState = error
@@ -8247,7 +8254,7 @@
           </div>
           <div style="margin-top:16px">
             ${s.loading && !s.rows ? `<div class="alert">Carregando histórico...</div>` : ""}
-            ${s.error ? `<div class="alert error">${escapeHtml(s.error)}</div>` : ""}
+            ${s.error ? `<div class="alert error">${escapeHtml(s.error)}<div class="actions" style="margin-top:10px"><button type="button" class="secondary" id="retryImportHistorico">Tentar novamente</button></div></div>` : ""}
             ${!s.error && s.rows ? importHistoricoTableHtml(s.rows) : ""}
           </div>
         </section>`;
@@ -8257,20 +8264,19 @@
         if (!rows.length) return `<p class="muted">Nenhuma campanha importada ainda.</p>`;
         return `<div class="table-wrap">
           <table>
-            <thead><tr><th>Marca</th><th>Nome da Campanha</th><th>Canal</th><th>Data da Importação</th><th>Usuário que Importou</th><th>Ações</th></tr></thead>
+            <thead><tr><th>Marca</th><th>Nome da Campanha</th><th>Data de Importação</th><th>Total de Disparos</th><th>Ações</th></tr></thead>
             <tbody>${rows.map(importHistoricoRowHtml).join("")}</tbody>
           </table>
         </div>`;
       }
 
       function importHistoricoRowHtml(campanha) {
-        const importador = campanha.perfis?.nome || campanha.perfis?.email || "—";
+        const totalDisparos = campanha.campanha_disparos?.[0]?.count ?? 0;
         return `<tr data-campanha-id="${escapeHtml(campanha.id)}">
           <td><span class="marca-chip ${marcaChipClass(campanha.marca)}">${escapeHtml(campanha.marca)}</span></td>
           <td>${escapeHtml(campanha.nome_campanha)}</td>
-          <td>${escapeHtml(campanha.destino_canal || "—")}</td>
           <td>${escapeHtml(formatDateTime(campanha.data_importacao))}</td>
-          <td>${escapeHtml(importador)}</td>
+          <td>${fmt.format(totalDisparos)}</td>
           <td>
             <div class="row-actions">
               <button type="button" class="danger excluir-campanha" data-id="${escapeHtml(campanha.id)}" data-nome="${escapeHtml(campanha.nome_campanha)}" title="Excluir campanha">
@@ -8284,6 +8290,8 @@
       function wireImportHistorico() {
         const refreshBtn = document.querySelector("#refreshImportHistorico");
         if (refreshBtn) refreshBtn.onclick = loadImportHistorico;
+        const retryBtn = document.querySelector("#retryImportHistorico");
+        if (retryBtn) retryBtn.onclick = loadImportHistorico;
         document.querySelectorAll(".excluir-campanha").forEach((btn) => {
           btn.onclick = () => openDeleteCampanhaModal(btn.dataset.id, btn.dataset.nome);
         });
