@@ -4310,11 +4310,18 @@
       }
 
       function instagramTotals(rows) {
+        // Tempo medio de visualizacao e skip rate 3s so existem para Reels - a Instagram Graph API
+        // nao retorna essas metricas para Feed/Stories, entao o sync grava 0 explicito (nao null)
+        // pra esses formatos (ver meta-sync-insights/index.ts). Calcular a media sobre TODOS os
+        // registros (Reels+Feed+Stories) diluia o numero pra perto de zero em contas onde a maioria
+        // dos posts nao e Reels - por isso restrito aqui as linhas instagram_reels, unico formato
+        // onde o dado tem algum sentido.
+        const reelsRows = rows.filter((r) => r.formato === "instagram_reels");
         return {
           registros: rows.reduce((s, r) => s + num(r.total_registros), 0),
           views: rows.reduce((s, r) => s + num(r.total_visualizacoes), 0),
-          watchTime: avgOrNull(rows, "tempo_medio_visualizacao"),
-          skipRate: avgOrNull(rows, "taxa_rejeicao_inicial"),
+          watchTime: avgOrNull(reelsRows, "tempo_medio_visualizacao"),
+          skipRate: avgOrNull(reelsRows, "taxa_rejeicao_inicial"),
           nonFollowers: avgOrNull(rows, "alcance_nao_seguidores_pct"),
           shares: rows.reduce((s, r) => s + num(r.compartilhamentos), 0),
           saves: rows.reduce((s, r) => s + num(r.salvamentos), 0),
