@@ -1143,6 +1143,23 @@
         };
       }
 
+      // Campos que sao MEDIAS por post (nao somas), acumulados via accumulateAvgField: essa funcao
+      // so soma e conta as linhas onde o campo realmente veio preenchido (rawNum != null) - um
+      // formato sem NENHUM post reportando o campo termina com media null (renderizado como "—" por
+      // pctOrDash/numOrDash), em vez do num()+soma/total_registros de antes, que tratava "sem dado"
+      // e "media zero" como a mesma coisa e ainda diluia a media quando so parte dos posts do
+      // formato reportava o campo (ex.: 2 de 10 posts com taxa_rejeicao_inicial preenchida virava
+      // media/10 em vez de media/2).
+      const INSTAGRAM_AVG_FIELDS = ["tempo_medio_visualizacao", "taxa_rejeicao_inicial", "percentual_assistido_final", "alcance_seguidores_pct", "alcance_nao_seguidores_pct", "media_visualizacoes_unicas_story", "taxa_retencao_diaria", "taxa_compartilhamento_feed"];
+      const FACEBOOK_AVG_FIELDS = ["retencao_qualificada_5s", "tempo_resposta_comentarios_horas"];
+
+      function accumulateAvgField(target, field, rawValue) {
+        const valor = rawNum(rawValue);
+        if (valor === null) return;
+        target[`${field}_sum`] = (target[`${field}_sum`] || 0) + valor;
+        target[`${field}_n`] = (target[`${field}_n`] || 0) + 1;
+      }
+
       function aggregateSocialFormatRows(rows, rede) {
         const groups = {};
         rows.forEach((row) => {
@@ -1170,23 +1187,19 @@
           target.data_publicacao ||= row.data_publicacao;
           if (rede === "Instagram") {
             ["alcance", "engajamento", "total_visualizacoes", "compartilhamentos", "salvamentos", "salvos", "curtidas", "comentarios", "melhor_sticker_interacoes", "respostas_dm", "cliques_sticker_link", "alcance_segunda_visualizacao", "comentarios_qualificados", "visitas_perfil", "seguidores_conquistados"].forEach((field) => target[field] = num(target[field]) + num(row[field]));
-            ["tempo_medio_visualizacao", "taxa_rejeicao_inicial", "percentual_assistido_final", "alcance_seguidores_pct", "alcance_nao_seguidores_pct", "media_visualizacoes_unicas_story", "taxa_retencao_diaria", "taxa_compartilhamento_feed"].forEach((field) => target[`${field}_sum`] = num(target[`${field}_sum`]) + num(row[field]));
+            INSTAGRAM_AVG_FIELDS.forEach((field) => accumulateAvgField(target, field, row[field]));
             target.melhor_sticker_tema ||= row.melhor_sticker_tema;
           } else {
             ["alcance", "engajamento", "visualizacoes_unicas_midia", "compartilhamentos_publicos_timeline", "cliques_link", "cliques_ver_mais", "compartilhamentos_grupos", "visualizacoes_unicas", "toques_avancar", "toques_voltar"].forEach((field) => target[field] = num(target[field]) + num(row[field]));
-            ["retencao_qualificada_5s", "tempo_resposta_comentarios_horas"].forEach((field) => target[`${field}_sum`] = num(target[`${field}_sum`]) + num(row[field]));
+            FACEBOOK_AVG_FIELDS.forEach((field) => accumulateAvgField(target, field, row[field]));
           }
           const referencia = row.data_publicacao || row.data_referencia;
           if (!target.ultima_referencia || referencia > target.ultima_referencia) target.ultima_referencia = referencia;
         });
 
         return Object.values(groups).map((row) => {
-          const count = Math.max(num(row.total_registros), 1);
-          if (rede === "Instagram") {
-            ["tempo_medio_visualizacao", "taxa_rejeicao_inicial", "percentual_assistido_final", "alcance_seguidores_pct", "alcance_nao_seguidores_pct", "media_visualizacoes_unicas_story", "taxa_retencao_diaria", "taxa_compartilhamento_feed"].forEach((field) => row[field] = num(row[`${field}_sum`]) / count);
-          } else {
-            ["retencao_qualificada_5s", "tempo_resposta_comentarios_horas"].forEach((field) => row[field] = num(row[`${field}_sum`]) / count);
-          }
+          const avgFields = rede === "Instagram" ? INSTAGRAM_AVG_FIELDS : FACEBOOK_AVG_FIELDS;
+          avgFields.forEach((field) => { row[field] = row[`${field}_n`] ? row[`${field}_sum`] / row[`${field}_n`] : null; });
           row.insight_social = socialFormatInsight(row, rede);
           return row;
         });
@@ -4090,7 +4103,6 @@
             </div>
           </div>
           ${socialTabsHtml(isInstagram ? "instagram" : "facebook")}
-          ${data.fallback && rows.length ? `<div class="alert success">Dados carregados da tabela <code>stage_social_format_metrics</code>. ${hasDetailedSocialMetrics(rows, rede) ? "Métricas detalhadas disponíveis para a rede." : "Posts capturados, mas a Meta ainda não liberou métricas detalhadas para esses conteúdos."}</div>` : ""}
           ${rows.length ? "" : `<div class="alert">Ainda não há métricas granulares de ${rede}. Confirme a página correta em <strong>Conexões</strong> e clique em <strong>Sincronizar confirmadas</strong>.</div>`}
           ${isInstagram ? instagramSummaryHtml(totals) : facebookSummaryHtml(totals)}
           ${followerEvolutionSectionHtml(followerSeriesPorMarca, `Seguidores ${title}`, rows, rede)}
@@ -4256,16 +4268,33 @@
         wireSocialTabs();
       }
 
+      // Diferencia "nenhuma linha do periodo/marca filtrados tem este campo preenchido" (retorna
+      // null, o resumo mostra "—") de "a media real e zero" (linhas tem o campo preenchido, so que
+      // com valor 0) - ao contrario de avg(rows.map(num).filter(Boolean)), que tratava as duas
+      // situacoes como identicas (sempre 0), escondendo metrica nao monitorada atras de "0,0%".
+      function avgOrNull(rows, field) {
+        const valores = rows.map((r) => rawNum(r[field])).filter((v) => v !== null);
+        return valores.length ? avg(valores) : null;
+      }
+
+      function pctOrDash(value, decimals = 1) {
+        return value === null ? "—" : `${value.toFixed(decimals).replace(".", ",")}%`;
+      }
+
+      function numOrDash(value, decimals = 2, suffix = "") {
+        return value === null ? "—" : `${value.toFixed(decimals).replace(".", ",")}${suffix}`;
+      }
+
       function instagramTotals(rows) {
         return {
           registros: rows.reduce((s, r) => s + num(r.total_registros), 0),
           alcance: rows.reduce((s, r) => s + num(r.alcance), 0),
           impressoes: rows.reduce((s, r) => s + num(r.impressoes), 0),
           views: rows.reduce((s, r) => s + num(r.total_visualizacoes), 0),
-          watchTime: avg(rows.map((r) => num(r.tempo_medio_visualizacao)).filter(Boolean)),
-          skipRate: avg(rows.map((r) => num(r.taxa_rejeicao_inicial)).filter(Boolean)),
-          completion: avg(rows.map((r) => num(r.percentual_assistido_final)).filter(Boolean)),
-          nonFollowers: avg(rows.map((r) => num(r.alcance_nao_seguidores_pct)).filter(Boolean)),
+          watchTime: avgOrNull(rows, "tempo_medio_visualizacao"),
+          skipRate: avgOrNull(rows, "taxa_rejeicao_inicial"),
+          completion: avgOrNull(rows, "percentual_assistido_final"),
+          nonFollowers: avgOrNull(rows, "alcance_nao_seguidores_pct"),
           shares: rows.reduce((s, r) => s + num(r.compartilhamentos), 0),
           saves: rows.reduce((s, r) => s + num(r.salvamentos), 0),
           dms: rows.reduce((s, r) => s + num(r.respostas_dm), 0),
@@ -4281,27 +4310,27 @@
           alcance: rows.reduce((s, r) => s + num(r.alcance), 0),
           impressoes: rows.reduce((s, r) => s + num(r.impressoes), 0),
           mediaViews: rows.reduce((s, r) => s + num(r.visualizacoes_unicas_midia), 0),
-          retention: avg(rows.map((r) => num(r.retencao_qualificada_5s)).filter(Boolean)),
+          retention: avgOrNull(rows, "retencao_qualificada_5s"),
           publicShares: rows.reduce((s, r) => s + num(r.compartilhamentos_publicos_timeline), 0),
           linkClicks: rows.reduce((s, r) => s + num(r.cliques_link), 0),
           seeMore: rows.reduce((s, r) => s + num(r.cliques_ver_mais), 0),
           groupShares: rows.reduce((s, r) => s + num(r.compartilhamentos_grupos), 0),
-          responseHours: avg(rows.map((r) => num(r.tempo_resposta_comentarios_horas)).filter(Boolean)),
+          responseHours: avgOrNull(rows, "tempo_resposta_comentarios_horas"),
           storyViews: rows.reduce((s, r) => s + num(r.visualizacoes_unicas), 0)
         };
       }
 
       function instagramSummaryHtml(t) {
-        const frequencia = t.alcance ? t.impressoes / t.alcance : 0;
+        const frequencia = t.alcance ? t.impressoes / t.alcance : null;
         return `<div class="grid kpis">
           ${kpi("Registros", fmt.format(t.registros), "dataset")}
           ${kpi("Views Reels", fmt.format(t.views), "play_circle")}
-          ${kpi("Frequência média", frequencia.toFixed(2).replace(".", ","), "repeat")}
+          ${kpi("Frequência média", numOrDash(frequencia, 2), "repeat")}
           ${kpi("Cliques no Link/Perfil", fmt.format(t.linkClicks), "ads_click")}
-          ${kpi("Tempo medio", `${t.watchTime.toFixed(1).replace(".", ",")}s`, "timer")}
-          ${kpi("Skip rate 3s", `${t.skipRate.toFixed(1).replace(".", ",")}%`, "move_selection_left")}
-          ${kpi("Assistiu ate o fim", `${t.completion.toFixed(1).replace(".", ",")}%`, "task_alt")}
-          ${kpi("Nao seguidores", `${t.nonFollowers.toFixed(1).replace(".", ",")}%`, "travel_explore")}
+          ${kpi("Tempo medio", numOrDash(t.watchTime, 1, "s"), "timer")}
+          ${kpi("Skip rate 3s", pctOrDash(t.skipRate), "move_selection_left")}
+          ${kpi("Assistiu ate o fim", pctOrDash(t.completion), "task_alt")}
+          ${kpi("Nao seguidores", pctOrDash(t.nonFollowers), "travel_explore")}
           ${kpi("Compartilhamentos", fmt.format(t.shares), "share")}
           ${kpi("Salvamentos", fmt.format(t.saves), "bookmark")}
           ${kpi("Visitas ao perfil", fmt.format(t.profileVisits), "person_search")}
@@ -4310,25 +4339,18 @@
       }
 
       function facebookSummaryHtml(t) {
-        const frequencia = t.alcance ? t.impressoes / t.alcance : 0;
+        const frequencia = t.alcance ? t.impressoes / t.alcance : null;
         return `<div class="grid kpis">
           ${kpi("Registros", fmt.format(t.registros), "dataset")}
           ${kpi("Views unicas", fmt.format(t.mediaViews), "play_circle")}
-          ${kpi("Frequência média", frequencia.toFixed(2).replace(".", ","), "repeat")}
+          ${kpi("Frequência média", numOrDash(frequencia, 2), "repeat")}
           ${kpi("Cliques no Link/Perfil", fmt.format(t.linkClicks), "ads_click")}
-          ${kpi("Retencao 5s", `${t.retention.toFixed(1).replace(".", ",")}%`, "timer")}
+          ${kpi("Retencao 5s", pctOrDash(t.retention), "timer")}
           ${kpi("Shares timeline", fmt.format(t.publicShares), "share")}
           ${kpi("Ver mais", fmt.format(t.seeMore), "read_more")}
           ${kpi("Shares grupos", fmt.format(t.groupShares), "groups")}
-          ${kpi("Resposta comentarios", `${t.responseHours.toFixed(1).replace(".", ",")}h`, "forum")}
+          ${kpi("Resposta comentarios", numOrDash(t.responseHours, 1, "h"), "forum")}
         </div>`;
-      }
-
-      function hasDetailedSocialMetrics(rows, rede) {
-        const fields = rede === "Instagram"
-          ? ["alcance", "engajamento", "total_visualizacoes", "compartilhamentos", "salvamentos", "curtidas", "comentarios"]
-          : ["alcance", "engajamento", "visualizacoes_unicas_midia", "cliques_link", "compartilhamentos_publicos_timeline"];
-        return rows.some((row) => fields.some((field) => num(row[field]) > 0));
       }
 
       function bestSocialSignals(rows, rede) {
