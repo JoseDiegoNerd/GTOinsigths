@@ -95,6 +95,12 @@
       .status-pill.active { background: #dcfce7; color: #166534; }
       .status-pill.inactive { background: #fee2e2; color: #991b1b; }
       .status-pill.pending { background: #fef3c7; color: #92400e; }
+      .status-pill.sugestao-aguardando { background: #fef3c7; color: #92400e; }
+      .status-pill.sugestao-analise { background: #dbeafe; color: #1d4ed8; }
+      .status-pill.sugestao-roadmap { background: #ede9fe; color: #6d28d9; }
+      .status-pill.sugestao-desenvolvimento { background: #ffedd5; color: #c2410c; }
+      .status-pill.sugestao-concluido { background: #dcfce7; color: #166534; }
+      .status-pill.sugestao-arquivado { background: #f1f5f9; color: #64748b; }
       .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
       .actions button { white-space: nowrap; }
       .row-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
@@ -1475,6 +1481,7 @@
               ${isAdmin ? `<button id="navConnections" class="${state.page === "connections" ? "active" : ""}"><span class="material-symbols-outlined">link</span>Conexões</button>` : ""}
               ${isAdmin ? `<button id="navImport" class="${state.page === "import" ? "active" : ""}"><span class="material-symbols-outlined">upload_file</span>Importar Planilhas</button>` : ""}
               ${isAdmin ? `<button id="navUsuarios" class="${state.page === "usuarios" ? "active" : ""}"><span class="material-symbols-outlined">manage_accounts</span>Gestão de Usuários</button>` : ""}
+              <button id="navSugestoes" class="${state.page === "sugestoes" ? "active" : ""}"><span class="material-symbols-outlined">lightbulb</span>Sugestões</button>
             </nav>
             <div class="profile">
               <div class="profile-info">
@@ -1500,7 +1507,8 @@
           <div class="modal-overlay" id="editAccessModal" hidden></div>
           <div class="modal-overlay" id="resetPasswordModal" hidden></div>
           <div class="modal-overlay" id="deleteUserModal" hidden></div>
-          <div class="modal-overlay" id="deleteCampanhaModal" hidden></div>`;
+          <div class="modal-overlay" id="deleteCampanhaModal" hidden></div>
+          <div class="modal-overlay" id="gerenciarSugestaoModal" hidden></div>`;
         document.querySelector("#logout").onclick = signOut;
         document.querySelector("#editProfile").onclick = openProfileModal;
         wireTopbarProfileMenu();
@@ -1518,6 +1526,7 @@
         if (navImportBtn) navImportBtn.onclick = () => { state.page = "import"; render(); };
         const navUsuariosBtn = document.querySelector("#navUsuarios");
         if (navUsuariosBtn) navUsuariosBtn.onclick = () => { state.page = "usuarios"; render(); };
+        document.querySelector("#navSugestoes").onclick = () => { state.page = "sugestoes"; render(); };
         if (state.page === "dashboard") await renderDashboard();
         if (state.page === "credsystem") await renderCredsystemBI();
         if (state.page === "email") await renderEmailBI();
@@ -1533,6 +1542,7 @@
         if (state.page === "google_business") await renderGoogleBusiness();
         if (state.page === "import") renderImport();
         if (state.page === "usuarios") await renderUsuarios();
+        if (state.page === "sugestoes") await renderSugestoes();
       }
 
       function pageTitle() {
@@ -1544,6 +1554,7 @@
         if (state.page === "connections") return "Conexões";
         if (state.page === "google_business") return "Google Meu Negócio";
         if (state.page === "usuarios") return "Gestão de Usuários";
+        if (state.page === "sugestoes") return "Sugestões & Melhorias";
         return "Pipeline de importação";
       }
 
@@ -9470,6 +9481,365 @@
         const nomeExcluido = s.usuario.nome || s.usuario.email;
         closeDeleteUserModal();
         await renderUsuarios(`Usuário ${nomeExcluido} excluído com sucesso.`);
+      }
+
+      // Modulo "Sugestoes & Melhorias" ------------------------------------------------------------
+      // Mural aberto a toda a equipe (nao filtrado por marca, ao contrario dos outros modulos):
+      // aba "Enviar Sugestao" grava em public.sugestoes (migration 20260820_036), aba "Mural da
+      // Equipe" lista todas as sugestoes com badge de status, voto (+1, com toggle via
+      // sugestoes_votos) e, so para Admin, o botao "Gerenciar Status".
+      const SUGESTAO_MODULOS = ["Dashboard Geral", "Redes Sociais", "Anúncios", "Cartão Próprio", "Email Marketing", "Google Meu Negócio", "Conexões", "Importar Planilhas", "Gestão de Usuários", "Outro"];
+      const SUGESTAO_NIVEIS_IMPACTO = ["Baixo", "Médio", "Alto"];
+      const SUGESTAO_STATUS_META = {
+        "Aguardando Análise": { emoji: "🟡", className: "sugestao-aguardando" },
+        "Em Análise": { emoji: "🔵", className: "sugestao-analise" },
+        "No Roadmap": { emoji: "🟣", className: "sugestao-roadmap" },
+        "Em Desenvolvimento": { emoji: "🟠", className: "sugestao-desenvolvimento" },
+        "Concluído": { emoji: "🟢", className: "sugestao-concluido" },
+        "Arquivado": { emoji: "⚪", className: "sugestao-arquivado" }
+      };
+      const SUGESTAO_STATUS_OPCOES = Object.keys(SUGESTAO_STATUS_META);
+
+      function sugestaoStatusBadgeHtml(status) {
+        const meta = SUGESTAO_STATUS_META[status] || SUGESTAO_STATUS_META["Aguardando Análise"];
+        return `<span class="status-pill ${meta.className}">${meta.emoji} ${escapeHtml(status)}</span>`;
+      }
+
+      async function renderSugestoes() {
+        const content = document.querySelector("#content");
+        if (!sugestaoFormState) resetSugestaoForm();
+        if (!state.sugestoesTab) state.sugestoesTab = "enviar";
+        content.innerHTML = `
+          <div class="page-head"><div><div class="eyebrow">Feedback da equipe</div><h2>Sugestões &amp; Melhorias</h2><p class="muted">Envie ideias, acompanhe o andamento e vote nas sugestões dos colegas.</p></div></div>
+          ${sugestoesTabsHtml(state.sugestoesTab)}
+          <div id="sugestoesTabContent">${state.sugestoesTab === "mural" ? sugestaoMuralHtml() : sugestaoFormHtml()}</div>`;
+        wireSugestoesTabs();
+        if (state.sugestoesTab === "enviar") {
+          wireSugestaoForm();
+        } else {
+          wireSugestaoMural();
+          if (sugestoesMuralState.rows === null && !sugestoesMuralState.loading) await loadSugestoesMural();
+        }
+      }
+
+      function sugestoesTabsHtml(active) {
+        const tabs = [
+          ["enviar", `<span class="material-symbols-outlined" style="font-size:16px">add_circle</span> <span>Enviar Sugestão</span>`],
+          ["mural", `<span class="material-symbols-outlined" style="font-size:16px">forum</span> <span>Mural da Equipe</span>`]
+        ];
+        return `<div class="segmented">${tabs.map(([key, label]) => `<button type="button" class="sugestoes-tab ${active === key ? "active" : ""}" data-tab="${key}" style="display:inline-flex;align-items:center;gap:6px">${label}</button>`).join("")}</div>`;
+      }
+
+      function wireSugestoesTabs() {
+        document.querySelectorAll(".sugestoes-tab").forEach((button) => {
+          button.onclick = () => { state.sugestoesTab = button.dataset.tab; renderSugestoes(); };
+        });
+      }
+
+      // Aba "Enviar Sugestao" ----------------------------------------------------------------------
+      let sugestaoFormState = null;
+
+      function resetSugestaoForm() {
+        sugestaoFormState = {
+          titulo: "",
+          modulo: SUGESTAO_MODULOS[0],
+          descricao: "",
+          nivelImpacto: SUGESTAO_NIVEIS_IMPACTO[1],
+          anexoFile: null,
+          anexoNome: "",
+          saving: false,
+          error: "",
+          successMessage: ""
+        };
+      }
+
+      function sugestaoFormHtml() {
+        const s = sugestaoFormState;
+        return `<section class="card" style="max-width:640px">
+          <h3>Nova sugestão</h3>
+          <p class="muted" style="margin-top:-6px">Conte o que poderia melhorar - quanto mais contexto, mais fácil priorizar.</p>
+          <div class="grid" style="gap:16px;margin-top:12px">
+            <label>Título<input type="text" id="sugestaoTitulo" value="${escapeHtml(s.titulo)}" placeholder="Ex: Exportar dashboard em PDF" /></label>
+            <label>Módulo<select id="sugestaoModulo">${SUGESTAO_MODULOS.map((m) => `<option ${s.modulo === m ? "selected" : ""}>${escapeHtml(m)}</option>`).join("")}</select></label>
+            <label>Descrição<textarea id="sugestaoDescricao" rows="4" placeholder="Descreva o problema ou a melhoria desejada" style="border:1px solid #d8e3fb;border-radius:8px;padding:10px 12px;font:inherit;resize:vertical">${escapeHtml(s.descricao)}</textarea></label>
+            <label>Nível de Impacto
+              <div class="pills">${SUGESTAO_NIVEIS_IMPACTO.map((n) => `<button type="button" class="pill impacto-pill ${s.nivelImpacto === n ? "active" : ""}" data-impacto="${n}">${n}</button>`).join("")}</div>
+            </label>
+            <label>Print / Anexo de referência (opcional)
+              <div class="drop-zone" id="sugestaoDropZone" style="min-height:120px">
+                <span class="material-symbols-outlined">upload_file</span>
+                <strong>${s.anexoNome ? escapeHtml(s.anexoNome) : "Arraste uma imagem aqui ou clique para selecionar"}</strong>
+                <p class="muted">PNG, JPG ou WEBP - até 4MB.</p>
+                <input id="sugestaoAnexoInput" type="file" accept="image/png,image/jpeg,image/webp" />
+              </div>
+            </label>
+            ${s.error ? `<div class="alert error">${escapeHtml(s.error)}</div>` : ""}
+            ${s.successMessage ? `<div class="alert success">${escapeHtml(s.successMessage)}</div>` : ""}
+            <div class="actions" style="justify-content:flex-end">
+              <button type="button" id="sugestaoSubmit" ${s.saving ? "disabled" : ""}>${s.saving ? "Enviando..." : "Enviar Sugestão"}</button>
+            </div>
+          </div>
+        </section>`;
+      }
+
+      function refreshSugestaoForm() {
+        const container = document.querySelector("#sugestoesTabContent");
+        if (!container) return;
+        container.innerHTML = sugestaoFormHtml();
+        wireSugestaoForm();
+      }
+
+      function wireSugestaoForm() {
+        const s = sugestaoFormState;
+        document.querySelector("#sugestaoTitulo").oninput = (event) => { s.titulo = event.target.value; };
+        document.querySelector("#sugestaoModulo").onchange = (event) => { s.modulo = event.target.value; };
+        document.querySelector("#sugestaoDescricao").oninput = (event) => { s.descricao = event.target.value; };
+        document.querySelectorAll(".impacto-pill").forEach((button) => {
+          button.onclick = () => { s.nivelImpacto = button.dataset.impacto; refreshSugestaoForm(); };
+        });
+        const dropZone = document.querySelector("#sugestaoDropZone");
+        document.querySelector("#sugestaoAnexoInput").onchange = (event) => handleSugestaoAnexo(event.target.files?.[0]);
+        dropZone.ondragover = (event) => { event.preventDefault(); dropZone.classList.add("dragover"); };
+        dropZone.ondragleave = () => dropZone.classList.remove("dragover");
+        dropZone.ondrop = (event) => {
+          event.preventDefault();
+          dropZone.classList.remove("dragover");
+          handleSugestaoAnexo(event.dataTransfer.files?.[0]);
+        };
+        document.querySelector("#sugestaoSubmit").onclick = submitSugestao;
+      }
+
+      function handleSugestaoAnexo(file) {
+        if (!file) return;
+        if (file.size > 4 * 1024 * 1024) {
+          sugestaoFormState.error = "Arquivo maior que 4MB. Escolha uma imagem menor.";
+          refreshSugestaoForm();
+          return;
+        }
+        sugestaoFormState.anexoFile = file;
+        sugestaoFormState.anexoNome = file.name;
+        sugestaoFormState.error = "";
+        refreshSugestaoForm();
+      }
+
+      async function submitSugestao() {
+        const s = sugestaoFormState;
+        const tituloInput = document.querySelector("#sugestaoTitulo");
+        s.titulo = (tituloInput ? tituloInput.value : s.titulo).trim();
+        if (!s.titulo) {
+          s.error = "Informe um título para a sugestão.";
+          refreshSugestaoForm();
+          return;
+        }
+
+        s.saving = true;
+        s.error = "";
+        s.successMessage = "";
+        refreshSugestaoForm();
+
+        try {
+          let anexoUrl = null;
+          if (s.anexoFile) {
+            const ext = (s.anexoFile.name.split(".").pop() || "png").toLowerCase();
+            const path = `${state.session.user.id}/${Date.now()}.${ext}`;
+            const { error: uploadError } = await supabase.storage.from("sugestoes-anexos").upload(path, s.anexoFile, { cacheControl: "3600" });
+            if (uploadError) throw uploadError;
+            anexoUrl = supabase.storage.from("sugestoes-anexos").getPublicUrl(path).data.publicUrl;
+          }
+
+          const { error: insertError } = await supabase.from("sugestoes").insert({
+            user_name: state.perfil?.nome || null,
+            user_email: state.session.user.email,
+            modulo: s.modulo,
+            titulo: s.titulo,
+            descricao: s.descricao || null,
+            nivel_impacto: s.nivelImpacto,
+            anexo_url: anexoUrl
+          });
+          if (insertError) throw insertError;
+
+          resetSugestaoForm();
+          sugestaoFormState.successMessage = "Sugestão enviada! Obrigado pela contribuição.";
+          refreshSugestaoForm();
+        } catch (error) {
+          s.saving = false;
+          s.error = safeErrorMessage(error, "Não foi possível enviar a sugestão.");
+          refreshSugestaoForm();
+        }
+      }
+
+      // Aba "Mural da Equipe" -----------------------------------------------------------------------
+      // rows null = ainda nao carregado. meusVotos guarda os ids de sugestao que o usuario logado
+      // ja votou, pra pintar o botao "Votar" como ja-votado sem precisar de 1 consulta por card.
+      let sugestoesMuralState = { rows: null, meusVotos: new Set(), loading: false, error: "" };
+
+      async function loadSugestoesMural() {
+        sugestoesMuralState = { ...sugestoesMuralState, loading: true, error: "" };
+        paintSugestoesMural();
+
+        try {
+          const [{ data: rows, error: rowsError }, { data: votos, error: votosError }] = await Promise.all([
+            supabase.from("sugestoes").select("*").order("created_at", { ascending: false }),
+            supabase.from("sugestoes_votos").select("sugestao_id").eq("user_id", state.session.user.id)
+          ]);
+          if (rowsError) throw rowsError;
+          if (votosError) throw votosError;
+          sugestoesMuralState = {
+            rows: rows || [],
+            meusVotos: new Set((votos || []).map((v) => v.sugestao_id)),
+            loading: false,
+            error: ""
+          };
+        } catch (error) {
+          sugestoesMuralState = { rows: null, meusVotos: new Set(), loading: false, error: safeErrorMessage(error, "Não foi possível carregar o mural de sugestões.") };
+        }
+        paintSugestoesMural();
+      }
+
+      function paintSugestoesMural() {
+        const container = document.querySelector("#sugestoesTabContent");
+        if (!container) return;
+        container.innerHTML = sugestaoMuralHtml();
+        wireSugestaoMural();
+      }
+
+      function sugestaoMuralHtml() {
+        const s = sugestoesMuralState;
+        if (s.error) return `<div class="alert error">${escapeHtml(s.error)}<div class="actions" style="margin-top:10px"><button type="button" class="secondary" id="retrySugestoesMural">Tentar novamente</button></div></div>`;
+        if (s.rows === null) return `<div class="alert">Carregando sugestões...</div>`;
+        if (!s.rows.length) return `<div class="alert">Nenhuma sugestão registrada ainda. Seja o primeiro a compartilhar uma ideia!</div>`;
+        return `<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(340px,1fr))">${s.rows.map(sugestaoCardHtml).join("")}</div>`;
+      }
+
+      function sugestaoCardHtml(sugestao) {
+        const jaVotou = sugestoesMuralState.meusVotos.has(sugestao.id);
+        const isAdmin = state.perfil?.cargo === "Admin";
+        return `<article class="card" style="display:grid;gap:10px;align-content:start">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+            <div style="min-width:0">
+              <p class="muted" style="margin:0 0 2px">${escapeHtml(sugestao.modulo || "Geral")} · ${escapeHtml(formatDateTime(sugestao.created_at))}</p>
+              <h3 style="font-size:15px">${escapeHtml(sugestao.titulo)}</h3>
+            </div>
+            ${sugestaoStatusBadgeHtml(sugestao.status)}
+          </div>
+          ${sugestao.descricao ? `<p style="margin:0;color:#334155;font-size:13px;line-height:1.5">${escapeHtml(sugestao.descricao)}</p>` : ""}
+          ${sugestao.nivel_impacto ? `<p class="muted" style="margin:0">Impacto: <strong>${escapeHtml(sugestao.nivel_impacto)}</strong></p>` : ""}
+          ${sugestao.anexo_url ? `<a href="${escapeHtml(sugestao.anexo_url)}" target="_blank" rel="noreferrer" class="link-btn">Ver anexo</a>` : ""}
+          ${sugestao.resposta_admin ? `<div class="insight-panel" style="background:#eff6ff"><h4 style="color:#1d4ed8">Resposta da equipe</h4><p style="margin:0;color:#334155;font-size:13px">${escapeHtml(sugestao.resposta_admin)}</p></div>` : ""}
+          <p class="muted" style="margin:0">Enviado por ${escapeHtml(sugestao.user_name || sugestao.user_email || "Usuário")}</p>
+          <div class="actions" style="justify-content:space-between">
+            <button type="button" class="pill voto-btn ${jaVotou ? "active" : ""}" data-id="${escapeHtml(sugestao.id)}" data-votou="${jaVotou ? "1" : "0"}" title="${jaVotou ? "Remover voto" : "Apoiar esta sugestão"}">
+              <span class="material-symbols-outlined" style="font-size:16px;vertical-align:-3px">thumb_up</span> ${fmt.format(sugestao.votos_count || 0)}
+            </button>
+            ${isAdmin ? `<button type="button" class="secondary gerenciar-sugestao-btn" data-id="${escapeHtml(sugestao.id)}">Gerenciar Status</button>` : ""}
+          </div>
+        </article>`;
+      }
+
+      function wireSugestaoMural() {
+        const retryBtn = document.querySelector("#retrySugestoesMural");
+        if (retryBtn) retryBtn.onclick = loadSugestoesMural;
+        document.querySelectorAll(".voto-btn").forEach((button) => {
+          button.onclick = () => toggleVotoSugestao(button.dataset.id, button.dataset.votou === "1");
+        });
+        document.querySelectorAll(".gerenciar-sugestao-btn").forEach((button) => {
+          button.onclick = () => openGerenciarSugestaoModal(button.dataset.id);
+        });
+      }
+
+      async function toggleVotoSugestao(sugestaoId, jaVotou) {
+        const button = document.querySelector(`.voto-btn[data-id="${sugestaoId}"]`);
+        if (button) button.disabled = true;
+        try {
+          const { error } = jaVotou
+            ? await supabase.from("sugestoes_votos").delete().eq("sugestao_id", sugestaoId).eq("user_id", state.session.user.id)
+            : await supabase.from("sugestoes_votos").insert({ sugestao_id: sugestaoId });
+          if (error) throw error;
+          await loadSugestoesMural();
+        } catch (error) {
+          console.error(error);
+          if (button) button.disabled = false;
+        }
+      }
+
+      // Modal "Gerenciar Status" - so Admin (gate no botao que abre, ver sugestaoCardHtml; a policy
+      // "sugestoes_update_admin" no banco e a autoridade real, o gate no front e so pra nao mostrar
+      // o botao pra quem nunca vai poder usa-lo).
+      let gerenciarSugestaoState = null;
+
+      function openGerenciarSugestaoModal(sugestaoId) {
+        const overlay = document.querySelector("#gerenciarSugestaoModal");
+        const sugestao = (sugestoesMuralState.rows || []).find((row) => row.id === sugestaoId);
+        if (!overlay || !sugestao) return;
+        gerenciarSugestaoState = { sugestao, status: sugestao.status, respostaAdmin: sugestao.resposta_admin || "", saving: false, error: "" };
+        overlay.innerHTML = gerenciarSugestaoModalPanelHtml();
+        overlay.hidden = false;
+        wireGerenciarSugestaoModal();
+      }
+
+      function closeGerenciarSugestaoModal() {
+        const overlay = document.querySelector("#gerenciarSugestaoModal");
+        if (overlay) { overlay.hidden = true; overlay.innerHTML = ""; }
+        gerenciarSugestaoState = null;
+      }
+
+      function gerenciarSugestaoModalPanelHtml() {
+        const s = gerenciarSugestaoState;
+        return `<div class="modal-panel">
+          <div class="modal-header">
+            <div><p style="margin:0 0 4px;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Gerenciar sugestão</p><h3 style="margin:0;font-size:17px">${escapeHtml(s.sugestao.titulo)}</h3></div>
+            <button type="button" class="modal-close" id="gerenciarSugestaoClose"><span class="material-symbols-outlined">close</span></button>
+          </div>
+          <div class="modal-body" style="display:grid;gap:14px">
+            <label>Status<select id="gerenciarSugestaoStatus">${SUGESTAO_STATUS_OPCOES.map((op) => `<option ${s.status === op ? "selected" : ""}>${escapeHtml(op)}</option>`).join("")}</select></label>
+            <label>Resposta da equipe<textarea id="gerenciarSugestaoResposta" rows="4" style="border:1px solid #d8e3fb;border-radius:8px;padding:10px 12px;font:inherit;resize:vertical">${escapeHtml(s.respostaAdmin)}</textarea></label>
+            ${s.error ? `<div class="alert error">${escapeHtml(s.error)}</div>` : ""}
+            <div class="actions" style="justify-content:flex-end">
+              <button type="button" class="secondary" id="gerenciarSugestaoCancel">Cancelar</button>
+              <button type="button" id="gerenciarSugestaoSalvar" ${s.saving ? "disabled" : ""}>${s.saving ? "Salvando..." : "Salvar"}</button>
+            </div>
+          </div>
+        </div>`;
+      }
+
+      function refreshGerenciarSugestaoModal() {
+        const overlay = document.querySelector("#gerenciarSugestaoModal");
+        if (!overlay || overlay.hidden || !gerenciarSugestaoState) return;
+        overlay.innerHTML = gerenciarSugestaoModalPanelHtml();
+        wireGerenciarSugestaoModal();
+      }
+
+      function wireGerenciarSugestaoModal() {
+        const overlay = document.querySelector("#gerenciarSugestaoModal");
+        overlay.querySelector("#gerenciarSugestaoClose").onclick = closeGerenciarSugestaoModal;
+        overlay.querySelector("#gerenciarSugestaoCancel").onclick = closeGerenciarSugestaoModal;
+        overlay.onclick = (event) => { if (event.target.id === "gerenciarSugestaoModal") closeGerenciarSugestaoModal(); };
+        overlay.querySelector("#gerenciarSugestaoStatus").onchange = (event) => { gerenciarSugestaoState.status = event.target.value; };
+        overlay.querySelector("#gerenciarSugestaoResposta").oninput = (event) => { gerenciarSugestaoState.respostaAdmin = event.target.value; };
+        overlay.querySelector("#gerenciarSugestaoSalvar").onclick = confirmGerenciarSugestao;
+      }
+
+      async function confirmGerenciarSugestao() {
+        if (!gerenciarSugestaoState) return;
+        const s = gerenciarSugestaoState;
+        s.saving = true;
+        s.error = "";
+        refreshGerenciarSugestaoModal();
+
+        const { error } = await supabase
+          .from("sugestoes")
+          .update({ status: s.status, resposta_admin: s.respostaAdmin || null })
+          .eq("id", s.sugestao.id);
+
+        if (error) {
+          s.saving = false;
+          s.error = safeErrorMessage(error, "Não foi possível salvar as alterações.");
+          refreshGerenciarSugestaoModal();
+          return;
+        }
+
+        closeGerenciarSugestaoModal();
+        await loadSugestoesMural();
       }
 
       init();
