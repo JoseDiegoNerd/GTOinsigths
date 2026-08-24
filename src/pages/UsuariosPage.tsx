@@ -14,14 +14,14 @@ const MARCA_CHIP_CLASS: Record<Marca, string> = {
   'Free Center Calçados': 'chip-calcados'
 };
 
-const CARGO_BADGE_CLASS: Record<CargoUsuario, string> = {
+export const CARGO_BADGE_CLASS: Record<CargoUsuario, string> = {
   Admin: 'badge-cargo-admin',
   Gestor: 'badge-cargo-gestor',
   Coordenador: 'badge-cargo-coordenador',
   Analista: 'badge-cargo-analista'
 };
 
-function formatDateTime(value: string | null): string {
+export function formatDateTime(value: string | null): string {
   if (!value) return 'Nunca acessou';
   return new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit',
@@ -32,7 +32,7 @@ function formatDateTime(value: string | null): string {
   }).format(new Date(value));
 }
 
-function initials(name: string): string {
+export function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return '?';
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
@@ -89,7 +89,7 @@ function Modal(props: { title: string; onClose: () => void; children: ReactNode 
   );
 }
 
-function InviteModal(props: {
+export function InviteModal(props: {
   onClose: () => void;
   onSubmit: (input: ConviteUsuarioInput) => Promise<boolean>;
   pending: boolean;
@@ -163,7 +163,7 @@ function InviteModal(props: {
   );
 }
 
-function EditAccessModal(props: {
+export function EditAccessModal(props: {
   usuario: UsuarioAdmin;
   onClose: () => void;
   onSubmit: (cargo: CargoUsuario, marcas: Marca[]) => Promise<boolean>;

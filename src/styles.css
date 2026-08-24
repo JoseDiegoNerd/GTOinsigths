@@ -920,6 +920,165 @@ td {
   }
 }
 
+/* Configurações --------------------------------------------------------- */
+
+.settings-row {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(280px, 5fr);
+  gap: 20px;
+}
+
+.badge-manutencao {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.bandeira-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.bandeira-card {
+  padding: 16px;
+}
+
+.bandeira-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.bandeira-card-top > div:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.bandeira-card-top span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.preferencias-stack {
+  display: grid;
+  gap: 20px;
+}
+
+.preferencia-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.preferencia-item > div {
+  display: grid;
+  gap: 2px;
+}
+
+.preferencia-item span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.theme-toggle {
+  display: inline-flex;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 3px;
+  background: #f1f5f9;
+}
+
+.theme-toggle button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  color: #64748b;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.theme-toggle button .material-symbols-outlined {
+  font-size: 16px;
+}
+
+.theme-toggle button.active {
+  background: #fff;
+  color: #2563eb;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.15);
+}
+
+.conexoes-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.conexao-card {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+
+.conexao-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.conexao-icon {
+  color: #2563eb;
+  font-size: 26px;
+}
+
+.conexao-card small {
+  color: #64748b;
+}
+
+.conexao-reconectar {
+  margin-top: 10px;
+  justify-content: center;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.icon-button-danger:hover:not(:disabled) {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.settings-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid #e2e8f0;
+  padding: 20px 4px 4px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.settings-footer-links {
+  display: flex;
+  gap: 18px;
+}
+
+.settings-footer-links button {
+  background: transparent;
+  color: #64748b;
+  padding: 0;
+  font-weight: 600;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.settings-footer-links button:hover {
+  color: #2563eb;
+}
+
 @media (max-width: 980px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -943,8 +1102,15 @@ td {
   .kpi-grid,
   .dashboard-grid,
   .import-grid,
-  .usuarios-status-grid {
+  .usuarios-status-grid,
+  .settings-row,
+  .conexoes-grid {
     grid-template-columns: 1fr;
+  }
+
+  .settings-footer {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .brand-row {

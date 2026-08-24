@@ -303,8 +303,23 @@
       .login-hero .side-brand { padding: 0; }
       .login-form-side { display: flex; align-items: center; justify-content: center; padding: 24px; }
       @media (max-width: 860px) { .login-split { grid-template-columns: 1fr; } .login-hero { padding: 32px 24px; } }
+      .settings-row { grid-template-columns: minmax(0, 7fr) minmax(280px, 5fr); }
+      .bandeira-grid { display: grid; gap: 12px; }
+      .bandeira-card { padding: 16px; }
+      .bandeira-card-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+      .bandeira-card-top > div:first-child { display: grid; gap: 2px; }
+      .bandeira-card-top span { color: #64748b; font-size: 12px; }
+      .conexoes-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .conexao-card { display: grid; gap: 6px; align-content: start; }
+      .conexao-card-top { display: flex; align-items: center; justify-content: space-between; }
+      .conexao-icon { color: var(--accent); font-size: 26px; }
+      .conexao-reconectar { margin-top: 6px; justify-content: center; border-color: #fecaca; color: #b91c1c; }
+      .settings-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-top: 1px solid #e2e8f0; padding: 16px 4px 4px; font-size: 12px; }
+      .settings-footer .link-btn { color: #64748b; text-decoration: underline; text-underline-offset: 2px; }
+      .settings-footer .link-btn:hover { color: var(--accent); }
       @media (max-width: 980px) {
-        .kpis, .cols, .insight-grid, .channel-grid, .highlight-grid, .channel-grid .kpis { grid-template-columns: 1fr; }
+        .kpis, .cols, .insight-grid, .channel-grid, .highlight-grid, .channel-grid .kpis, .settings-row, .conexoes-grid { grid-template-columns: 1fr; }
+        .settings-footer { flex-direction: column; align-items: flex-start; }
         .shell { flex-direction: column; height: auto; overflow: visible; }
         aside { width: 100%; height: auto; overflow: visible; }
         main { height: auto; overflow: visible; }
@@ -1467,7 +1482,7 @@
         // aqui, no unico lugar que pinta a tela - cobre clique de nav (ja escondido), ?page= na URL
         // (ver finishLogin) e qualquer outro caminho futuro que troque state.page.
         const isAdmin = state.perfil?.cargo === "Admin";
-        if ((state.page === "connections" || state.page === "import" || state.page === "usuarios") && !isAdmin) {
+        if ((state.page === "connections" || state.page === "import" || state.page === "usuarios" || state.page === "configuracoes") && !isAdmin) {
           state.page = "dashboard";
         }
         applyBrandTheme();
@@ -1485,6 +1500,7 @@
               ${isAdmin ? `<button id="navConnections" class="${state.page === "connections" ? "active" : ""}"><span class="material-symbols-outlined">link</span>Conexões</button>` : ""}
               ${isAdmin ? `<button id="navImport" class="${state.page === "import" ? "active" : ""}"><span class="material-symbols-outlined">upload_file</span>Importar Planilhas</button>` : ""}
               ${isAdmin ? `<button id="navUsuarios" class="${state.page === "usuarios" ? "active" : ""}"><span class="material-symbols-outlined">manage_accounts</span>Gestão de Usuários</button>` : ""}
+              ${isAdmin ? `<button id="navConfiguracoes" class="${state.page === "configuracoes" ? "active" : ""}"><span class="material-symbols-outlined">settings</span>Configurações</button>` : ""}
               <button id="navSugestoes" class="${state.page === "sugestoes" ? "active" : ""}"><span class="material-symbols-outlined">lightbulb</span>Sugestões</button>
             </nav>
             <div class="profile">
@@ -1530,6 +1546,8 @@
         if (navImportBtn) navImportBtn.onclick = () => { state.page = "import"; render(); };
         const navUsuariosBtn = document.querySelector("#navUsuarios");
         if (navUsuariosBtn) navUsuariosBtn.onclick = () => { state.page = "usuarios"; render(); };
+        const navConfiguracoesBtn = document.querySelector("#navConfiguracoes");
+        if (navConfiguracoesBtn) navConfiguracoesBtn.onclick = () => { state.page = "configuracoes"; render(); };
         document.querySelector("#navSugestoes").onclick = () => { state.page = "sugestoes"; render(); };
         if (state.page === "dashboard") await renderDashboard();
         if (state.page === "credsystem") await renderCredsystemBI();
@@ -1546,6 +1564,7 @@
         if (state.page === "google_business") await renderGoogleBusiness();
         if (state.page === "import") renderImport();
         if (state.page === "usuarios") await renderUsuarios();
+        if (state.page === "configuracoes") await renderConfiguracoes();
         if (state.page === "sugestoes") await renderSugestoes();
       }
 
@@ -1558,6 +1577,7 @@
         if (state.page === "connections") return "Conexões";
         if (state.page === "google_business") return "Google Meu Negócio";
         if (state.page === "usuarios") return "Gestão de Usuários";
+        if (state.page === "configuracoes") return "Configurações do Sistema";
         if (state.page === "sugestoes") return "Sugestões & Melhorias";
         return "Pipeline de importação";
       }
@@ -8783,6 +8803,165 @@
         document.querySelectorAll(".excluir-usuario").forEach((btn) => { btn.onclick = () => openDeleteUserModal(btn.dataset.id); });
       }
 
+      // Configuracoes do Sistema (Admin only) ---------------------------------------------------
+      // Bloco 1 (Gerenciar usuarios) reaproveita loadUsuarios()/openInviteModal()/openEditAccessModal()/
+      // openDeleteUserModal() da tela Gestao de Usuarios (mesmos dados reais e mesmas acoes contra o
+      // Supabase), so que numa tabela mais enxuta. Blocos 2 e 4 (bandeiras e fontes de dados) ainda
+      // nao tem tabela propria no banco - ficam com dados ilustrativos ate existir essa integracao.
+      const CONFIG_BANDEIRAS = [
+        { nome: "Tesoura de Ouro", lojas: 32, status: "LIVE" },
+        { nome: "Free Center", lojas: 18, status: "LIVE" },
+        { nome: "Magazine da Economia", lojas: 12, status: "MANUTENÇÃO" }
+      ];
+
+      const CONFIG_CONEXOES = [
+        { nome: "CredSystem", icon: "credit_card", status: "CONECTADO", detalhe: "Sincronizado há 2 horas" },
+        { nome: "RD Station", icon: "campaign", status: "CONECTADO", detalhe: "Sincronizado há 4 horas" },
+        { nome: "Meta Ads", icon: "share", status: "CONECTADO", detalhe: "Sincronizado há 1 hora" },
+        { nome: "Google Ads", icon: "ads_click", status: "ERRO", detalhe: "Token expirado desde ontem" }
+      ];
+
+      function configUsuarioRowHtml(usuario) {
+        const podeExcluir = usuario.id !== state.session.user.id;
+        return `<tr data-usuario-id="${escapeHtml(usuario.id)}">
+          <td>
+            <div class="user-cell">
+              <span class="user-avatar">${escapeHtml(userInitials(usuario.nome || usuario.email))}</span>
+              <div class="user-cell-info"><strong>${escapeHtml(usuario.nome || "Sem nome")}</strong><span>${escapeHtml(usuario.email)}</span></div>
+            </div>
+          </td>
+          <td><span class="cargo-pill ${cargoPillClass(usuario.cargo)}">${escapeHtml(usuario.cargo)}</span></td>
+          <td>${escapeHtml(formatDateTime(usuario.last_sign_in_at))}</td>
+          <td><span class="status-pill ${usuario.ativo ? "active" : "inactive"}">${usuario.ativo ? "Ativo" : "Inativo"}</span></td>
+          <td>
+            <div class="row-actions">
+              <button type="button" class="secondary config-editar-acesso" data-id="${escapeHtml(usuario.id)}">Editar</button>
+              ${podeExcluir ? `<button type="button" class="danger config-excluir-usuario" data-id="${escapeHtml(usuario.id)}" title="Excluir usuário"><span class="material-symbols-outlined" style="vertical-align:middle;font-size:18px">delete</span></button>` : ""}
+            </div>
+          </td>
+        </tr>`;
+      }
+
+      function bandeiraCardHtml(bandeira) {
+        const isLive = bandeira.status === "LIVE";
+        return `<article class="card bandeira-card">
+          <div class="bandeira-card-top">
+            <div><strong>${escapeHtml(bandeira.nome)}</strong><span>${fmt.format(bandeira.lojas)} lojas</span></div>
+            <span class="status-pill ${isLive ? "active" : "pending"}">${escapeHtml(bandeira.status)}</span>
+          </div>
+        </article>`;
+      }
+
+      function conexaoCardHtml(conexao) {
+        const conectado = conexao.status === "CONECTADO";
+        return `<article class="card conexao-card">
+          <div class="conexao-card-top">
+            <span class="material-symbols-outlined conexao-icon">${escapeHtml(conexao.icon)}</span>
+            <span class="status-pill ${conectado ? "active" : "inactive"}">${escapeHtml(conexao.status)}</span>
+          </div>
+          <strong>${escapeHtml(conexao.nome)}</strong>
+          <small class="muted">${escapeHtml(conexao.detalhe)}</small>
+          ${!conectado ? `<button type="button" class="secondary conexao-reconectar" data-conexao="${escapeHtml(conexao.nome)}">RECONECTAR AGORA</button>` : ""}
+        </article>`;
+      }
+
+      async function renderConfiguracoes(statusMessage = "") {
+        const content = document.querySelector("#content");
+        state.configPrefs = state.configPrefs || { modoEscuro: false, notifRelatorios: true, notifDiscrepancia: true };
+        content.innerHTML = `<div class="alert">Carregando usuários...</div>`;
+
+        try {
+          await loadUsuarios();
+        } catch (error) {
+          content.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}<br><br>Se a função ainda não foi publicada, rode <code>supabase functions deploy admin-users-list</code>.</div>`;
+          return;
+        }
+
+        const usuarios = state.usuarios || [];
+        const statusHtml = statusMessage ? `<div class="alert success">${escapeHtml(statusMessage)}</div>` : "";
+        const prefs = state.configPrefs;
+
+        content.innerHTML = `
+          <div class="page-head">
+            <div><div class="eyebrow">Admin</div><h2>Configurações do Sistema</h2><p class="muted">Gerencie permissões, marcas, fontes de dados e preferências da plataforma.</p></div>
+          </div>
+          ${statusHtml}
+          <section class="card">
+            <div class="page-head" style="align-items:center">
+              <div><h3>Gerenciar usuários</h3><p class="muted">Convites, cargos e status de acesso à plataforma.</p></div>
+              <button id="configNovoUsuario" class="pill-action"><span class="material-symbols-outlined" style="vertical-align:middle">add</span> NOVO USUÁRIO</button>
+            </div>
+            <div class="table-wrap" style="margin-top:16px">
+              <table>
+                <thead><tr><th>Nome / E-mail</th><th>Cargo</th><th>Último acesso</th><th>Status</th><th>Ações</th></tr></thead>
+                <tbody>${usuarios.length ? usuarios.map(configUsuarioRowHtml).join("") : `<tr><td colspan="5">Nenhum usuário cadastrado ainda.</td></tr>`}</tbody>
+              </table>
+            </div>
+          </section>
+          <div class="grid settings-row">
+            <section class="card">
+              <h3>Gerenciar bandeiras</h3>
+              <p class="muted">Marcas ativas na plataforma e status operacional.</p>
+              <div class="bandeira-grid" style="margin-top:16px">${CONFIG_BANDEIRAS.map(bandeiraCardHtml).join("")}</div>
+            </section>
+            <section class="card">
+              <h3>Preferências do sistema</h3>
+              <p class="muted">Exibição e alertas por e-mail.</p>
+              <div style="margin-top:12px">
+                <div class="switch-row">
+                  <div class="switch-row-label"><strong>Modo de exibição</strong><span>Escolha entre tema claro ou escuro.</span></div>
+                  <div class="segmented">
+                    <button type="button" data-theme-mode="claro" class="${!prefs.modoEscuro ? "active" : ""}"><span class="material-symbols-outlined" style="vertical-align:middle;font-size:16px">light_mode</span> Claro</button>
+                    <button type="button" data-theme-mode="escuro" class="${prefs.modoEscuro ? "active" : ""}"><span class="material-symbols-outlined" style="vertical-align:middle;font-size:16px">dark_mode</span> Escuro</button>
+                  </div>
+                </div>
+                <div class="switch-row">
+                  <div class="switch-row-label"><strong>Relatórios semanais</strong><span>Resumo de performance por e-mail.</span></div>
+                  <label class="switch"><input type="checkbox" id="prefRelatorios" ${prefs.notifRelatorios ? "checked" : ""} /><span class="slider"></span></label>
+                </div>
+                <div class="switch-row">
+                  <div class="switch-row-label"><strong>Alertas de discrepância</strong><span>Avisos quando os dados divergirem do esperado.</span></div>
+                  <label class="switch"><input type="checkbox" id="prefDiscrepancia" ${prefs.notifDiscrepancia ? "checked" : ""} /><span class="slider"></span></label>
+                </div>
+              </div>
+            </section>
+          </div>
+          <section class="card">
+            <h3>Fontes de dados integradas</h3>
+            <p class="muted">Status das conexões de API que alimentam o GTO Insights.</p>
+            <div class="grid conexoes-grid" style="margin-top:16px">${CONFIG_CONEXOES.map(conexaoCardHtml).join("")}</div>
+          </section>
+          <footer class="settings-footer">
+            <span class="muted">GTO INSIGHTS © 2023 | Versão 2.4.0-build.82</span>
+            <div class="actions">
+              <button type="button" class="link-btn" title="Em breve">Termos de Uso</button>
+              <button type="button" class="link-btn" title="Em breve">Política de Privacidade</button>
+              <button type="button" class="link-btn" title="Em breve">Logs de Auditoria</button>
+            </div>
+          </footer>`;
+
+        wireConfiguracoesPage();
+      }
+
+      function wireConfiguracoesPage() {
+        document.querySelector("#configNovoUsuario").onclick = () => openInviteModal();
+        document.querySelectorAll(".config-editar-acesso").forEach((btn) => { btn.onclick = () => openEditAccessModal(btn.dataset.id); });
+        document.querySelectorAll(".config-excluir-usuario").forEach((btn) => { btn.onclick = () => openDeleteUserModal(btn.dataset.id); });
+        document.querySelectorAll("[data-theme-mode]").forEach((btn) => {
+          btn.onclick = () => {
+            state.configPrefs.modoEscuro = btn.dataset.themeMode === "escuro";
+            renderConfiguracoes();
+          };
+        });
+        const prefRelatorios = document.querySelector("#prefRelatorios");
+        if (prefRelatorios) prefRelatorios.onchange = (event) => { state.configPrefs.notifRelatorios = event.target.checked; };
+        const prefDiscrepancia = document.querySelector("#prefDiscrepancia");
+        if (prefDiscrepancia) prefDiscrepancia.onchange = (event) => { state.configPrefs.notifDiscrepancia = event.target.checked; };
+        document.querySelectorAll(".conexao-reconectar").forEach((btn) => {
+          btn.onclick = () => { state.page = "connections"; render(); };
+        });
+      }
+
       async function toggleUsuarioAtivo(id, ativo) {
         const usuario = (state.usuarios || []).find((u) => u.id === id);
         const { error } = await supabase.from("perfis").update({ ativo }).eq("id", id);
@@ -9012,7 +9191,14 @@
         const usuarioCriado = Boolean(inviteModalState?.usuarioId);
         if (overlay) { overlay.hidden = true; overlay.innerHTML = ""; }
         inviteModalState = null;
-        if (usuarioCriado) renderUsuarios("Convite salvo com sucesso.");
+        if (usuarioCriado) refreshUsuariosListing("Convite salvo com sucesso.");
+      }
+
+      // Convite/Editar acesso/Excluir sao compartilhados entre a tela "Gestao de Usuarios" e o bloco
+      // "Gerenciar usuarios" de Configuracoes - repinta a que estiver ativa em vez de sempre voltar
+      // pra Usuarios.
+      function refreshUsuariosListing(message) {
+        return state.page === "configuracoes" ? renderConfiguracoes(message) : renderUsuarios(message);
       }
 
       function inviteModalPanelHtml() {
@@ -9414,7 +9600,7 @@
           if (cargoError) throw cargoError;
 
           closeEditAccessModal();
-          await renderUsuarios("Cargo e marcas atualizados.");
+          await refreshUsuariosListing("Cargo e marcas atualizados.");
         } catch (error) {
           s.saving = false;
           s.error = safeErrorMessage(error, "Não foi possível salvar as alterações.");
@@ -9430,7 +9616,7 @@
         const usuario = (state.usuarios || []).find((u) => u.id === usuarioId);
         if (!overlay || !usuario) return;
         if (usuario.id === state.session.user.id) {
-          renderUsuarios("Você não pode excluir a própria conta.");
+          refreshUsuariosListing("Você não pode excluir a própria conta.");
           return;
         }
         deleteUserModalState = { usuario, saving: false, error: "" };
@@ -9496,7 +9682,7 @@
 
         const nomeExcluido = s.usuario.nome || s.usuario.email;
         closeDeleteUserModal();
-        await renderUsuarios(`Usuário ${nomeExcluido} excluído com sucesso.`);
+        await refreshUsuariosListing(`Usuário ${nomeExcluido} excluído com sucesso.`);
       }
 
       // Modulo "Sugestoes & Melhorias" ------------------------------------------------------------
