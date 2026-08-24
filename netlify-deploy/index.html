@@ -5277,6 +5277,27 @@
       // com formato de PostgrestError (revelaria nomes de tabela/coluna/constraint). O erro
       // completo sempre vai pro console (visivel so a quem abrir o devtools), nunca pro HTML puro -
       // por isso todo lugar que usa isto continua passando o resultado por escapeHtml() tambem.
+      // safeErrorMessage ja bloqueava erro no formato PostgrestError (code/details/hint - pode ter
+      // nome de tabela/coluna/constraint), mas pra qualquer outro objeto Error devolvia
+      // error.message direto pro usuario. A maioria das mensagens que o proprio app lanca
+      // (throw new Error("...")) e um texto curto em portugues escrito a dedo - seguro de mostrar -,
+      // mas um erro INESPERADO (falha de rede, exception de lib de terceiro, bug) tambem e um Error
+      // e podia vazar stack trace, caminho de arquivo, nome de variavel de ambiente ou erro cru de
+      // SQL. looksLikeInfraLeak() e a rede de seguranca: heuristica que reconhece esses padroes e
+      // cai no fallback generico, sem quebrar as mensagens de validacao curtas que o app usa hoje.
+      function looksLikeInfraLeak(message) {
+        if (typeof message !== "string" || !message) return true;
+        if (message.length > 300) return true;
+        if (/\n/.test(message)) return true;
+        if (/^(TypeError|ReferenceError|SyntaxError|RangeError|EvalError|URIError|AggregateError)\b/.test(message)) return true;
+        if (/\bat\s+(async\s+)?[\w$.<>]+\s*\(/.test(message)) return true;
+        if (/(node_modules|Deno\.|process\.env|import\.meta\.env|\.ts:\d|\.js:\d|\.tsx:\d)/i.test(message)) return true;
+        if (/(relation ".*" does not exist|column ".*" does not exist|syntax error at or near|violates (foreign key|check|unique|not-null) constraint|permission denied for)/i.test(message)) return true;
+        if (/^https?:\/\//i.test(message)) return true;
+        if (/[A-Za-z]:\\|\/home\/|\/var\/|\/usr\/|\/etc\//.test(message)) return true;
+        return false;
+      }
+
       function safeErrorMessage(error, fallback = "Ocorreu um erro ao processar a solicitação.") {
         console.error(error);
         const looksLikePostgrestError =
@@ -5285,8 +5306,12 @@
           ("code" in error || "details" in error || "hint" in error) &&
           !(error instanceof Error);
         if (looksLikePostgrestError) return fallback;
-        if (error instanceof Error) return error.message;
-        if (error && typeof error === "object" && typeof error.message === "string") return error.message;
+
+        let message = null;
+        if (error instanceof Error) message = error.message;
+        else if (error && typeof error === "object" && typeof error.message === "string") message = error.message;
+
+        if (message && !looksLikeInfraLeak(message)) return message;
         return fallback;
       }
 
@@ -7507,7 +7532,7 @@
             <span class="material-symbols-outlined">upload_file</span>
             <strong>Arraste um arquivo aqui ou clique para selecionar</strong>
             <p class="muted">CSV ou XLSX - será validado antes da importação.${s.destino === "email_marketing" ? " XLSX com múltiplas abas = múltiplos disparos; CSV = uma linha por disparo." : ""}</p>
-            <input id="wizardFile" type="file" accept=".csv,.xlsx,.xls" />
+            <input id="wizardFile" type="file" accept=".csv,.xlsx" />
           </div>
           ${s.error ? `<div class="alert error">${escapeHtml(s.error)}</div>` : ""}
           <div class="actions" style="justify-content:flex-start">
@@ -7968,12 +7993,32 @@
         return { disparos };
       }
 
+      // Extensoes/tamanho aceitos pelo wizard de importacao - so o que parseSpreadsheetFile/
+      // parseEmailCampaignWorkbook realmente sabem ler (planilha tabular). O accept=".csv,.xlsx" do
+      // input e so dica de UI (o navegador nao impede selecionar/arrastar outro arquivo), esta
+      // checagem em JS que de fato barra o resto antes de gastar tempo tentando parsear.
+      const IMPORT_WIZARD_EXTENSOES_PERMITIDAS = [".csv", ".xlsx"];
+      const IMPORT_WIZARD_TAMANHO_MAXIMO = 10 * 1024 * 1024; // 10MB
+
       async function handleWizardFile(file) {
         if (!file) return;
         const s = importWizardState;
 
         if (!s.nomeCampanha.trim()) {
           s.error = "Preencha o nome da campanha antes de enviar o arquivo.";
+          renderImport();
+          return;
+        }
+
+        const nomeArquivo = (file.name || "").toLowerCase();
+        const extensaoPermitida = IMPORT_WIZARD_EXTENSOES_PERMITIDAS.some((ext) => nomeArquivo.endsWith(ext));
+        if (!extensaoPermitida) {
+          s.error = `Formato não suportado. Envie um arquivo ${IMPORT_WIZARD_EXTENSOES_PERMITIDAS.join(" ou ")}.`;
+          renderImport();
+          return;
+        }
+        if (file.size > IMPORT_WIZARD_TAMANHO_MAXIMO) {
+          s.error = `Arquivo muito grande (${(file.size / (1024 * 1024)).toFixed(1)}MB). O limite é ${IMPORT_WIZARD_TAMANHO_MAXIMO / (1024 * 1024)}MB.`;
           renderImport();
           return;
         }
@@ -8780,14 +8825,35 @@
 
       // Configuracoes do Sistema (Admin only) ---------------------------------------------------
       // "Gerenciar usuarios" absorveu a extinta tela standalone "Gestao de Usuarios" (mesmos dados,
-      // mesmas acoes reais contra o Supabase - nada foi simplificado). Blocos 2 e 4 (bandeiras e
-      // fontes de dados) ainda nao tem tabela propria no banco - ficam com dados ilustrativos ate
-      // existir essa integracao.
-      const CONFIG_BANDEIRAS = [
-        { nome: "Tesoura de Ouro", lojas: 32, status: "LIVE" },
-        { nome: "Free Center", lojas: 18, status: "LIVE" },
-        { nome: "Magazine da Economia", lojas: 12, status: "MANUTENÇÃO" }
-      ];
+      // mesmas acoes reais contra o Supabase - nada foi simplificado). Bloco 4 (fontes de dados)
+      // ainda nao tem tabela propria no banco - fica com dados ilustrativos ate existir essa
+      // integracao.
+      const BANDEIRA_NOME_EXIBICAO = {
+        "Tesoura de Ouro": "Tesoura de Ouro",
+        "Free Center Calçados": "Free Center",
+        "Magazine da Economia": "Magazine da Economia"
+      };
+
+      // "Gerenciar bandeiras" conta de verdade a tabela lojas_unidades (migration
+      // 20260824_037) em vez de usar numero fixo no codigo - LIVE se tiver ao menos 1 loja
+      // cadastrada pra marca, MANUTENÇÃO se nao tiver nenhuma (marca cadastrada mas sem lojas
+      // ainda, ou marca nova).
+      async function loadBandeiras() {
+        const { data, error } = await supabase.from("lojas_unidades").select("marca");
+        if (error) throw error;
+
+        const contagem = new Map();
+        for (const row of data ?? []) {
+          contagem.set(row.marca, (contagem.get(row.marca) ?? 0) + 1);
+        }
+
+        state.bandeiras = Object.keys(BANDEIRA_NOME_EXIBICAO).map((marca) => ({
+          marca,
+          nome: BANDEIRA_NOME_EXIBICAO[marca],
+          lojas: contagem.get(marca) ?? 0,
+          status: (contagem.get(marca) ?? 0) > 0 ? "LIVE" : "MANUTENÇÃO"
+        }));
+      }
 
       const CONFIG_CONEXOES = [
         { nome: "CredSystem", icon: "credit_card", status: "CONECTADO", detalhe: "Sincronizado há 2 horas" },
@@ -8800,7 +8866,7 @@
         const isLive = bandeira.status === "LIVE";
         return `<article class="card bandeira-card">
           <div class="bandeira-card-top">
-            <div><strong>${escapeHtml(bandeira.nome)}</strong><span>${fmt.format(bandeira.lojas)} lojas</span></div>
+            <div><strong>${escapeHtml(bandeira.nome)}</strong><span>${fmt.format(bandeira.lojas)} loja${bandeira.lojas === 1 ? "" : "s"}</span></div>
             <span class="status-pill ${isLive ? "active" : "pending"}">${escapeHtml(bandeira.status)}</span>
           </div>
         </article>`;
@@ -8835,6 +8901,16 @@
           await loadUsuarios();
         } catch (error) {
           usuariosLoadError = safeErrorMessage(error, "Não foi possível carregar os usuários agora.");
+        }
+
+        // Mesma logica de nao derrubar a pagina inteira: se lojas_unidades ainda nao existir
+        // (migration 20260824_037 nao aplicada) ou a query falhar por qualquer motivo, o bloco
+        // "Gerenciar bandeiras" mostra aviso com retry em vez de quebrar Configuracoes.
+        let bandeirasLoadError = "";
+        try {
+          await loadBandeiras();
+        } catch (error) {
+          bandeirasLoadError = safeErrorMessage(error, "Não foi possível carregar as bandeiras agora.");
         }
 
         const usuarios = state.usuarios || [];
@@ -8881,7 +8957,9 @@
             <section class="card">
               <h3>Gerenciar bandeiras</h3>
               <p class="muted">Marcas ativas na plataforma e status operacional.</p>
-              <div class="bandeira-grid" style="margin-top:16px">${CONFIG_BANDEIRAS.map(bandeiraCardHtml).join("")}</div>
+              ${bandeirasLoadError
+                ? `<div class="alert error" style="margin-top:16px">Não foi possível carregar as bandeiras agora. ${escapeHtml(bandeirasLoadError)}<div class="actions" style="margin-top:10px"><button type="button" class="secondary" id="retryBandeiras">Tentar novamente</button></div></div>`
+                : `<div class="bandeira-grid" style="margin-top:16px">${(state.bandeiras || []).map(bandeiraCardHtml).join("")}</div>`}
             </section>
             <section class="card">
               <h3>Preferências do sistema</h3>
@@ -8927,6 +9005,8 @@
         document.querySelector("#inviteUsuario").onclick = () => openInviteModal();
         const retryBtn = document.querySelector("#retryUsuarios");
         if (retryBtn) retryBtn.onclick = () => renderConfiguracoes();
+        const retryBandeirasBtn = document.querySelector("#retryBandeiras");
+        if (retryBandeirasBtn) retryBandeirasBtn.onclick = () => renderConfiguracoes();
         document.querySelectorAll(".editar-acesso").forEach((btn) => { btn.onclick = () => openEditAccessModal(btn.dataset.id); });
         document.querySelectorAll(".toggle-ativo").forEach((input) => { input.onchange = () => toggleUsuarioAtivo(input.dataset.id, input.checked); });
         document.querySelectorAll(".resetar-senha").forEach((btn) => { btn.onclick = () => openResetPasswordModal(btn.dataset.id); });

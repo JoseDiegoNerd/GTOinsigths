@@ -1,22 +1,10 @@
 import { useMemo, useState } from 'react';
+import { useBandeiras } from '../hooks/useBandeiras';
 import { useOnlineUsers } from '../hooks/usePresence';
 import { useUsuariosAdmin } from '../hooks/useUsuariosAdmin';
 import { CARGO_BADGE_CLASS, EditAccessModal, InviteModal, MARCA_CHIP_CLASS, formatDateTime, initials } from './UsuariosPage';
+import type { BandeiraResumo } from '../services/bandeirasService';
 import type { UsuarioAdmin } from '../types/gto';
-
-type BandeiraStatus = 'LIVE' | 'MANUTENÇÃO';
-
-type Bandeira = {
-  nome: string;
-  lojas: number;
-  status: BandeiraStatus;
-};
-
-const BANDEIRAS: Bandeira[] = [
-  { nome: 'Tesoura de Ouro', lojas: 32, status: 'LIVE' },
-  { nome: 'Free Center', lojas: 18, status: 'LIVE' },
-  { nome: 'Magazine da Economia', lojas: 12, status: 'MANUTENÇÃO' }
-];
 
 type ConexaoStatus = 'CONECTADO' | 'ERRO';
 
@@ -34,14 +22,16 @@ const CONEXOES: Conexao[] = [
   { nome: 'Google Ads', icon: 'ads_click', status: 'ERRO', detalhe: 'Token expirado desde ontem' }
 ];
 
-function BandeiraCard({ bandeira }: { bandeira: Bandeira }) {
+function BandeiraCard({ bandeira }: { bandeira: BandeiraResumo }) {
   const isLive = bandeira.status === 'LIVE';
   return (
     <article className="card bandeira-card">
       <div className="bandeira-card-top">
         <div>
-          <strong>{bandeira.nome}</strong>
-          <span>{bandeira.lojas} lojas</span>
+          <strong>{bandeira.nomeExibicao}</strong>
+          <span>
+            {bandeira.lojas} loja{bandeira.lojas === 1 ? '' : 's'}
+          </span>
         </div>
         <span className={`badge ${isLive ? 'badge-ativo' : 'badge-manutencao'}`}>{bandeira.status}</span>
       </div>
@@ -193,6 +183,7 @@ function UsuariosTable(props: {
 
 export default function ConfiguracoesPage() {
   const admin = useUsuariosAdmin();
+  const bandeirasQuery = useBandeiras();
   const online = useOnlineUsers();
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editingUsuario, setEditingUsuario] = useState<UsuarioAdmin | null>(null);
@@ -326,11 +317,24 @@ export default function ConfiguracoesPage() {
               <p>Marcas ativas na plataforma e status operacional.</p>
             </div>
           </div>
-          <div className="bandeira-grid">
-            {BANDEIRAS.map((bandeira) => (
-              <BandeiraCard bandeira={bandeira} key={bandeira.nome} />
-            ))}
-          </div>
+          {bandeirasQuery.error ? (
+            <div className="alert error">
+              Não foi possível carregar as bandeiras agora. {bandeirasQuery.error}
+              <div className="button-row" style={{ marginTop: 10 }}>
+                <button type="button" className="secondary-button" onClick={() => bandeirasQuery.reload()}>
+                  Tentar novamente
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="bandeira-grid">
+              {bandeirasQuery.loading ? (
+                <p className="empty">Carregando bandeiras...</p>
+              ) : (
+                bandeirasQuery.bandeiras.map((bandeira) => <BandeiraCard bandeira={bandeira} key={bandeira.marca} />)
+              )}
+            </div>
+          )}
         </article>
 
         <article className="card">
