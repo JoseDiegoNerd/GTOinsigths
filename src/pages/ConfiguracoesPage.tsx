@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useOnlineUsers } from '../hooks/usePresence';
 import { useUsuariosAdmin } from '../hooks/useUsuariosAdmin';
-import { CARGO_BADGE_CLASS, EditAccessModal, InviteModal, formatDateTime, initials } from './UsuariosPage';
+import { CARGO_BADGE_CLASS, EditAccessModal, InviteModal, MARCA_CHIP_CLASS, formatDateTime, initials } from './UsuariosPage';
 import type { UsuarioAdmin } from '../types/gto';
 
 type BandeiraStatus = 'LIVE' | 'MANUTENÇÃO';
@@ -75,75 +76,114 @@ function ConexaoCard({ conexao, onReconectar }: { conexao: Conexao; onReconectar
 function UsuariosTable(props: {
   usuarios: UsuarioAdmin[];
   loading: boolean;
+  onlineIds: Set<string>;
   pendingActionId: string | null;
   onEditar: (usuario: UsuarioAdmin) => void;
-  onExcluir: (usuario: UsuarioAdmin) => void;
+  onAlternarStatus: (usuario: UsuarioAdmin) => void;
+  onRedefinirSenha: (usuario: UsuarioAdmin) => void;
+  onResetarMfa: (usuario: UsuarioAdmin) => void;
 }) {
   return (
     <div className="table-wrap">
       <table>
         <thead>
           <tr>
-            <th>Nome / E-mail</th>
+            <th>Usuário</th>
             <th>Cargo</th>
-            <th>Último acesso</th>
+            <th>Marcas permitidas</th>
             <th>Status</th>
+            <th>Último acesso</th>
             <th>Ações</th>
           </tr>
         </thead>
         <tbody>
           {props.loading ? (
             <tr>
-              <td colSpan={5}>Carregando usuários...</td>
+              <td colSpan={6}>Carregando usuários...</td>
             </tr>
           ) : props.usuarios.length === 0 ? (
             <tr>
-              <td colSpan={5}>Nenhum usuário cadastrado ainda.</td>
+              <td colSpan={6}>Nenhum usuário cadastrado ainda.</td>
             </tr>
           ) : (
-            props.usuarios.map((usuario) => (
-              <tr key={usuario.id}>
-                <td>
-                  <div className="usuario-cell">
-                    <span className="presence-avatar">{initials(usuario.nome ?? usuario.email)}</span>
-                    <div>
-                      <strong>{usuario.nome ?? 'Sem nome'}</strong>
-                      <span className="usuario-email">{usuario.email}</span>
+            props.usuarios.map((usuario) => {
+              const isOnline = props.onlineIds.has(usuario.id);
+              const busyPrefix = props.pendingActionId;
+              return (
+                <tr key={usuario.id}>
+                  <td>
+                    <div className="usuario-cell">
+                      <span className={`presence-avatar ${isOnline ? 'is-online' : ''}`}>{initials(usuario.nome ?? usuario.email)}</span>
+                      <div>
+                        <strong>{usuario.nome ?? 'Sem nome'}</strong>
+                        <span className="usuario-email">{usuario.email}</span>
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td>
-                  <span className={`badge ${CARGO_BADGE_CLASS[usuario.cargo]}`}>{usuario.cargo}</span>
-                </td>
-                <td>{formatDateTime(usuario.last_sign_in_at)}</td>
-                <td>
-                  <span className={`badge ${usuario.ativo ? 'badge-ativo' : 'badge-inativo'}`}>
-                    {usuario.ativo ? 'Ativo' : 'Inativo'}
-                  </span>
-                </td>
-                <td>
-                  <div className="row-actions">
-                    <button
-                      type="button"
-                      className="icon-button"
-                      title="Editar cargo e marcas"
-                      onClick={() => props.onEditar(usuario)}
-                    >
-                      <span className="material-symbols-outlined">edit</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="icon-button icon-button-danger"
-                      title={usuario.ativo ? 'Excluir (desativar) usuário' : 'Usuário já está inativo'}
-                      disabled={props.pendingActionId === `status-${usuario.id}` || !usuario.ativo}
-                      onClick={() => props.onExcluir(usuario)}
-                    >
-                      <span className="material-symbols-outlined">delete</span>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))
+                  </td>
+                  <td>
+                    <span className={`badge ${CARGO_BADGE_CLASS[usuario.cargo]}`}>{usuario.cargo}</span>
+                  </td>
+                  <td>
+                    <div className="chip-row">
+                      {usuario.marcas.length === 0 ? (
+                        <span className="empty">Todas as marcas</span>
+                      ) : (
+                        usuario.marcas.map((marca) => (
+                          <span className={`chip ${MARCA_CHIP_CLASS[marca]}`} key={marca}>
+                            {marca}
+                          </span>
+                        ))
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    <span className={`badge ${usuario.ativo ? 'badge-ativo' : 'badge-inativo'}`}>
+                      {usuario.ativo ? 'Ativo' : 'Bloqueado'}
+                    </span>
+                  </td>
+                  <td>{formatDateTime(usuario.last_sign_in_at)}</td>
+                  <td>
+                    <div className="row-actions">
+                      <button
+                        type="button"
+                        className="icon-button"
+                        title="Alterar cargo e marcas"
+                        onClick={() => props.onEditar(usuario)}
+                      >
+                        <span className="material-symbols-outlined">edit</span>
+                      </button>
+                      <label className="switch" title={usuario.ativo ? 'Bloquear usuário' : 'Ativar usuário'}>
+                        <input
+                          type="checkbox"
+                          checked={usuario.ativo}
+                          disabled={busyPrefix === `status-${usuario.id}`}
+                          onChange={() => props.onAlternarStatus(usuario)}
+                        />
+                        <span className="switch-track" aria-hidden="true" />
+                      </label>
+                      <button
+                        type="button"
+                        className="icon-button"
+                        title="Enviar e-mail de redefinição de senha"
+                        disabled={busyPrefix === `senha-${usuario.id}`}
+                        onClick={() => props.onRedefinirSenha(usuario)}
+                      >
+                        <span className="material-symbols-outlined">mail_lock</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="icon-button"
+                        title="Resetar MFA (2FA)"
+                        disabled={busyPrefix === `mfa-${usuario.id}` || !usuario.mfa_enrolled}
+                        onClick={() => props.onResetarMfa(usuario)}
+                      >
+                        <span className="material-symbols-outlined">phonelink_lock</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })
           )}
         </tbody>
       </table>
@@ -153,16 +193,20 @@ function UsuariosTable(props: {
 
 export default function ConfiguracoesPage() {
   const admin = useUsuariosAdmin();
+  const online = useOnlineUsers();
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editingUsuario, setEditingUsuario] = useState<UsuarioAdmin | null>(null);
   const [modoEscuro, setModoEscuro] = useState(false);
   const [notifRelatorios, setNotifRelatorios] = useState(true);
   const [notifDiscrepancia, setNotifDiscrepancia] = useState(true);
 
-  function handleExcluir(usuario: UsuarioAdmin) {
-    const confirmado = window.confirm(`Excluir o acesso de ${usuario.nome ?? usuario.email}? O usuário será desativado.`);
-    if (confirmado) admin.alternarStatus(usuario);
-  }
+  const onlineIds = useMemo(() => new Set(online.map((item) => item.userId)), [online]);
+
+  const ultimoAcessoGeral = useMemo(() => {
+    const timestamps = admin.usuarios.map((item) => item.last_sign_in_at).filter((value): value is string => Boolean(value));
+    if (timestamps.length === 0) return null;
+    return timestamps.reduce((latest, current) => (current > latest ? current : latest));
+  }, [admin.usuarios]);
 
   function handleReconectar(nome: string) {
     window.alert(`Reautenticação de ${nome} ainda não está disponível nesta build. Use a tela de Conexões.`);
@@ -178,7 +222,6 @@ export default function ConfiguracoesPage() {
         </div>
       </div>
 
-      {admin.loadError ? <div className="alert error">{admin.loadError}</div> : null}
       {admin.actionError ? <div className="alert error">{admin.actionError}</div> : null}
       {admin.actionSuccess ? <div className="alert success">{admin.actionSuccess}</div> : null}
 
@@ -186,22 +229,93 @@ export default function ConfiguracoesPage() {
         <div className="section-title">
           <div>
             <h3>Gerenciar usuários</h3>
-            <p>Convites, cargos e status de acesso à plataforma.</p>
+            <p>Convites, cargos, marcas permitidas e presença em tempo real de quem acessa o GTO Insights.</p>
           </div>
-          <button type="button" onClick={() => setInviteOpen(true)}>
-            <span className="material-symbols-outlined" aria-hidden="true">
-              add
-            </span>
-            NOVO USUÁRIO
-          </button>
+          <div className="filters">
+            <button type="button" className="secondary-button" onClick={() => admin.reload()}>
+              <span className="material-symbols-outlined" aria-hidden="true">
+                refresh
+              </span>
+              Atualizar
+            </button>
+            <button type="button" onClick={() => setInviteOpen(true)}>
+              <span className="material-symbols-outlined" aria-hidden="true">
+                add
+              </span>
+              NOVO USUÁRIO
+            </button>
+          </div>
         </div>
-        <UsuariosTable
-          usuarios={admin.usuarios}
-          loading={admin.loading}
-          pendingActionId={admin.pendingActionId}
-          onEditar={setEditingUsuario}
-          onExcluir={handleExcluir}
-        />
+
+        {admin.loadError ? (
+          <div className="alert error">
+            Não foi possível carregar a lista de usuários agora. {admin.loadError}
+            <div className="button-row" style={{ marginTop: 10 }}>
+              <button type="button" className="secondary-button" onClick={() => admin.reload()}>
+                Tentar novamente
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {admin.usuariosFallback ? (
+              <div className="alert" style={{ marginBottom: 16 }}>
+                Alguns dados (último acesso, verificação de MFA) estão indisponíveis no momento - mostrando os dados
+                básicos do cadastro.
+              </div>
+            ) : null}
+            <div className="usuarios-status-grid" style={{ marginBottom: 20 }}>
+              <article className="card status-card status-card-online">
+                <div className="kpi-top">
+                  <span>Usuários online agora</span>
+                  <span className="presence-dot" aria-hidden="true" />
+                </div>
+                <strong>{online.length}</strong>
+                {online.length === 0 ? (
+                  <small>Ninguém conectado neste momento.</small>
+                ) : (
+                  <div className="avatar-stack" title={online.map((item) => item.nome).join(', ')}>
+                    {online.slice(0, 6).map((item) => (
+                      <span className="avatar-chip" key={item.userId}>
+                        {initials(item.nome)}
+                      </span>
+                    ))}
+                    {online.length > 6 ? <span className="avatar-chip avatar-chip-more">+{online.length - 6}</span> : null}
+                  </div>
+                )}
+              </article>
+
+              <article className="card status-card">
+                <div className="kpi-top">
+                  <span>Total de cadastrados</span>
+                  <span className="material-symbols-outlined">group</span>
+                </div>
+                <strong>{admin.usuarios.length}</strong>
+                <small>{admin.usuarios.filter((item) => item.ativo).length} ativos</small>
+              </article>
+
+              <article className="card status-card">
+                <div className="kpi-top">
+                  <span>Último acesso registrado</span>
+                  <span className="material-symbols-outlined">history</span>
+                </div>
+                <strong className="status-card-datetime">{formatDateTime(ultimoAcessoGeral)}</strong>
+                <small>Considerando todos os perfis cadastrados</small>
+              </article>
+            </div>
+
+            <UsuariosTable
+              usuarios={admin.usuarios}
+              loading={admin.loading}
+              onlineIds={onlineIds}
+              pendingActionId={admin.pendingActionId}
+              onEditar={setEditingUsuario}
+              onAlternarStatus={admin.alternarStatus}
+              onRedefinirSenha={admin.enviarRedefinicaoSenha}
+              onResetarMfa={admin.resetarMfa}
+            />
+          </>
+        )}
       </article>
 
       <div className="settings-row">

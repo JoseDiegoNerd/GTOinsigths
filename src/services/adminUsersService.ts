@@ -30,9 +30,47 @@ async function invokeAdminFunction<T>(
   return data as T;
 }
 
-export async function listUsuariosAdmin(): Promise<UsuarioAdmin[]> {
-  const result = await invokeAdminFunction<{ usuarios: UsuarioAdmin[] }>('admin-users-list', { method: 'GET' });
-  return result.usuarios;
+export async function listUsuariosAdmin(): Promise<{ usuarios: UsuarioAdmin[]; fallback: boolean }> {
+  try {
+    const result = await invokeAdminFunction<{ usuarios: UsuarioAdmin[] }>('admin-users-list', { method: 'POST' });
+    return { usuarios: result.usuarios, fallback: false };
+  } catch (error) {
+    // admin-users-list junta perfis com auth.users/auth.mfa_factors via service_role (so por isso
+    // ela existe - last_sign_in_at/mfa_enrolled nao ficam expostos via PostgREST). Se ela nao
+    // estiver publicada, sem permissao ou fora do ar, cai pra uma consulta direta em
+    // perfis/perfis_marcas: a RLS ja libera nome/cargo/marcas/status pra Admin/Gestor sem precisar
+    // de Edge Function nenhuma. Os campos que so a Auth Admin API tem ficam "desconhecidos" nesse
+    // modo, em vez de quebrar a tela inteira.
+    console.warn('admin-users-list indisponível, usando fallback direto em perfis:', error);
+    return { usuarios: await listUsuariosFallback(), fallback: true };
+  }
+}
+
+async function listUsuariosFallback(): Promise<UsuarioAdmin[]> {
+  const [{ data: perfis, error: perfisError }, { data: marcasRows, error: marcasError }] = await Promise.all([
+    supabase
+      .from('perfis')
+      .select('id,email,nome,cargo,ativo,avatar_url,cargo_oficial,criado_em,atualizado_em')
+      .order('criado_em', { ascending: false }),
+    supabase.from('perfis_marcas').select('perfil_id,marca')
+  ]);
+  if (perfisError) throw perfisError;
+  if (marcasError) throw marcasError;
+
+  const marcasPorPerfil = new Map<string, Marca[]>();
+  for (const row of marcasRows ?? []) {
+    const lista = marcasPorPerfil.get(row.perfil_id) ?? [];
+    lista.push(row.marca as Marca);
+    marcasPorPerfil.set(row.perfil_id, lista);
+  }
+
+  return (perfis ?? []).map((perfil) => ({
+    ...perfil,
+    marcas: marcasPorPerfil.get(perfil.id) ?? [],
+    last_sign_in_at: null,
+    email_confirmed_at: null,
+    mfa_enrolled: false
+  })) as UsuarioAdmin[];
 }
 
 // Convite: só dispara o e-mail (via Edge Function, exige service_role). Cargo/marcas/ativo do

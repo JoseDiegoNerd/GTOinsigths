@@ -5,7 +5,6 @@ import { usePresenceHeartbeat } from './hooks/usePresence';
 import { useStageImport } from './hooks/useStageImport';
 import { formatZodError, loginSchema } from './lib/validation';
 import ConfiguracoesPage from './pages/ConfiguracoesPage';
-import UsuariosPage from './pages/UsuariosPage';
 import type { CargoUsuario, Marca, PeriodoFiltro, StageSource } from './types/gto';
 
 type PageKey =
@@ -17,7 +16,6 @@ type PageKey =
   | 'google-meu-negocio'
   | 'conexoes'
   | 'importar-planilhas'
-  | 'usuarios'
   | 'configuracoes';
 
 type NavItem = {
@@ -37,7 +35,6 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'google-meu-negocio', label: 'Google Meu Negócio', icon: 'store' },
   { key: 'conexoes', label: 'Conexões', icon: 'cable', adminOnly: true },
   { key: 'importar-planilhas', label: 'Importar Planilhas', icon: 'upload_file', adminOnly: true },
-  { key: 'usuarios', label: 'Gestão de Usuários', icon: 'manage_accounts', adminOnly: true },
   { key: 'configuracoes', label: 'Configurações', icon: 'settings', adminOnly: true }
 ];
 
@@ -610,8 +607,6 @@ export default function App() {
         return <Dashboard />;
       case 'importar-planilhas':
         return <ImportPage />;
-      case 'usuarios':
-        return <UsuariosPage />;
       case 'configuracoes':
         return <ConfiguracoesPage />;
       default:

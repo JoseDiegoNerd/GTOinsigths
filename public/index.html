@@ -1482,7 +1482,7 @@
         // aqui, no unico lugar que pinta a tela - cobre clique de nav (ja escondido), ?page= na URL
         // (ver finishLogin) e qualquer outro caminho futuro que troque state.page.
         const isAdmin = state.perfil?.cargo === "Admin";
-        if ((state.page === "connections" || state.page === "import" || state.page === "usuarios" || state.page === "configuracoes") && !isAdmin) {
+        if ((state.page === "connections" || state.page === "import" || state.page === "configuracoes") && !isAdmin) {
           state.page = "dashboard";
         }
         applyBrandTheme();
@@ -1499,7 +1499,6 @@
               <button id="navGMN" class="${state.page === "google_business" ? "active" : ""}"><span class="material-symbols-outlined">store</span>Google Meu Negócio</button>
               ${isAdmin ? `<button id="navConnections" class="${state.page === "connections" ? "active" : ""}"><span class="material-symbols-outlined">link</span>Conexões</button>` : ""}
               ${isAdmin ? `<button id="navImport" class="${state.page === "import" ? "active" : ""}"><span class="material-symbols-outlined">upload_file</span>Importar Planilhas</button>` : ""}
-              ${isAdmin ? `<button id="navUsuarios" class="${state.page === "usuarios" ? "active" : ""}"><span class="material-symbols-outlined">manage_accounts</span>Gestão de Usuários</button>` : ""}
               ${isAdmin ? `<button id="navConfiguracoes" class="${state.page === "configuracoes" ? "active" : ""}"><span class="material-symbols-outlined">settings</span>Configurações</button>` : ""}
               <button id="navSugestoes" class="${state.page === "sugestoes" ? "active" : ""}"><span class="material-symbols-outlined">lightbulb</span>Sugestões</button>
             </nav>
@@ -1544,8 +1543,6 @@
         if (navConnectionsBtn) navConnectionsBtn.onclick = () => { state.page = "connections"; render(); };
         const navImportBtn = document.querySelector("#navImport");
         if (navImportBtn) navImportBtn.onclick = () => { state.page = "import"; render(); };
-        const navUsuariosBtn = document.querySelector("#navUsuarios");
-        if (navUsuariosBtn) navUsuariosBtn.onclick = () => { state.page = "usuarios"; render(); };
         const navConfiguracoesBtn = document.querySelector("#navConfiguracoes");
         if (navConfiguracoesBtn) navConfiguracoesBtn.onclick = () => { state.page = "configuracoes"; render(); };
         document.querySelector("#navSugestoes").onclick = () => { state.page = "sugestoes"; render(); };
@@ -1563,7 +1560,6 @@
         if (state.page === "connections") await renderConnections();
         if (state.page === "google_business") await renderGoogleBusiness();
         if (state.page === "import") renderImport();
-        if (state.page === "usuarios") await renderUsuarios();
         if (state.page === "configuracoes") await renderConfiguracoes();
         if (state.page === "sugestoes") await renderSugestoes();
       }
@@ -1576,7 +1572,6 @@
         if (state.page === "ads") return "Anúncios Meta";
         if (state.page === "connections") return "Conexões";
         if (state.page === "google_business") return "Google Meu Negócio";
-        if (state.page === "usuarios") return "Gestão de Usuários";
         if (state.page === "configuracoes") return "Configurações do Sistema";
         if (state.page === "sugestoes") return "Sugestões & Melhorias";
         return "Pipeline de importação";
@@ -8653,7 +8648,7 @@
         if (presenceChannel || !state.session) return;
         presenceChannel = supabase.channel("online-users", { config: { presence: { key: state.session.user.id } } });
         presenceChannel.on("presence", { event: "sync" }, () => {
-          if (state.page === "usuarios") refreshUsuariosOnlineCard();
+          if (state.page === "configuracoes") refreshUsuariosOnlineCard();
         });
         presenceChannel.subscribe(async (status) => {
           if (status === "SUBSCRIBED" && presenceChannel) {
@@ -8691,10 +8686,49 @@
       }
 
       async function loadUsuarios() {
-        const { data, error } = await supabase.functions.invoke("admin-users-list", { body: {} });
-        if (error) throw error;
-        if (data?.error) throw new Error(data.error);
-        state.usuarios = data?.usuarios || [];
+        try {
+          const { data, error } = await supabase.functions.invoke("admin-users-list", { body: {} });
+          if (error) throw error;
+          if (data?.error) throw new Error(data.error);
+          state.usuarios = data?.usuarios || [];
+          state.usuariosFallback = false;
+          return;
+        } catch (error) {
+          // admin-users-list junta perfis com auth.users/auth.mfa_factors via service_role (so por
+          // isso ela existe - ver comentario no proprio arquivo da function). Se ela nao estiver
+          // publicada, sem permissao (exige AAL2) ou fora do ar, cai pra uma consulta direta em
+          // perfis/perfis_marcas: a RLS ja libera nome/cargo/marcas/status pra Admin/Gestor sem
+          // precisar de Edge Function nenhuma. Os campos que so a Auth Admin API tem
+          // (last_sign_in_at/email_confirmed_at/mfa_enrolled) ficam "desconhecidos" nesse modo, em
+          // vez de derrubar a tela inteira.
+          console.warn("admin-users-list indisponível, usando fallback direto em perfis:", safeErrorMessage(error));
+        }
+
+        const [{ data: perfis, error: perfisError }, { data: marcasRows, error: marcasError }] = await Promise.all([
+          supabase
+            .from("perfis")
+            .select("id,email,nome,cargo,ativo,avatar_url,cargo_oficial,origem_convite,telefone,criado_em,atualizado_em")
+            .order("criado_em", { ascending: false }),
+          supabase.from("perfis_marcas").select("perfil_id,marca")
+        ]);
+        if (perfisError) throw perfisError;
+        if (marcasError) throw marcasError;
+
+        const marcasPorPerfil = new Map();
+        for (const row of marcasRows ?? []) {
+          const lista = marcasPorPerfil.get(row.perfil_id) ?? [];
+          lista.push(row.marca);
+          marcasPorPerfil.set(row.perfil_id, lista);
+        }
+
+        state.usuarios = (perfis ?? []).map((perfil) => ({
+          ...perfil,
+          marcas: marcasPorPerfil.get(perfil.id) ?? [],
+          last_sign_in_at: null,
+          email_confirmed_at: null,
+          mfa_enrolled: false
+        }));
+        state.usuariosFallback = true;
       }
 
       function usuariosOnlineCardHtml() {
@@ -8709,54 +8743,6 @@
               </div>`
             : `<span class="muted">Ninguém conectado agora.</span>`}
         </article>`;
-      }
-
-      async function renderUsuarios(statusMessage = "") {
-        const content = document.querySelector("#content");
-        ensurePresenceHeartbeat();
-        content.innerHTML = `<div class="alert">Carregando usuários...</div>`;
-
-        try {
-          await loadUsuarios();
-        } catch (error) {
-          content.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}<br><br>Se a função ainda não foi publicada, rode <code>supabase functions deploy admin-users-list</code>.</div>`;
-          return;
-        }
-
-        const usuarios = state.usuarios || [];
-        const totalAtivos = usuarios.filter((u) => u.ativo).length;
-        const ultimosAcessos = usuarios.map((u) => u.last_sign_in_at).filter(Boolean).sort();
-        const ultimoAcessoGeral = ultimosAcessos.length ? ultimosAcessos[ultimosAcessos.length - 1] : null;
-        const onlineIds = new Set(onlineUsersList().map((u) => u.userId));
-        const statusHtml = statusMessage ? `<div class="alert success">${escapeHtml(statusMessage)}</div>` : "";
-
-        content.innerHTML = `
-          <div class="page-head">
-            <div><div class="eyebrow">Admin · RBAC</div><h2>Gestão de Usuários</h2><p class="muted">Convites, cargos, marcas permitidas e presença em tempo real de quem acessa o GTO Insights.</p></div>
-            <div class="filters">
-              <button id="refreshUsuarios" class="secondary pill-action"><span class="material-symbols-outlined" style="vertical-align:middle">refresh</span> Atualizar</button>
-              <button id="inviteUsuario" class="pill-action"><span class="material-symbols-outlined" style="vertical-align:middle">person_add</span> Convidar usuário</button>
-            </div>
-          </div>
-          ${statusHtml}
-          <div class="grid kpis">
-            ${usuariosOnlineCardHtml()}
-            ${kpi("Total de cadastrados", fmt.format(usuarios.length), "group")}
-            ${kpi("Ativos", fmt.format(totalAtivos), "check_circle")}
-            ${kpi("Último acesso registrado", escapeHtml(formatDateTime(ultimoAcessoGeral)), "history")}
-          </div>
-          <section class="card">
-            <h3>Controle de acessos</h3>
-            <p class="muted">Alterar cargo/marcas, ativar ou bloquear, e disparar redefinição de senha ou reset de MFA.</p>
-            <div class="table-wrap" style="margin-top:16px">
-              <table>
-                <thead><tr><th>Usuário</th><th>Cargo</th><th>Marcas permitidas</th><th>Status</th><th>Origem</th><th>Último acesso</th><th>Ações</th></tr></thead>
-                <tbody>${usuarios.length ? usuarios.map((u) => usuarioRowHtml(u, onlineIds)).join("") : `<tr><td colspan="7">Nenhum usuário cadastrado ainda.</td></tr>`}</tbody>
-              </table>
-            </div>
-          </section>`;
-
-        wireUsuariosPage();
       }
 
       function usuarioRowHtml(usuario, onlineIds) {
@@ -8792,22 +8778,11 @@
         </tr>`;
       }
 
-      function wireUsuariosPage() {
-        document.querySelector("#refreshUsuarios").onclick = () => renderUsuarios();
-        document.querySelector("#inviteUsuario").onclick = () => openInviteModal();
-        document.querySelectorAll(".editar-acesso").forEach((btn) => { btn.onclick = () => openEditAccessModal(btn.dataset.id); });
-        document.querySelectorAll(".toggle-ativo").forEach((input) => { input.onchange = () => toggleUsuarioAtivo(input.dataset.id, input.checked); });
-        document.querySelectorAll(".resetar-senha").forEach((btn) => { btn.onclick = () => openResetPasswordModal(btn.dataset.id); });
-        document.querySelectorAll(".resetar-mfa").forEach((btn) => { btn.onclick = () => resetarMfaUsuario(btn.dataset.id); });
-        document.querySelectorAll(".reenviar-convite").forEach((btn) => { btn.onclick = () => openInviteModal(btn.dataset.id); });
-        document.querySelectorAll(".excluir-usuario").forEach((btn) => { btn.onclick = () => openDeleteUserModal(btn.dataset.id); });
-      }
-
       // Configuracoes do Sistema (Admin only) ---------------------------------------------------
-      // Bloco 1 (Gerenciar usuarios) reaproveita loadUsuarios()/openInviteModal()/openEditAccessModal()/
-      // openDeleteUserModal() da tela Gestao de Usuarios (mesmos dados reais e mesmas acoes contra o
-      // Supabase), so que numa tabela mais enxuta. Blocos 2 e 4 (bandeiras e fontes de dados) ainda
-      // nao tem tabela propria no banco - ficam com dados ilustrativos ate existir essa integracao.
+      // "Gerenciar usuarios" absorveu a extinta tela standalone "Gestao de Usuarios" (mesmos dados,
+      // mesmas acoes reais contra o Supabase - nada foi simplificado). Blocos 2 e 4 (bandeiras e
+      // fontes de dados) ainda nao tem tabela propria no banco - ficam com dados ilustrativos ate
+      // existir essa integracao.
       const CONFIG_BANDEIRAS = [
         { nome: "Tesoura de Ouro", lojas: 32, status: "LIVE" },
         { nome: "Free Center", lojas: 18, status: "LIVE" },
@@ -8820,27 +8795,6 @@
         { nome: "Meta Ads", icon: "share", status: "CONECTADO", detalhe: "Sincronizado há 1 hora" },
         { nome: "Google Ads", icon: "ads_click", status: "ERRO", detalhe: "Token expirado desde ontem" }
       ];
-
-      function configUsuarioRowHtml(usuario) {
-        const podeExcluir = usuario.id !== state.session.user.id;
-        return `<tr data-usuario-id="${escapeHtml(usuario.id)}">
-          <td>
-            <div class="user-cell">
-              <span class="user-avatar">${escapeHtml(userInitials(usuario.nome || usuario.email))}</span>
-              <div class="user-cell-info"><strong>${escapeHtml(usuario.nome || "Sem nome")}</strong><span>${escapeHtml(usuario.email)}</span></div>
-            </div>
-          </td>
-          <td><span class="cargo-pill ${cargoPillClass(usuario.cargo)}">${escapeHtml(usuario.cargo)}</span></td>
-          <td>${escapeHtml(formatDateTime(usuario.last_sign_in_at))}</td>
-          <td><span class="status-pill ${usuario.ativo ? "active" : "inactive"}">${usuario.ativo ? "Ativo" : "Inativo"}</span></td>
-          <td>
-            <div class="row-actions">
-              <button type="button" class="secondary config-editar-acesso" data-id="${escapeHtml(usuario.id)}">Editar</button>
-              ${podeExcluir ? `<button type="button" class="danger config-excluir-usuario" data-id="${escapeHtml(usuario.id)}" title="Excluir usuário"><span class="material-symbols-outlined" style="vertical-align:middle;font-size:18px">delete</span></button>` : ""}
-            </div>
-          </td>
-        </tr>`;
-      }
 
       function bandeiraCardHtml(bandeira) {
         const isLive = bandeira.status === "LIVE";
@@ -8868,18 +8822,45 @@
       async function renderConfiguracoes(statusMessage = "") {
         const content = document.querySelector("#content");
         state.configPrefs = state.configPrefs || { modoEscuro: false, notifRelatorios: true, notifDiscrepancia: true };
-        content.innerHTML = `<div class="alert">Carregando usuários...</div>`;
+        ensurePresenceHeartbeat();
+        content.innerHTML = `<div class="alert">Carregando...</div>`;
 
+        // loadUsuarios ja cai num fallback direto em perfis/perfis_marcas se admin-users-list falhar
+        // (ver comentario la). Isto aqui e so a ultima linha de defesa: se ate o fallback falhar
+        // (RLS bloqueando, rede fora), a secao "Gerenciar usuarios" mostra um aviso com botao de
+        // retry em vez de derrubar a pagina de Configuracoes inteira - bandeiras/preferencias/fontes
+        // de dados continuam normalmente.
+        let usuariosLoadError = "";
         try {
           await loadUsuarios();
         } catch (error) {
-          content.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}<br><br>Se a função ainda não foi publicada, rode <code>supabase functions deploy admin-users-list</code>.</div>`;
-          return;
+          usuariosLoadError = safeErrorMessage(error, "Não foi possível carregar os usuários agora.");
         }
 
         const usuarios = state.usuarios || [];
+        const totalAtivos = usuarios.filter((u) => u.ativo).length;
+        const ultimosAcessos = usuarios.map((u) => u.last_sign_in_at).filter(Boolean).sort();
+        const ultimoAcessoGeral = ultimosAcessos.length ? ultimosAcessos[ultimosAcessos.length - 1] : null;
+        const onlineIds = new Set(onlineUsersList().map((u) => u.userId));
         const statusHtml = statusMessage ? `<div class="alert success">${escapeHtml(statusMessage)}</div>` : "";
         const prefs = state.configPrefs;
+
+        const usuariosSectionHtml = usuariosLoadError
+          ? `<div class="alert error">Não foi possível carregar a lista de usuários agora. ${escapeHtml(usuariosLoadError)}<div class="actions" style="margin-top:10px"><button type="button" class="secondary" id="retryUsuarios">Tentar novamente</button></div></div>`
+          : `
+            ${state.usuariosFallback ? `<div class="alert" style="margin-bottom:16px">Alguns dados (último acesso, verificação de MFA) estão indisponíveis no momento - mostrando os dados básicos do cadastro. <button type="button" class="link-btn" id="retryUsuarios">Tentar novamente</button></div>` : ""}
+            <div class="grid kpis">
+              ${usuariosOnlineCardHtml()}
+              ${kpi("Total de cadastrados", fmt.format(usuarios.length), "group")}
+              ${kpi("Ativos", fmt.format(totalAtivos), "check_circle")}
+              ${kpi("Último acesso registrado", escapeHtml(formatDateTime(ultimoAcessoGeral)), "history")}
+            </div>
+            <div class="table-wrap" style="margin-top:16px">
+              <table>
+                <thead><tr><th>Usuário</th><th>Cargo</th><th>Marcas permitidas</th><th>Status</th><th>Origem</th><th>Último acesso</th><th>Ações</th></tr></thead>
+                <tbody>${usuarios.length ? usuarios.map((u) => usuarioRowHtml(u, onlineIds)).join("") : `<tr><td colspan="7">Nenhum usuário cadastrado ainda.</td></tr>`}</tbody>
+              </table>
+            </div>`;
 
         content.innerHTML = `
           <div class="page-head">
@@ -8888,15 +8869,13 @@
           ${statusHtml}
           <section class="card">
             <div class="page-head" style="align-items:center">
-              <div><h3>Gerenciar usuários</h3><p class="muted">Convites, cargos e status de acesso à plataforma.</p></div>
-              <button id="configNovoUsuario" class="pill-action"><span class="material-symbols-outlined" style="vertical-align:middle">add</span> NOVO USUÁRIO</button>
+              <div><h3>Gerenciar usuários</h3><p class="muted">Convites, cargos, marcas permitidas e presença em tempo real de quem acessa o GTO Insights.</p></div>
+              <div class="actions">
+                <button id="refreshUsuarios" class="secondary pill-action"><span class="material-symbols-outlined" style="vertical-align:middle">refresh</span> Atualizar</button>
+                <button id="inviteUsuario" class="pill-action"><span class="material-symbols-outlined" style="vertical-align:middle">person_add</span> Convidar usuário</button>
+              </div>
             </div>
-            <div class="table-wrap" style="margin-top:16px">
-              <table>
-                <thead><tr><th>Nome / E-mail</th><th>Cargo</th><th>Último acesso</th><th>Status</th><th>Ações</th></tr></thead>
-                <tbody>${usuarios.length ? usuarios.map(configUsuarioRowHtml).join("") : `<tr><td colspan="5">Nenhum usuário cadastrado ainda.</td></tr>`}</tbody>
-              </table>
-            </div>
+            ${usuariosSectionHtml}
           </section>
           <div class="grid settings-row">
             <section class="card">
@@ -8944,9 +8923,16 @@
       }
 
       function wireConfiguracoesPage() {
-        document.querySelector("#configNovoUsuario").onclick = () => openInviteModal();
-        document.querySelectorAll(".config-editar-acesso").forEach((btn) => { btn.onclick = () => openEditAccessModal(btn.dataset.id); });
-        document.querySelectorAll(".config-excluir-usuario").forEach((btn) => { btn.onclick = () => openDeleteUserModal(btn.dataset.id); });
+        document.querySelector("#refreshUsuarios").onclick = () => renderConfiguracoes();
+        document.querySelector("#inviteUsuario").onclick = () => openInviteModal();
+        const retryBtn = document.querySelector("#retryUsuarios");
+        if (retryBtn) retryBtn.onclick = () => renderConfiguracoes();
+        document.querySelectorAll(".editar-acesso").forEach((btn) => { btn.onclick = () => openEditAccessModal(btn.dataset.id); });
+        document.querySelectorAll(".toggle-ativo").forEach((input) => { input.onchange = () => toggleUsuarioAtivo(input.dataset.id, input.checked); });
+        document.querySelectorAll(".resetar-senha").forEach((btn) => { btn.onclick = () => openResetPasswordModal(btn.dataset.id); });
+        document.querySelectorAll(".resetar-mfa").forEach((btn) => { btn.onclick = () => resetarMfaUsuario(btn.dataset.id); });
+        document.querySelectorAll(".reenviar-convite").forEach((btn) => { btn.onclick = () => openInviteModal(btn.dataset.id); });
+        document.querySelectorAll(".excluir-usuario").forEach((btn) => { btn.onclick = () => openDeleteUserModal(btn.dataset.id); });
         document.querySelectorAll("[data-theme-mode]").forEach((btn) => {
           btn.onclick = () => {
             state.configPrefs.modoEscuro = btn.dataset.themeMode === "escuro";
@@ -8966,10 +8952,10 @@
         const usuario = (state.usuarios || []).find((u) => u.id === id);
         const { error } = await supabase.from("perfis").update({ ativo }).eq("id", id);
         if (error) {
-          await renderUsuarios(`Erro ao atualizar status: ${safeErrorMessage(error)}`);
+          await renderConfiguracoes(`Erro ao atualizar status: ${safeErrorMessage(error)}`);
           return;
         }
-        await renderUsuarios(`${usuario?.nome || usuario?.email || "Usuário"} foi ${ativo ? "ativado" : "bloqueado"}.`);
+        await renderConfiguracoes(`${usuario?.nome || usuario?.email || "Usuário"} foi ${ativo ? "ativado" : "bloqueado"}.`);
       }
 
       // resetPasswordForEmail e o mesmo metodo usado na tela publica de login (sendRecoveryEmail),
@@ -8980,24 +8966,24 @@
         if (!usuario) return;
         const { error } = await supabase.auth.resetPasswordForEmail(usuario.email, { redirectTo: appRedirectUrl() });
         if (error) {
-          await renderUsuarios(`Não foi possível enviar o e-mail de redefinição de senha: ${safeErrorMessage(error)}`);
+          await renderConfiguracoes(`Não foi possível enviar o e-mail de redefinição de senha: ${safeErrorMessage(error)}`);
           return;
         }
-        await renderUsuarios(`E-mail de redefinição de senha enviado para ${usuario.email}.`);
+        await renderConfiguracoes(`E-mail de redefinição de senha enviado para ${usuario.email}.`);
       }
 
       async function resetarMfaUsuario(id) {
         const usuario = (state.usuarios || []).find((u) => u.id === id);
         const { data, error } = await supabase.functions.invoke("admin-reset-mfa", { body: { usuario_id: id } });
         if (error) {
-          await renderUsuarios(`Não foi possível resetar o MFA: ${safeErrorMessage(error)}`);
+          await renderConfiguracoes(`Não foi possível resetar o MFA: ${safeErrorMessage(error)}`);
           return;
         }
         if (data?.error) {
-          await renderUsuarios(`Não foi possível resetar o MFA: ${data.error}`);
+          await renderConfiguracoes(`Não foi possível resetar o MFA: ${data.error}`);
           return;
         }
-        await renderUsuarios(`Autenticação em duas etapas reiniciada para ${usuario?.nome || usuario?.email || "o usuário"}.`);
+        await renderConfiguracoes(`Autenticação em duas etapas reiniciada para ${usuario?.nome || usuario?.email || "o usuário"}.`);
       }
 
       // Modal "Redefinir senha" --------------------------------------------------------------------
@@ -9138,7 +9124,7 @@
 
         const email = s.usuario.email;
         closeResetPasswordModal();
-        await renderUsuarios(`Senha redefinida manualmente para ${email}.`);
+        await renderConfiguracoes(`Senha redefinida manualmente para ${email}.`);
       }
 
       // Modal "Convidar usuario" ------------------------------------------------------------------
@@ -9191,14 +9177,7 @@
         const usuarioCriado = Boolean(inviteModalState?.usuarioId);
         if (overlay) { overlay.hidden = true; overlay.innerHTML = ""; }
         inviteModalState = null;
-        if (usuarioCriado) refreshUsuariosListing("Convite salvo com sucesso.");
-      }
-
-      // Convite/Editar acesso/Excluir sao compartilhados entre a tela "Gestao de Usuarios" e o bloco
-      // "Gerenciar usuarios" de Configuracoes - repinta a que estiver ativa em vez de sempre voltar
-      // pra Usuarios.
-      function refreshUsuariosListing(message) {
-        return state.page === "configuracoes" ? renderConfiguracoes(message) : renderUsuarios(message);
+        if (usuarioCriado) renderConfiguracoes("Convite salvo com sucesso.");
       }
 
       function inviteModalPanelHtml() {
@@ -9600,7 +9579,7 @@
           if (cargoError) throw cargoError;
 
           closeEditAccessModal();
-          await refreshUsuariosListing("Cargo e marcas atualizados.");
+          await renderConfiguracoes("Cargo e marcas atualizados.");
         } catch (error) {
           s.saving = false;
           s.error = safeErrorMessage(error, "Não foi possível salvar as alterações.");
@@ -9616,7 +9595,7 @@
         const usuario = (state.usuarios || []).find((u) => u.id === usuarioId);
         if (!overlay || !usuario) return;
         if (usuario.id === state.session.user.id) {
-          refreshUsuariosListing("Você não pode excluir a própria conta.");
+          renderConfiguracoes("Você não pode excluir a própria conta.");
           return;
         }
         deleteUserModalState = { usuario, saving: false, error: "" };
@@ -9682,7 +9661,7 @@
 
         const nomeExcluido = s.usuario.nome || s.usuario.email;
         closeDeleteUserModal();
-        await refreshUsuariosListing(`Usuário ${nomeExcluido} excluído com sucesso.`);
+        await renderConfiguracoes(`Usuário ${nomeExcluido} excluído com sucesso.`);
       }
 
       // Modulo "Sugestoes & Melhorias" ------------------------------------------------------------
@@ -9690,7 +9669,7 @@
       // aba "Enviar Sugestao" grava em public.sugestoes (migration 20260820_036), aba "Mural da
       // Equipe" lista todas as sugestoes com badge de status, voto (+1, com toggle via
       // sugestoes_votos) e, so para Admin, o botao "Gerenciar Status".
-      const SUGESTAO_MODULOS = ["Dashboard Geral", "Redes Sociais", "Anúncios", "Cartão Próprio", "Email Marketing", "Google Meu Negócio", "Conexões", "Importar Planilhas", "Gestão de Usuários", "Outro"];
+      const SUGESTAO_MODULOS = ["Dashboard Geral", "Redes Sociais", "Anúncios", "Cartão Próprio", "Email Marketing", "Google Meu Negócio", "Conexões", "Importar Planilhas", "Configurações", "Outro"];
       const SUGESTAO_NIVEIS_IMPACTO = ["Baixo", "Médio", "Alto"];
       const SUGESTAO_STATUS_META = {
         "Aguardando Análise": { emoji: "🟡", className: "sugestao-aguardando" },

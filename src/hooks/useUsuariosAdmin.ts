@@ -91,10 +91,11 @@ export function useUsuariosAdmin() {
   }
 
   return {
-    usuarios: query.data ?? [],
+    usuarios: query.data?.usuarios ?? [],
+    usuariosFallback: query.data?.fallback ?? false,
     loading: query.isLoading,
     refreshing: query.isFetching && !query.isLoading,
-    loadError: query.isError ? toSafeErrorMessage(query.error, 'Erro ao carregar usuários.') : null,
+    loadError: query.isError ? toSafeErrorMessage(query.error, 'Não foi possível carregar os usuários agora.') : null,
     reload: () => query.refetch(),
     convidar,
     alterarCargoMarcas,
