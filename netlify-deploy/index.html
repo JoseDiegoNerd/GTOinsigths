@@ -425,7 +425,7 @@
         social_format_metrics: "Social Format Metrics"
       };
 
-      let state = { session: null, perfil: null, page: "dashboard", marca: "Todas", periodo: "30d", periodoDe: "", periodoAte: "", periodoMenuOpen: false, rows: [], emailDisparos: [], meta: [], metaSeguidoresSnapshot: [], ads: [], google: null, dashboardConsolidadoMetric: "credito", propostas: [], bi: null, channels: null, email: null, emailSelectedCampanhaId: null, social: null, socialFormat: null, socialTab: "geral", connections: [], bestTimes: null, socialCompareMetric: "alcance", socialEficienciaTab: "frequencia", compareA: { de: "", ate: "" }, compareB: { de: "", ate: "" }, adsStatusFilter: "todas", adsObjetivoFilter: "todos", adsCrossMetric: "alcance", adsSortColumn: "investimento", adsSortDirection: "desc", topbarMenuOpen: false };
+      let state = { session: null, perfil: null, page: "dashboard", marca: "Todas", periodo: "30d", periodoDe: "", periodoAte: "", periodoMenuOpen: false, rows: [], emailDisparos: [], meta: [], metaSeguidoresSnapshot: [], ads: [], google: null, dashboardConsolidadoMetric: "credito", propostas: [], bi: null, channels: null, email: null, emailSelectedCampanhaId: null, social: null, socialFormat: null, socialTab: "geral", connections: [], bestTimes: null, socialCompareMetric: "alcance", socialEficienciaTab: "frequencia", compareA: { de: "", ate: "" }, compareB: { de: "", ate: "" }, adsStatusFilter: "todas", adsObjetivoFilter: "todos", adsCanalFilter: "todos", adsCrossMetric: "alcance", adsSortColumn: "investimento", adsSortDirection: "desc", topbarMenuOpen: false };
 
       // Cache "estilo React Query" para o Dashboard Geral: guarda o ultimo modelo montado por
       // marca+periodo por 5min (staleTime) e reaproveita na hora ao trocar de aba (keepPreviousData),
@@ -5571,6 +5571,46 @@
         });
       }
 
+      // "Canal" aqui = destino do clique da campanha (para onde ela manda o usuario), NAO o
+      // posicionamento onde o anuncio e exibido. Usa a mesma classificacao de host de
+      // campaignUrlChannelSuffix, olhando primeiro o destino_url e, na falta dele, uma URL
+      // embutida no nome da campanha ou uma mencao textual ao canal.
+      const ADS_CANAIS = ["Instagram", "Facebook", "Linktree", "WhatsApp"];
+
+      function campaignCanal(r) {
+        const doDestino = campaignUrlChannelSuffix(r.destino_url || "");
+        if (doDestino) return doDestino;
+        const urlNoNome = String(r.campaign_name || "").match(/https?:\/\/\S+/i);
+        if (urlNoNome) {
+          const doNome = campaignUrlChannelSuffix(urlNoNome[0].replace(/["')]+$/, ""));
+          if (doNome) return doNome;
+        }
+        const nome = String(r.campaign_name || "").toLowerCase();
+        if (nome.includes("instagram")) return "Instagram";
+        if (nome.includes("facebook")) return "Facebook";
+        return "Outros";
+      }
+
+      function campanhaNoCanal(r, canal) {
+        if (canal === "todos") return true;
+        if (canal === "outros") return !ADS_CANAIS.includes(campaignCanal(r));
+        return campaignCanal(r).toLowerCase() === canal;
+      }
+
+      function adsCanalFilterHtml() {
+        const opcoes = [["todos", "Todos os Canais"], ...ADS_CANAIS.map((c) => [c.toLowerCase(), c]), ["outros", "Outros"]];
+        return `<div class="pills">${opcoes.map(([value, label]) => `<button type="button" class="pill ads-canal-pill ${state.adsCanalFilter === value ? "active" : ""}" data-canal="${value}">${label}</button>`).join("")}</div>`;
+      }
+
+      function wireAdsCanalPills(onSelect) {
+        document.querySelectorAll(".ads-canal-pill").forEach((button) => {
+          button.onclick = () => {
+            state.adsCanalFilter = button.dataset.canal;
+            onSelect();
+          };
+        });
+      }
+
       function campaignFormatoIcon(formato) {
         return { "Vídeo": "movie", "Carrossel": "view_carousel", "Imagem": "image" }[formato] || "image";
       }
@@ -6509,7 +6549,9 @@
           const passaStatus = state.adsStatusFilter === "todas"
             ? true
             : state.adsStatusFilter === "ativas" ? campaignEstaAtiva(r) : !campaignEstaAtiva(r);
-          return passaStatus && campanhaNoBaldeObjetivo(r.objetivo, state.adsObjetivoFilter);
+          return passaStatus
+            && campanhaNoBaldeObjetivo(r.objetivo, state.adsObjetivoFilter)
+            && campanhaNoCanal(r, state.adsCanalFilter);
         });
 
         content.innerHTML = `
@@ -6548,6 +6590,8 @@
               ${adsStatusFilterHtml()}
             </div>
             <div style="margin-top:10px">${adsObjetivoFilterHtml()}</div>
+            <div style="margin-top:8px">${adsCanalFilterHtml()}</div>
+            <p class="muted" style="margin:8px 0 0;font-size:11.5px">Canal = destino do clique da campanha (para onde ela leva), não o posicionamento onde o anúncio é exibido.</p>
             <div class="table-wrap" style="margin-top:16px">
               <table class="ads-table">
                 <thead><tr>
@@ -6592,6 +6636,7 @@
 
         wireAdsStatusPills(renderMetaAds);
         wireAdsObjetivoPills(renderMetaAds);
+        wireAdsCanalPills(renderMetaAds);
         wireAdsSortableHeaders(renderMetaAds);
         wireAdsCrossMetricButtons(renderMetaAds);
         wireMarcaPills(renderMetaAds);
