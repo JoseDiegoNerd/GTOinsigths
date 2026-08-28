@@ -48,19 +48,70 @@ async function tryMetaGet(path: string, params: Record<string, string | number |
   }
 }
 
-async function fetchCampaignStatuses(integration: AdAccountIntegration, warnings: string[]) {
-  const statusByCampaignId = new Map<string, string>();
-  const result = await tryMetaGet(`/${integration.ad_account_id}/campaigns`, {
-    fields: "id,effective_status",
-    limit: 200,
-    access_token: integration.access_token,
-  }, warnings);
+type CampaignMeta = {
+  effectiveStatus: string;
+  startTime: string | null;
+  stopTime: string | null;
+};
 
-  for (const campaign of result?.data || []) {
-    if (campaign.id) statusByCampaignId.set(campaign.id, campaign.effective_status || "UNKNOWN");
+function toCampaignMeta(campaign: Record<string, unknown>): CampaignMeta {
+  return {
+    effectiveStatus: String(campaign.effective_status || "UNKNOWN"),
+    startTime: campaign.start_time ? String(campaign.start_time) : null,
+    stopTime: campaign.stop_time ? String(campaign.stop_time) : null,
+  };
+}
+
+// effective_status (nao "status") + janela de veiculacao (start_time / stop_time) de todas as
+// campanhas da conta - paginado, porque uma conta com mais de 200 campanhas deixava as demais
+// sem status (ficavam como null no banco e nunca eram contadas como ativas/pausadas).
+async function fetchCampaignMeta(integration: AdAccountIntegration, warnings: string[]) {
+  const metaByCampaignId = new Map<string, CampaignMeta>();
+
+  let after: string | undefined;
+  for (let page = 0; page < 20; page += 1) {
+    const result = await tryMetaGet(`/${integration.ad_account_id}/campaigns`, {
+      fields: "id,effective_status,start_time,stop_time",
+      limit: 200,
+      after,
+      access_token: integration.access_token,
+    }, warnings);
+
+    for (const campaign of result?.data || []) {
+      if (campaign.id) metaByCampaignId.set(String(campaign.id), toCampaignMeta(campaign));
+    }
+
+    after = result?.paging?.cursors?.after;
+    if (!after || !result?.data?.length) break;
   }
 
-  return statusByCampaignId;
+  return metaByCampaignId;
+}
+
+// Campanhas referenciadas pelos insights que o endpoint /campaigns nao devolveu (arquivadas ou
+// fora do conjunto padrao de listagem) - busca por id em lotes de 50 pra nao deixar essas linhas
+// sem status/periodo.
+async function fillMissingCampaignMeta(
+  integration: AdAccountIntegration,
+  metaByCampaignId: Map<string, CampaignMeta>,
+  campaignIds: string[],
+  warnings: string[],
+) {
+  const missing = [...new Set(campaignIds)].filter((id) => id && !metaByCampaignId.has(id));
+
+  for (let i = 0; i < missing.length; i += 50) {
+    const chunk = missing.slice(i, i + 50);
+    const result = await tryMetaGet("", {
+      ids: chunk.join(","),
+      fields: "effective_status,start_time,stop_time",
+      access_token: integration.access_token,
+    }, warnings);
+
+    if (!result || typeof result !== "object") continue;
+    for (const [id, campaign] of Object.entries(result as Record<string, Record<string, unknown>>)) {
+      if (campaign && typeof campaign === "object") metaByCampaignId.set(String(id), toCampaignMeta(campaign));
+    }
+  }
 }
 
 type MetaCreative = {
@@ -205,18 +256,27 @@ async function fetchDailyInsights(integration: AdAccountIntegration, warnings: s
 }
 
 async function syncAdAccount(integration: AdAccountIntegration, warnings: string[]) {
-  const statusByCampaignId = await fetchCampaignStatuses(integration, warnings);
+  const campaignMetaById = await fetchCampaignMeta(integration, warnings);
   const creativeInfoByCampaignId = await fetchCampaignCreativeInfo(integration, warnings);
   const insightRows = await fetchDailyInsights(integration, warnings);
 
   if (!insightRows.length) return 0;
 
+  await fillMissingCampaignMeta(
+    integration,
+    campaignMetaById,
+    insightRows.map((row) => String(row.campaign_id || "")),
+    warnings,
+  );
+
   const supabase = getAdminClient();
+  const verificadoEm = new Date().toISOString();
   let imported = 0;
 
   for (const row of insightRows) {
     const dataReferencia = String(row.date_start || new Date().toISOString().slice(0, 10));
     const creativeInfo = creativeInfoByCampaignId.get(String(row.campaign_id));
+    const campaignMeta = campaignMetaById.get(String(row.campaign_id));
     const { error } = await supabase
       .from("stage_meta_ads_metrics")
       .upsert({
@@ -225,7 +285,10 @@ async function syncAdAccount(integration: AdAccountIntegration, warnings: string
         campaign_id: row.campaign_id,
         campaign_name: row.campaign_name || null,
         objetivo: row.objective || null,
-        status: statusByCampaignId.get(String(row.campaign_id)) || null,
+        status: campaignMeta?.effectiveStatus || null,
+        campanha_inicio: campaignMeta?.startTime || null,
+        campanha_fim: campaignMeta?.stopTime || null,
+        campanha_status_atualizado_em: verificadoEm,
         destino_url: creativeInfo?.url || null,
         criativo_thumbnail_url: creativeInfo?.thumbnailUrl || null,
         criativo_formato: creativeInfo?.formato || null,
@@ -248,6 +311,37 @@ async function syncAdAccount(integration: AdAccountIntegration, warnings: string
 
     if (error) throw error;
     imported += 1;
+  }
+
+  // Restampa effective_status/periodo em TODAS as linhas historicas das campanhas conhecidas -
+  // inclusive dias sem entrega e linhas fora da janela de 60 dias que o /insights nao devolve.
+  // Sem isso, uma campanha encerrada/pausada depois da ultima entrega fica congelada como "Ativa"
+  // no banco (dado obsoleto exibido no dashboard). Agrupa campanhas com o mesmo status/periodo
+  // pra fazer um UPDATE por combinacao (poucas) em vez de um por campanha (centenas).
+  const campaignsBySignature = new Map<string, { meta: CampaignMeta; ids: string[] }>();
+  for (const [campaignId, campaignMeta] of campaignMetaById) {
+    const signature = `${campaignMeta.effectiveStatus}|${campaignMeta.startTime}|${campaignMeta.stopTime}`;
+    const bucket = campaignsBySignature.get(signature) || { meta: campaignMeta, ids: [] };
+    bucket.ids.push(campaignId);
+    campaignsBySignature.set(signature, bucket);
+  }
+
+  for (const { meta, ids } of campaignsBySignature.values()) {
+    for (let i = 0; i < ids.length; i += 100) {
+      const { error } = await supabase
+        .from("stage_meta_ads_metrics")
+        .update({
+          status: meta.effectiveStatus,
+          campanha_inicio: meta.startTime,
+          campanha_fim: meta.stopTime,
+          campanha_status_atualizado_em: verificadoEm,
+        })
+        .eq("marca", integration.marca)
+        .eq("ad_account_id", integration.ad_account_id)
+        .in("campaign_id", ids.slice(i, i + 100));
+
+      if (error) throw error;
+    }
   }
 
   return imported;

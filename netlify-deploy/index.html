@@ -5381,6 +5381,71 @@
         return `<span class="status-pill ${active ? "active" : "inactive"}">${escapeHtml(label)}</span>`;
       }
 
+      // start_time / stop_time da Marketing API vem no fuso da conta de anuncios (ex.:
+      // "2026-07-15T09:00:00-0300"); a parte da data ja e a que interessa, sem reconverter fuso.
+      function formatCampaignDate(value) {
+        if (!value) return null;
+        const str = String(value);
+        const dateOnly = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (dateOnly) return `${dateOnly[3]}/${dateOnly[2]}/${dateOnly[1]}`;
+        const d = new Date(str);
+        if (Number.isNaN(d.getTime())) return null;
+        return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+      }
+
+      // "Em veiculacao" = effective_status ACTIVE E a data de hoje dentro de [campanha_inicio,
+      // campanha_fim] (quando ha stop_time). Nao considera entrega na janela - isso e so pro badge
+      // de status da campanha.
+      function campaignEmVeiculacao(r) {
+        if (String(r.status || "").toUpperCase() !== "ACTIVE") return false;
+        const agora = Date.now();
+        if (r.campanha_inicio) {
+          const inicio = new Date(r.campanha_inicio).getTime();
+          if (Number.isFinite(inicio) && inicio > agora) return false;
+        }
+        if (r.campanha_fim) {
+          const fim = new Date(r.campanha_fim).getTime();
+          if (Number.isFinite(fim) && fim < agora) return false;
+        }
+        return true;
+      }
+
+      // "Ativa" pro filtro/contagem da tela: em veiculacao E com entrega (impressoes ou gasto) na
+      // janela de data selecionada - uma campanha ligada mas sem nenhuma entrega no periodo filtrado
+      // nao conta como ativa aqui.
+      function campaignEstaAtiva(r) {
+        return campaignEmVeiculacao(r) && (num(r.impressoes) > 0 || num(r.investimento) > 0);
+      }
+
+      function campaignInicioLabel(r) {
+        return formatCampaignDate(r.campanha_inicio) || "—";
+      }
+
+      function campaignTerminoLabel(r) {
+        const fim = formatCampaignDate(r.campanha_fim);
+        if (fim) return fim;
+        if (campaignEmVeiculacao(r)) return "Contínuo";
+        // Sem stop_time e ja fora de veiculacao: o melhor proxy do "encerrada em" e o ultimo dia
+        // com entrega registrado.
+        return formatCampaignDate(r.data_referencia) || "Contínuo";
+      }
+
+      function campaignStatusPillFromRow(r) {
+        if (campaignEstaAtiva(r)) return `<span class="status-pill active">Ativa</span>`;
+        const value = String(r.status || "").toUpperCase();
+        if (value === "ACTIVE") {
+          // Ligada na Meta, mas sem entrega na janela filtrada ou fora do intervalo start/stop.
+          return `<span class="status-pill inactive">Sem veiculação</span>`;
+        }
+        const label = value === "PAUSED" || value === "CAMPAIGN_PAUSED" ? "Pausada"
+          : value === "ARCHIVED" ? "Arquivada"
+          : value === "DELETED" ? "Excluída"
+          : value === "IN_PROCESS" ? "Em processamento"
+          : value === "WITH_ISSUES" ? "Com pendências"
+          : value || "-";
+        return `<span class="status-pill inactive">${escapeHtml(label)}</span>`;
+      }
+
       function campaignObjectiveLabel(objetivo) {
         const labels = {
           LINK_CLICKS: "Cliques no link",
@@ -5409,6 +5474,8 @@
               campaign_name: row.campaign_name,
               objetivo: row.objetivo,
               status: row.status,
+              campanha_inicio: row.campanha_inicio || null,
+              campanha_fim: row.campanha_fim || null,
               destino_url: row.destino_url || null,
               criativo_thumbnail_url: row.criativo_thumbnail_url || null,
               criativo_formato: row.criativo_formato || null,
@@ -5433,6 +5500,8 @@
             existing.campaign_name = row.campaign_name;
             existing.objetivo = row.objetivo;
             existing.status = row.status;
+            existing.campanha_inicio = row.campanha_inicio || null;
+            existing.campanha_fim = row.campanha_fim || null;
             existing.data_referencia = row.data_referencia;
             if (row.destino_url) existing.destino_url = row.destino_url;
             if (row.criativo_thumbnail_url) existing.criativo_thumbnail_url = row.criativo_thumbnail_url;
@@ -6402,7 +6471,7 @@
         try {
           dailyRows = await fetchAllRows(
             "stage_meta_ads_metrics",
-            "marca,ad_account_id,campaign_id,campaign_name,objetivo,status,destino_url,criativo_thumbnail_url,criativo_formato,data_referencia,investimento,impressoes,alcance,cliques,cliques_link,conversoes",
+            "marca,ad_account_id,campaign_id,campaign_name,objetivo,status,campanha_inicio,campanha_fim,destino_url,criativo_thumbnail_url,criativo_formato,data_referencia,investimento,impressoes,alcance,cliques,cliques_link,conversoes",
             state.marca,
             "data_referencia"
           );
@@ -6437,10 +6506,9 @@
         }
 
         const filteredRows = rows.filter((r) => {
-          const status = String(r.status || "").toUpperCase();
           const passaStatus = state.adsStatusFilter === "todas"
             ? true
-            : state.adsStatusFilter === "ativas" ? status === "ACTIVE" : status === "PAUSED";
+            : state.adsStatusFilter === "ativas" ? campaignEstaAtiva(r) : !campaignEstaAtiva(r);
           return passaStatus && campanhaNoBaldeObjetivo(r.objetivo, state.adsObjetivoFilter);
         });
 
@@ -6488,6 +6556,8 @@
                   <th>Campanha</th>
                   <th>Objetivo</th>
                   <th>Status</th>
+                  <th>Data de Início</th>
+                  <th>Data de Término</th>
                   ${adsSortableThHtml("investimento", "Investimento")}
                   ${adsSortableThHtml("alcance", "Alcance")}
                   <th>Impressões</th>
@@ -6503,7 +6573,9 @@
                   <td>${campaignCreativeCellHtml(r)}</td>
                   <td>${campaignNameCellHtml(r)}</td>
                   <td>${escapeHtml(campaignObjectiveLabel(r.objetivo))}</td>
-                  <td>${campaignStatusPill(r.status)}</td>
+                  <td>${campaignStatusPillFromRow(r)}</td>
+                  <td>${escapeHtml(campaignInicioLabel(r))}</td>
+                  <td>${escapeHtml(campaignTerminoLabel(r))}</td>
                   <td>R$ ${fmt.format(num(r.investimento))}</td>
                   <td>${fmt.format(num(r.alcance))}</td>
                   <td>${fmt.format(num(r.impressoes))}</td>
@@ -6513,7 +6585,7 @@
                   <td>${fmt.format(num(r.conversoes))}</td>
                   <td>${r.conversoes ? `R$ ${num(r.cpa).toFixed(2).replace(".", ",")}` : "-"}</td>
                   <td>${num(r.taxaConversaoClique).toFixed(2).replace(".", ",")}%</td>
-                </tr>`).join("") || `<tr><td colspan="14">Sem campanhas para este período/filtro.</td></tr>`}</tbody>
+                </tr>`).join("") || `<tr><td colspan="16">Sem campanhas para este período/filtro.</td></tr>`}</tbody>
               </table>
             </div>
           </section>`;

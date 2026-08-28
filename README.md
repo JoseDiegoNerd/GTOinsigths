@@ -95,7 +95,8 @@ Sistema separado da integracao organica acima (API diferente, mesmo padrao de re
 
 - Nivel **campanha** apenas (nao ha ainda breakdown por conjunto de anuncios ou anuncio individual).
 - Janela **rolante de 30 dias** (`date_preset: last_30d`) — cada sincronizacao sobrescreve a linha daquela campanha com o acumulado dos ultimos 30 dias, nao e uma serie historica dia a dia.
-- `status` da campanha vem de uma chamada separada (`/{ad_account_id}/campaigns?fields=id,effective_status`), combinada com o resultado de `/insights` pelo `campaign_id`.
+- `status`/periodo da campanha vem de uma chamada separada e **paginada** a `/{ad_account_id}/campaigns?fields=id,effective_status,start_time,stop_time` (campanhas referenciadas pelos insights mas ausentes dessa listagem — arquivadas etc. — sao buscadas por id em lotes de 50), combinada com o resultado de `/insights` pelo `campaign_id`. `effective_status` (nao `status`) vira a coluna `status`; `start_time`/`stop_time` viram `campanha_inicio`/`campanha_fim` (migration `20260828_038_meta_ads_periodo_campanha.sql`). Ao fim de cada sync o `meta-ads-sync` **restampa** `status`/periodo em todas as linhas historicas de cada campanha conhecida, para que uma campanha encerrada/pausada depois da ultima entrega nao fique congelada como "Ativa" no banco.
+- Na tela **Anuncios**, o filtro "Ativas" (e o badge de status da tabela) considera campanha ativa quando `effective_status == ACTIVE`, a data de hoje esta dentro de `[campanha_inicio, campanha_fim]` (quando ha `stop_time`) e houve entrega (impressoes/gasto) na janela de data selecionada. A tabela mostra **Data de Inicio** e **Data de Termino** (`Continuo` quando nao ha `stop_time`).
 - Metricas: `spend`, `impressions`, `reach`, `clicks`, `inline_link_clicks`, `cpm`, `cpc`, `ctr`, `frequency`. O payload bruto de cada linha (incluindo `actions`, quando presentes) fica salvo em `payload_bruto` para uso futuro.
 
 ### Limitacoes conhecidas
