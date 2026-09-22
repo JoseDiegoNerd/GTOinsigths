@@ -67,7 +67,7 @@ begin
   limit 1;
 
   if v_editor is null then
-    v_res := v_res || 'PULADO: nao ha Coordenador ativo com marca vinculada para simular escrita';
+    v_res := v_res || 'PULADO: nao ha Coordenador ativo com marca vinculada para simular escrita'::text;
     raise exception E'RELATORIO\n%', array_to_string(v_res, E'\n');
   end if;
 
@@ -94,41 +94,41 @@ begin
   set local role authenticated;
 
   select count(*) into v_n from public.influenciadores where id = v_inf_b;
-  v_res := v_res || (case when v_n = 0 then 'ok' else 'FALHA' end) || ' T1: coordenador da marca A nao le influenciador da marca B';
+  v_res := v_res || (case when v_n = 0 then 'ok' else 'FALHA' end) || ' T1: coordenador da marca A nao le influenciador da marca B'::text;
 
   select count(*) into v_n from public.influenciadores where id = v_inf_a;
-  v_res := v_res || (case when v_n = 1 then 'ok' else 'FALHA' end) || ' T2: coordenador le influenciador da propria marca';
+  v_res := v_res || (case when v_n = 1 then 'ok' else 'FALHA' end) || ' T2: coordenador le influenciador da propria marca'::text;
 
   begin
     insert into public.influenciadores (marca, nome, handle, rede_social)
     values (v_marca_b, 'Invasor', '@invasor_rls', 'Instagram');
-    v_res := v_res || 'FALHA T3: coordenador inseriu em outra marca';
+    v_res := v_res || 'FALHA T3: coordenador inseriu em outra marca'::text;
   exception
-    when insufficient_privilege then v_res := v_res || 'ok T3: insert em outra marca bloqueado';
-    when others then v_res := v_res || 'FALHA T3: erro inesperado ' || sqlstate;
+    when insufficient_privilege then v_res := v_res || 'ok T3: insert em outra marca bloqueado'::text;
+    when others then v_res := v_res || 'FALHA T3: erro inesperado '::text || sqlstate;
   end;
 
   begin
     insert into public.influenciadores (marca, nome, handle, rede_social)
     values (v_marca_a, 'Legitimo', '@legitimo_rls', 'TikTok');
-    v_res := v_res || 'ok T4: coordenador insere na propria marca';
+    v_res := v_res || 'ok T4: coordenador insere na propria marca'::text;
   exception when others then
-    v_res := v_res || 'FALHA T4: coordenador nao conseguiu inserir na propria marca (' || sqlstate || ')';
+    v_res := v_res || 'FALHA T4: coordenador nao conseguiu inserir na propria marca ('::text || sqlstate || ')';
   end;
 
   begin
     update public.influenciadores set nome = 'Hackeado' where id = v_inf_b;
     get diagnostics v_n = row_count;
-    v_res := v_res || (case when v_n = 0 then 'ok' else 'FALHA' end) || ' T5: update em outra marca nao afeta linhas';
+    v_res := v_res || (case when v_n = 0 then 'ok' else 'FALHA' end) || ' T5: update em outra marca nao afeta linhas'::text;
   exception when others then
-    v_res := v_res || 'ok T5: update em outra marca bloqueado';
+    v_res := v_res || 'ok T5: update em outra marca bloqueado'::text;
   end;
 
   reset role;
 
   -- Sessao do Analista da marca A (somente leitura)
   if v_leitor is null then
-    v_res := v_res || 'PULADO T6/T7: nao ha Analista ativo na marca ' || v_marca_a;
+    v_res := v_res || 'PULADO T6/T7: nao ha Analista ativo na marca '::text || v_marca_a;
   else
     perform set_config('request.jwt.claim.sub', v_leitor::text, true);
     perform set_config('request.jwt.claims',
@@ -136,15 +136,15 @@ begin
     set local role authenticated;
 
     select count(*) into v_n from public.influenciadores where id = v_inf_a;
-    v_res := v_res || (case when v_n = 1 then 'ok' else 'FALHA' end) || ' T6: analista le a propria marca';
+    v_res := v_res || (case when v_n = 1 then 'ok' else 'FALHA' end) || ' T6: analista le a propria marca'::text;
 
     begin
       insert into public.influenciadores (marca, nome, handle, rede_social)
       values (v_marca_a, 'Analista Escreve', '@analista_rls', 'Instagram');
-      v_res := v_res || 'FALHA T7: analista conseguiu escrever';
+      v_res := v_res || 'FALHA T7: analista conseguiu escrever'::text;
     exception
-      when insufficient_privilege then v_res := v_res || 'ok T7: analista nao escreve';
-      when others then v_res := v_res || 'FALHA T7: erro inesperado ' || sqlstate;
+      when insufficient_privilege then v_res := v_res || 'ok T7: analista nao escreve'::text;
+      when others then v_res := v_res || 'FALHA T7: erro inesperado '::text || sqlstate;
     end;
 
     reset role;
@@ -154,45 +154,45 @@ begin
   begin
     insert into public.influenciador_campanhas (influenciador_id, marca, nome, data_inicio)
     values (v_inf_a, v_marca_b, 'Marca divergente', current_date);
-    v_res := v_res || 'FALHA T8: campanha com marca diferente do pai foi aceita';
+    v_res := v_res || 'FALHA T8: campanha com marca diferente do pai foi aceita'::text;
   exception
-    when foreign_key_violation then v_res := v_res || 'ok T8: FK composta rejeita marca divergente';
-    when others then v_res := v_res || 'FALHA T8: erro inesperado ' || sqlstate;
+    when foreign_key_violation then v_res := v_res || 'ok T8: FK composta rejeita marca divergente'::text;
+    when others then v_res := v_res || 'FALHA T8: erro inesperado '::text || sqlstate;
   end;
 
   begin
     insert into public.influenciador_midias (influenciador_id, marca, titulo, url, publicada_em)
     values (v_inf_a, v_marca_a, 'Post http', 'http://instagram.com/reel/x', current_date);
-    v_res := v_res || 'FALHA T9: url http foi aceita';
+    v_res := v_res || 'FALHA T9: url http foi aceita'::text;
   exception
-    when check_violation then v_res := v_res || 'ok T9: url http rejeitada';
-    when others then v_res := v_res || 'FALHA T9: erro inesperado ' || sqlstate;
+    when check_violation then v_res := v_res || 'ok T9: url http rejeitada'::text;
+    when others then v_res := v_res || 'FALHA T9: erro inesperado '::text || sqlstate;
   end;
 
   begin
     insert into public.influenciador_campanhas (influenciador_id, marca, nome, data_inicio, cache_valor)
     values (v_inf_a, v_marca_a, 'Negativa', current_date, -1);
-    v_res := v_res || 'FALHA T10: cache negativo foi aceito';
+    v_res := v_res || 'FALHA T10: cache negativo foi aceito'::text;
   exception
-    when check_violation then v_res := v_res || 'ok T10: cache negativo rejeitado';
-    when others then v_res := v_res || 'FALHA T10: erro inesperado ' || sqlstate;
+    when check_violation then v_res := v_res || 'ok T10: cache negativo rejeitado'::text;
+    when others then v_res := v_res || 'FALHA T10: erro inesperado '::text || sqlstate;
   end;
 
   begin
     update public.influenciadores set cupom_exclusivo = true, cupom_codigo = null where id = v_inf_a;
-    v_res := v_res || 'FALHA T11: cupom exclusivo sem codigo foi aceito';
+    v_res := v_res || 'FALHA T11: cupom exclusivo sem codigo foi aceito'::text;
   exception
-    when check_violation then v_res := v_res || 'ok T11: cupom exclusivo exige codigo';
-    when others then v_res := v_res || 'FALHA T11: erro inesperado ' || sqlstate;
+    when check_violation then v_res := v_res || 'ok T11: cupom exclusivo exige codigo'::text;
+    when others then v_res := v_res || 'FALHA T11: erro inesperado '::text || sqlstate;
   end;
 
   begin
     insert into public.influenciador_campanhas (influenciador_id, marca, nome, data_inicio, cache_valor, voucher_valor)
     values (v_inf_a, v_marca_a, 'Soma', current_date, 10000, 5000);
     select investimento_total into v_n from public.influenciador_campanhas where nome = 'Soma' and influenciador_id = v_inf_a;
-    v_res := v_res || (case when v_n = 15000 then 'ok' else 'FALHA' end) || ' T12: investimento_total = cache + voucher';
+    v_res := v_res || (case when v_n = 15000 then 'ok' else 'FALHA' end) || ' T12: investimento_total = cache + voucher'::text;
   exception when others then
-    v_res := v_res || 'FALHA T12: ' || sqlstate;
+    v_res := v_res || 'FALHA T12: '::text || sqlstate;
   end;
 
   -- O erro abaixo desfaz TODAS as fixtures (a instrucao DO e atomica).
