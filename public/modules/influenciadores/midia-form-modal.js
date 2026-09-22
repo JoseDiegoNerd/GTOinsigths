@@ -45,17 +45,19 @@ export function midiaFormHtml(e) {
       <p class="muted">${escapeHtml(e.influenciadorNome)} · ${escapeHtml(e.marca)}</p></div>
       <button type="button" class="modal-close" data-fechar-modal aria-label="Fechar"><span class="material-symbols-outlined">close</span></button></div>
     <form id="infMForm" class="modal-body" novalidate>
-      ${e.erroGeral ? `<div class="alert error">${escapeHtml(e.erroGeral)}</div>` : ""}
-      <label>Título<input id="infMTitulo" type="text" value="${escapeHtml(e.titulo)}" maxlength="160" placeholder="Ex: Reel: Provador Tesoura de Ouro" />${erroDe(e.erros, "titulo")}</label>
-      <label>URL do post<input id="infMUrl" type="url" value="${escapeHtml(e.url)}" maxlength="500" placeholder="https://www.instagram.com/reel/..." />${erroDe(e.erros, "url")}</label>
-      <div class="inf-form-grid">
-        <label>Plataforma<select id="infMPlataforma">${plataformas}</select>${erroDe(e.erros, "plataforma")}</label>
-        <label>Formato<select id="infMFormato">${formatos}</select>${erroDe(e.erros, "formato")}</label>
-        <label>Publicado em<input id="infMData" type="date" value="${escapeHtml(e.publicada_em)}" />${erroDe(e.erros, "publicada_em")}</label>
-        <label>Campanha<select id="infMCampanha">${campanhas}</select></label>
+      <div class="inf-form-scroll">
+        ${e.erroGeral ? `<div class="alert error">${escapeHtml(e.erroGeral)}</div>` : ""}
+        <label>Título<input id="infMTitulo" type="text" value="${escapeHtml(e.titulo)}" maxlength="160" placeholder="Ex: Reel: Provador Tesoura de Ouro" />${erroDe(e.erros, "titulo")}</label>
+        <label>URL do post<input id="infMUrl" type="url" value="${escapeHtml(e.url)}" maxlength="500" placeholder="https://www.instagram.com/reel/..." />${erroDe(e.erros, "url")}</label>
+        <div class="inf-form-grid">
+          <label>Plataforma<select id="infMPlataforma">${plataformas}</select>${erroDe(e.erros, "plataforma")}</label>
+          <label>Formato<select id="infMFormato">${formatos}</select>${erroDe(e.erros, "formato")}</label>
+          <label>Publicado em<input id="infMData" type="date" value="${escapeHtml(e.publicada_em)}" />${erroDe(e.erros, "publicada_em")}</label>
+          <label>Campanha<select id="infMCampanha">${campanhas}</select></label>
+        </div>
+        <p class="muted" style="margin:0">Métricas informadas manualmente (copie do print de insights que o influenciador enviou).</p>
+        <div class="inf-form-grid inf-form-grid-3">${metricas}</div>
       </div>
-      <p class="muted" style="margin:0">Métricas informadas manualmente (copie do print de insights que o influenciador enviou).</p>
-      <div class="inf-form-grid inf-form-grid-3">${metricas}</div>
       <div class="inf-form-rodape"><div></div><div class="inf-form-botoes"><button type="button" class="secondary" data-fechar-modal>Cancelar</button>
         <button type="submit"${e.salvando ? " disabled" : ""}>${e.salvando ? "Salvando…" : "Salvar"}</button></div></div>
     </form>`;

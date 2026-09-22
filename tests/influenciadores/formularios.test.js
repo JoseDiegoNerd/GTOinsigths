@@ -85,6 +85,41 @@ test('formulario escapa dados do usuario', () => {
   assert.ok(!html.includes('<script>1</script>'));
 });
 
+test('campo de foto usa botao customizado em pt-BR, sem depender do rotulo nativo do navegador', () => {
+  const e = estadoInicialInfluenciador({ influenciador: null, campanhas: [], marcaPadrao: 'Tesoura de Ouro' });
+  const html = influencerFormHtml(e, { marcasEditaveis: MARCAS_VALIDAS, podeExcluir: false });
+  assert.match(html, /<label for="infFAvatar" class="inf-btn-arquivo">Escolher imagem<\/label>/);
+  assert.match(html, /Nenhuma imagem selecionada/);
+  assert.match(html, /<input id="infFAvatar" type="file" accept="image\/jpeg,image\/png,image\/webp" class="inf-input-oculto" \/>/);
+  assert.ok(!html.includes('ficheiro'), 'nao deve depender de texto nativo do navegador em outro idioma');
+});
+
+test('campo de foto mostra o nome do arquivo ja selecionado, escapado', () => {
+  const e = { ...estadoInicialInfluenciador({ influenciador: null, campanhas: [], marcaPadrao: 'Tesoura de Ouro' }),
+    avatarFile: { name: '"><script>x</script>.png', type: 'image/png', size: 1000 } };
+  const html = influencerFormHtml(e, { marcasEditaveis: MARCAS_VALIDAS, podeExcluir: false });
+  assert.match(html, /inf-arquivo-nome">&quot;&gt;&lt;script&gt;x&lt;\/script&gt;\.png</);
+  assert.ok(!html.includes('<script>x</script>'));
+});
+
+test('formulario de influenciador separa area rolavel do rodape fixo (evita rolagem horizontal, mantem botoes visiveis)', () => {
+  const e = estadoInicialInfluenciador({ influenciador: null, campanhas: [], marcaPadrao: 'Tesoura de Ouro' });
+  const html = influencerFormHtml(e, { marcasEditaveis: MARCAS_VALIDAS, podeExcluir: false });
+  const iScroll = html.indexOf('<div class="inf-form-scroll">');
+  const iNome = html.indexOf('id="infFNome"');
+  const iRodape = html.indexOf('<div class="inf-form-rodape">');
+  assert.ok(iScroll !== -1 && iNome !== -1 && iRodape !== -1, 'esperava os tres marcadores presentes');
+  assert.ok(iScroll < iNome, 'campos ficam dentro da area rolavel');
+  assert.ok(iNome < iRodape, 'rodape vem depois dos campos, fora da area rolavel');
+});
+
+test('linha de campanha separa nome+remover do restante dos campos (evita grade de 6 colunas cramada)', () => {
+  const e = estadoInicialInfluenciador({ influenciador, campanhas, marcaPadrao: 'x' });
+  const html = influencerFormHtml(e, { marcasEditaveis: MARCAS_VALIDAS, podeExcluir: true });
+  assert.match(html, /<div class="inf-camp-cabecalho">/);
+  assert.match(html, /<div class="inf-camp-detalhes">/);
+});
+
 test('validarFormularioInfluenciador valida pai e campanhas juntos', () => {
   const e = estadoInicialInfluenciador({ influenciador, campanhas, marcaPadrao: 'x' });
   const r = validarFormularioInfluenciador(e);
@@ -133,6 +168,17 @@ test('formulario de midia mostra campos, campanhas e metricas', () => {
     '<option value="c1" selected>Pais 2026</option>', 'value="1840000"', 'id="infMForm"', 'Métricas informadas manualmente']) {
     assert.ok(html.includes(texto), `faltou ${texto}`);
   }
+});
+
+test('formulario de midia separa area rolavel do rodape fixo', () => {
+  const e = estadoInicialMidia({ midia, influenciador, campanhas, hoje: '2026-09-21' });
+  const html = midiaFormHtml(e);
+  const iScroll = html.indexOf('<div class="inf-form-scroll">');
+  const iTitulo = html.indexOf('id="infMTitulo"');
+  const iRodape = html.indexOf('<div class="inf-form-rodape">');
+  assert.ok(iScroll !== -1 && iTitulo !== -1 && iRodape !== -1, 'esperava os tres marcadores presentes');
+  assert.ok(iScroll < iTitulo, 'campos ficam dentro da area rolavel');
+  assert.ok(iTitulo < iRodape, 'rodape vem depois dos campos, fora da area rolavel');
 });
 
 test('formulario de midia nova mostra o titulo certo e escapa dados', () => {

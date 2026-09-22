@@ -250,7 +250,7 @@ function pintarModal() {
   const html = estado.modal.tipo === "influenciador"
     ? influencerFormHtml(estado.modal, { marcasEditaveis: marcasEditaveisPara(deps.state.perfil?.cargo), podeExcluir: Boolean(estado.modal.id) })
     : midiaFormHtml(estado.modal);
-  overlay.innerHTML = `<div class="modal-panel">${html}</div>`;
+  overlay.innerHTML = `<div class="modal-panel inf-modal-panel">${html}</div>`;
   overlay.hidden = false;
   ligarModal(overlay);
 }
@@ -318,6 +318,7 @@ function ligarModal(overlay) {
     if (avatarInput) avatarInput.onchange = () => {
       estado.modal = lerInfluencerForm(overlay, estado.modal);
       estado.modal.avatarFile = avatarInput.files[0] ?? null;
+      pintarModal(); // repinta para exibir o nome do arquivo escolhido no botao customizado
     };
 
     overlay.querySelector("#infForm").onsubmit = async (evento) => {
