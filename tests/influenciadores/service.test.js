@@ -211,3 +211,50 @@ test('traduzirErro', () => {
   const desconhecido = { code: 'XX000', message: 'boom' };
   assert.equal(traduzirErro(desconhecido), desconhecido);
 });
+
+test('sincronizarInstagram chama a Edge Function com o influenciador_id e devolve os dados', async () => {
+  const chamadas = [];
+  const supabase = {
+    from: () => { throw new Error('nao deveria acessar tabelas diretamente'); },
+    storage: { from: () => ({}) },
+    functions: {
+      invoke: async (nome, opcoes) => {
+        chamadas.push({ nome, opcoes });
+        return { data: { ok: true, seguidores: 15000, publicacoes_total: 342 }, error: null };
+      }
+    }
+  };
+  const resultado = await criarService(supabase).sincronizarInstagram('i1');
+  assert.equal(chamadas.length, 1);
+  assert.equal(chamadas[0].nome, 'influenciador-instagram-sync');
+  assert.deepEqual(chamadas[0].opcoes, { body: { influenciador_id: 'i1' } });
+  assert.deepEqual(resultado, { seguidores: 15000, publicacoes_total: 342 });
+});
+
+test('sincronizarInstagram traduz o erro devolvido pela Edge Function', async () => {
+  const supabase = {
+    functions: {
+      invoke: async () => ({
+        data: null,
+        error: { message: 'Edge Function returned a non-2xx status code', context: { json: async () => ({ error: 'Conecte o Instagram da marca em Conexoes antes de sincronizar.' }) } },
+        response: null
+      })
+    }
+  };
+  await assert.rejects(
+    criarService(supabase).sincronizarInstagram('i1'),
+    /Conecte o Instagram da marca/
+  );
+});
+
+test('sincronizarInstagram cai na mensagem generica quando o corpo do erro nao tem JSON legivel', async () => {
+  const supabase = {
+    functions: {
+      invoke: async () => ({ data: null, error: { message: 'Failed to send a request to the Edge Function', context: null }, response: null })
+    }
+  };
+  await assert.rejects(
+    criarService(supabase).sincronizarInstagram('i1'),
+    /Nao foi possivel sincronizar com o Instagram\.|Não foi possível sincronizar com o Instagram\./
+  );
+});

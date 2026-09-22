@@ -140,5 +140,27 @@ export function criarService(supabase) {
     if (error) throw traduzirErro(error);
   }
 
-  return { carregarTudo, salvarInfluenciador, excluirInfluenciador, salvarMidia, excluirMidia, registrarSeguidores };
+  // supabase.functions.invoke() devolve { data, error, response }. Quando a Edge Function responde
+  // com status != 2xx, error e um FunctionsHttpError cujo error.context e o Response bruto; o corpo
+  // JSON que a funcao devolveu (ex.: { error: "mensagem em pt-BR" }) so aparece chamando
+  // error.context.json() - nao existe um campo "context" separado no retorno do invoke(). Formato
+  // confirmado em node_modules/@supabase/functions-js/dist/module/FunctionsClient.js.
+  async function sincronizarInstagram(influenciadorId) {
+    const { data, error } = await supabase.functions.invoke("influenciador-instagram-sync", {
+      body: { influenciador_id: influenciadorId }
+    });
+    if (error) {
+      let mensagem = "Nao foi possivel sincronizar com o Instagram.";
+      try {
+        const corpo = error.context?.json ? await error.context.json() : null;
+        if (corpo?.error) mensagem = corpo.error;
+      } catch {
+        // resposta sem JSON legivel - mantem a mensagem generica
+      }
+      throw new Error(mensagem);
+    }
+    return { seguidores: data.seguidores, publicacoes_total: data.publicacoes_total };
+  }
+
+  return { carregarTudo, salvarInfluenciador, excluirInfluenciador, salvarMidia, excluirMidia, registrarSeguidores, sincronizarInstagram };
 }
