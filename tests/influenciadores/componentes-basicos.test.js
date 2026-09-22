@@ -103,11 +103,11 @@ test('kpiCardsHtml sem base mostra travessao neutro', () => {
 // pilulas ----------------------------------------------------------------------------------------
 const marcas = ['Todas', 'Tesoura de Ouro', 'Magazine da Economia', 'Free Center Calçados'];
 
-test('opcoesMarca: so Admin e Gestor veem "Todas"', () => {
-  assert.equal(opcoesMarca('Admin', marcas).length, 4);
-  assert.equal(opcoesMarca('Gestor', marcas).length, 4);
-  assert.deepEqual(opcoesMarca('Coordenador', marcas), marcas.slice(1));
-  assert.deepEqual(opcoesMarca('Analista', marcas), marcas.slice(1));
+test('opcoesMarca: todos os cargos veem "Todas" (visao ampla entre marcas)', () => {
+  assert.deepEqual(opcoesMarca('Admin', marcas), marcas);
+  assert.deepEqual(opcoesMarca('Gestor', marcas), marcas);
+  assert.deepEqual(opcoesMarca('Coordenador', marcas), marcas);
+  assert.deepEqual(opcoesMarca('Analista', marcas), marcas);
 });
 
 test('brandFilterPillsHtml marca a ativa e rotula "Todas as Lojas"', () => {

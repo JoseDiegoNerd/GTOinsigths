@@ -33,7 +33,7 @@ let estado = null;
 
 function podeEditar() {
   const cargo = deps.state.perfil?.cargo;
-  return cargo === "Admin" || cargo === "Gestor" || cargo === "Coordenador";
+  return cargo === "Admin" || cargo === "Gestor" || cargo === "Coordenador" || cargo === "Analista";
 }
 
 function novoEstado() {

@@ -1,10 +1,10 @@
 import { escapeHtml } from "./html.js";
 
-// "Todas" so faz sentido para quem enxerga todas as marcas (Admin/Gestor); para os demais o RLS
-// ja limita a marca vinculada, entao a opcao some.
-export function opcoesMarca(cargo, marcas) {
-  const veTodas = cargo === "Admin" || cargo === "Gestor";
-  return marcas.filter((m) => m !== "Todas" || veTodas);
+// Visao ampla: todo cargo enxerga influenciadores de todas as marcas (RLS de leitura liberado para
+// qualquer autenticado). A opcao "Todas" aparece para todos; a marca vinculada de Coordenador/
+// Analista so restringe ESCRITA (ver marcasEditaveisPara em index.js), nao leitura.
+export function opcoesMarca(_cargo, marcas) {
+  return marcas;
 }
 
 function rotulo(marca) {

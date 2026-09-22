@@ -76,6 +76,24 @@ test('renderInfluenciadores carrega os dados no primeiro boot e nao trava em "Ca
   assert.ok(chamadas.length >= antes, 'a segunda navegacao nao deve quebrar a renderizacao');
 });
 
+test('Analista tambem edita (escrita ampliada): botao "Novo Influenciador" aparece para o cargo Analista', async () => {
+  const { supabase } = criarSupabaseFalso();
+  const contentEl = criarElementoStub();
+  const state = { contentEl, marca: 'Todas', perfil: { cargo: 'Analista', marca_vinculada: 'Tesoura de Ouro' } };
+
+  await initInfluenciadores({
+    supabase,
+    state,
+    escapeHtml,
+    marcas: ['Todas', 'Tesoura de Ouro', 'Magazine da Economia', 'Free Center Calçados'],
+    safeErrorMessage: (_erro, fallback) => fallback
+  });
+
+  await renderInfluenciadores();
+
+  assert.ok(contentEl.innerHTML.includes('Novo Influenciador'), 'Analista tambem deve poder criar/editar influenciadores agora');
+});
+
 test('prepararSnapshotSeguidores rejeita valor nao numerico em vez de gravar 0', () => {
   const r = prepararSnapshotSeguidores({ data: '2026-09-20', seguidores: '   ' }, '2026-09-22');
   assert.equal(r.ok, false);
