@@ -143,10 +143,27 @@ Deno.serve(withCors(async (req) => {
         return jsonResponse({ error: "Segredo de cron invalido." }, 403);
       }
 
+      // So sincroniza influenciadores de marcas que de fato conectaram o Instagram em Conexoes -
+      // sem esse filtro, marcas sem conta Instagram ativa recebiam, todo dia, uma gravacao inutil
+      // de instagram_sync_erro (mais a linha de auditoria correspondente) para cada influenciador.
+      const { data: contasComInstagram, error: contasError } = await admin
+        .from("integracao_meta_contas")
+        .select("marca")
+        .eq("ativo", true)
+        .not("instagram_business_account_id", "is", null);
+      if (contasError) throw contasError;
+
+      const marcasElegiveis = [...new Set((contasComInstagram || []).map((c) => c.marca))];
+
+      if (marcasElegiveis.length === 0) {
+        return jsonResponse({ ok: true, sincronizados: 0, com_erro: 0 });
+      }
+
       const { data: influenciadores, error } = await admin
         .from("influenciadores")
         .select("id,marca,handle,rede_social")
-        .eq("rede_social", "Instagram");
+        .eq("rede_social", "Instagram")
+        .in("marca", marcasElegiveis);
       if (error) throw error;
 
       let sincronizados = 0;
@@ -206,6 +223,7 @@ Deno.serve(withCors(async (req) => {
     if (resultado.erro) return jsonResponse({ error: resultado.erro }, 400);
     return jsonResponse({ ok: true, seguidores: resultado.seguidores, publicacoes_total: resultado.publicacoes_total });
   } catch (error) {
-    return jsonResponse({ error: safeErrorMessage(error, "Nao foi possivel sincronizar com o Instagram.") }, 400);
+    console.error("Erro nao tratado em influenciador-instagram-sync:", error);
+    return jsonResponse({ error: "Nao foi possivel sincronizar com o Instagram." }, 400);
   }
 }));
