@@ -153,11 +153,12 @@ begin
   insert into public.influenciadores (marca, nome, handle, rede_social)
   values (v_marca, 'Fixture Sync', '@fixture_sync_041_rls', 'Instagram') returning id into v_inf;
 
-  select count(*) into strict v_res[1]::int
-  from public.influenciadores
-  where id = v_inf and publicacoes_total is null and instagram_sincronizado_em is null and instagram_sync_erro is null;
-  v_res := array[]::text[];
-  perform 1;
+  if (select publicacoes_total is null and instagram_sincronizado_em is null and instagram_sync_erro is null
+      from public.influenciadores where id = v_inf) then
+    v_res := v_res || 'ok T0: colunas nascem nulas (nunca sincronizado)'::text;
+  else
+    v_res := v_res || 'FALHA T0: colunas novas nao nasceram nulas'::text;
+  end if;
 
   begin
     update public.influenciadores set publicacoes_total = -1 where id = v_inf;
