@@ -113,7 +113,7 @@ begin
     values (v_marca_a, 'Legitimo', '@legitimo_rls', 'TikTok');
     v_res := v_res || 'ok T4: coordenador insere na propria marca'::text;
   exception when others then
-    v_res := v_res || 'FALHA T4: coordenador nao conseguiu inserir na propria marca ('::text || sqlstate || ')';
+    v_res := v_res || 'FALHA T4: coordenador nao conseguiu inserir na propria marca ('::text || sqlstate || ')'::text;
   end;
 
   begin
@@ -128,7 +128,7 @@ begin
 
   -- Sessao do Analista da marca A (somente leitura)
   if v_leitor is null then
-    v_res := v_res || 'PULADO T6/T7: nao ha Analista ativo na marca '::text || v_marca_a;
+    v_res := v_res || 'PULADO T6/T7: nao ha Analista ativo na marca '::text || v_marca_a::text;
   else
     perform set_config('request.jwt.claim.sub', v_leitor::text, true);
     perform set_config('request.jwt.claims',
