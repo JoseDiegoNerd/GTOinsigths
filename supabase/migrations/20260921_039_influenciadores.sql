@@ -240,6 +240,11 @@ using (
 with check (
   bucket_id = 'influenciadores-avatares'
   and (select public.gto_meu_cargo()) in ('Admin', 'Gestor', 'Coordenador')
+  and exists (
+    select 1 from public.influenciadores i
+    where i.id::text = (storage.foldername(name))[1]
+      and ((select public.gto_eh_admin_ou_gestor()) or public.gto_tem_acesso_marca(i.marca))
+  )
 );
 
 drop policy if exists "influenciadores_avatares_delete" on storage.objects;
