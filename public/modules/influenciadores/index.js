@@ -2,7 +2,6 @@
 // renderizar e liga os eventos dos componentes. Chamado por public/index.html via import()
 // dinamico quando state.page === "influenciadores".
 
-import { escapeHtml as escapeHtmlLocal } from "./html.js";
 import {
   agruparPorInfluenciador, agregarInfluenciador, calcularKpis, filtrarInfluenciadores,
   paginar, pontosCrescimento, hojeISO
@@ -18,6 +17,7 @@ import {
 import {
   estadoInicialMidia, midiaFormHtml, lerMidiaForm, validarFormularioMidia
 } from "./midia-form-modal.js";
+import { validarSeguidores } from "./validacao.js";
 
 const TAMANHO_PAGINA = 5;
 const SUBABAS = [
@@ -38,7 +38,11 @@ function podeEditar() {
 
 function novoEstado() {
   return {
-    carregando: true,
+    // "carregando" = ha uma busca em voo agora; "carregado" = ja buscamos pelo menos uma vez.
+    // Sao coisas diferentes: sem essa separacao o primeiro render cai no ramo de repintura e a
+    // tela fica presa no placeholder "Carregando…" para sempre.
+    carregando: false,
+    carregado: false,
     erro: "",
     dados: { influenciadores: [], campanhas: [], midias: [], snapshots: [], avatares: new Map() },
     busca: "",
@@ -68,6 +72,7 @@ async function carregar() {
     estado.erro = deps.safeErrorMessage(erro, "Não foi possível carregar os influenciadores.");
   } finally {
     estado.carregando = false;
+    estado.carregado = true;
     pintar();
   }
 }
@@ -136,6 +141,15 @@ function pintar() {
   ligarEventos();
 }
 
+// Valida o snapshot de seguidores antes de tocar no banco. Sem isso, um campo vazio virava
+// Number("") === 0 e gravava um snapshot de 0 seguidores em silencio, distorcendo o crescimento
+// semanal e o grafico. Funcao pura (exportada para teste sem DOM).
+export function prepararSnapshotSeguidores({ data, seguidores }, hoje) {
+  const r = validarSeguidores({ data, seguidores }, hoje);
+  if (!r.ok) return { ok: false, mensagem: Object.values(r.erros).join(" ") };
+  return { ok: true, valor: r.valor };
+}
+
 function ligarEventos() {
   const raiz = deps.state.contentEl;
   bindBrandFilterPills(raiz, (marca) => {
@@ -152,7 +166,20 @@ function ligarEventos() {
   if (estado.subaba !== "geral") return;
 
   bindInfluencersTable(raiz, {
-    aoBuscar: (texto) => { estado.busca = texto; estado.pagina = 1; pintar(); },
+    aoBuscar: (texto) => {
+      // pintar() reescreve o innerHTML inteiro, destruindo o <input> que disparou o oninput e
+      // jogando o foco no <body>. Guardamos o cursor antes da repintura e devolvemos foco e
+      // posicao ao campo recriado, senao o usuario perde o teclado a cada tecla digitada.
+      const cursor = deps.state.contentEl.querySelector("#infBusca")?.selectionStart ?? texto.length;
+      estado.busca = texto;
+      estado.pagina = 1;
+      pintar();
+      const campo = deps.state.contentEl.querySelector("#infBusca");
+      if (campo) {
+        campo.focus();
+        try { campo.setSelectionRange(cursor, cursor); } catch { /* navegador pode recusar selecao neste input */ }
+      }
+    },
     aoSelecionar: (id) => { estado.abertoId = estado.abertoId === id ? null : id; pintar(); },
     aoMarcar: (id, marcado) => { marcado ? estado.selecionados.add(id) : estado.selecionados.delete(id); pintar(); },
     aoMarcarTodos: (marcado) => {
@@ -191,10 +218,12 @@ function ligarEventos() {
     },
     aoRegistrarSeguidores: async ({ data, seguidores }) => {
       const influenciador = estado.dados.influenciadores.find((i) => i.id === estado.abertoId);
+      const preparo = prepararSnapshotSeguidores({ data, seguidores }, hojeISO());
+      if (!preparo.ok) { estado.erro = preparo.mensagem; pintar(); return; }
       try {
         await service.registrarSeguidores({
           influenciadorId: influenciador.id, marca: influenciador.marca,
-          data, seguidores: Number(String(seguidores).replace(/\D/g, ""))
+          data: preparo.valor.data, seguidores: preparo.valor.seguidores
         });
         await carregar();
       } catch (erro) {
@@ -337,6 +366,6 @@ function ligarModal(overlay) {
 
 export async function renderInfluenciadores() {
   if (!estado) estado = novoEstado();
-  if (estado.dados.influenciadores.length === 0 && !estado.carregando) await carregar();
+  if (!estado.carregado && !estado.carregando) await carregar();
   else pintar();
 }
