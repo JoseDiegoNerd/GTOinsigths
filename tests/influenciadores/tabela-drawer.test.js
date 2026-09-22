@@ -107,6 +107,38 @@ test('drawer mostra os blocos do prototipo', () => {
   assert.match(html, /href="https:\/\/www\.instagram\.com\/reel\/C8x9L_p\/" target="_blank" rel="noopener noreferrer"/);
 });
 
+test('drawer mostra publicacoes_total e status de sincronizacao para influenciador do Instagram', () => {
+  const html = influencerDrawerHtml({
+    ...modeloDrawer,
+    influenciador: { ...influenciador, publicacoes_total: 342, instagram_sincronizado_em: '2026-09-22T11:45:00Z', instagram_sync_erro: null }
+  });
+  assert.match(html, /342/);
+  assert.match(html, /data-acao="sincronizar-instagram"/);
+  assert.match(html, /Sincronizar com Instagram/);
+});
+
+test('drawer mostra a mensagem de erro da ultima sincronizacao, escapada', () => {
+  const html = influencerDrawerHtml({
+    ...modeloDrawer,
+    influenciador: { ...influenciador, instagram_sync_erro: '<script>x</script> conecte o Instagram' }
+  });
+  assert.ok(!html.includes('<script>x</script>'));
+  assert.match(html, /conecte o Instagram/);
+});
+
+test('drawer nao mostra botao de sincronizar para rede social diferente de Instagram ou quando nao pode editar', () => {
+  const semInstagram = influencerDrawerHtml({ ...modeloDrawer, influenciador: { ...influenciador, rede_social: 'TikTok' } });
+  assert.ok(!semInstagram.includes('data-acao="sincronizar-instagram"'));
+  const semPermissao = influencerDrawerHtml({ ...modeloDrawer, podeEditar: false });
+  assert.ok(!semPermissao.includes('data-acao="sincronizar-instagram"'));
+});
+
+test('botao de sincronizar fica desabilitado e com texto de progresso durante a sincronizacao', () => {
+  const html = influencerDrawerHtml({ ...modeloDrawer, sincronizando: true });
+  assert.match(html, /data-acao="sincronizar-instagram"[^>]*disabled/);
+  assert.match(html, /Sincronizando…/);
+});
+
 test('drawer para quem nao edita nao oferece acoes de escrita', () => {
   const html = influencerDrawerHtml({ ...modeloDrawer, podeEditar: false });
   for (const acao of ['data-acao="editar"', 'data-acao="nova-midia"', 'data-editar-midia', 'data-excluir-midia', 'id="infSnapForm"']) {

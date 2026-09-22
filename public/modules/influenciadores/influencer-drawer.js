@@ -1,7 +1,7 @@
 import { escapeHtml } from "./html.js";
 import { avatarHtml } from "./avatar.js";
 import { growthChartHtml, crescimentoBadgeHtml } from "./growth-chart.js";
-import { formatBRLInteiro, formatInt } from "./calculos.js";
+import { formatBRLInteiro, formatInt, formatSincronizadoEm } from "./calculos.js";
 
 const CLASSE_STATUS = { Ativo: "ativo", Pausado: "pausado", Encerrado: "encerrado" };
 const CORES_CAMPANHA = ["#2563eb", "#f59e0b", "#10b981", "#ec4899", "#8b5cf6", "#06b6d4"];
@@ -21,10 +21,23 @@ function topoHtml(m) {
       ${avatarHtml({ nome: i.nome, url: m.avatarUrl, tamanho: "lg", destaque: true })}
       <div><div class="inf-drawer-nome"><h3>${escapeHtml(i.nome)}</h3>${i.verificado ? `<span class="material-symbols-outlined inf-verificado">verified</span>` : ""}</div>
         <div class="inf-criador-handle">${escapeHtml(i.handle)}</div>
+        ${i.publicacoes_total !== null && i.publicacoes_total !== undefined ? `<div class="inf-publicacoes">${formatInt(i.publicacoes_total)} publicações</div>` : ""}
         <div class="inf-tags">${i.nicho ? `<span class="inf-tag roxo">${escapeHtml(i.nicho)}</span>` : ""}<span class="inf-tag azul">${escapeHtml(i.marca)}</span></div></div></div>
     <div class="inf-drawer-acoes">
       ${m.podeEditar ? `<button type="button" class="inf-icone" data-acao="editar" title="Editar influenciador"><span class="material-symbols-outlined">edit</span></button>` : ""}
       <button type="button" class="inf-icone" data-acao="fechar" title="Fechar painel"><span class="material-symbols-outlined">close</span></button></div></div>`;
+}
+
+function sincronizacaoHtml(m) {
+  const i = m.influenciador;
+  if (i.rede_social !== "Instagram" || !m.podeEditar) return "";
+  const status = i.instagram_sync_erro
+    ? `<span class="inf-sync-erro">${escapeHtml(i.instagram_sync_erro)}</span>`
+    : `<span class="inf-sync-status">${escapeHtml(formatSincronizadoEm(i.instagram_sincronizado_em))}</span>`;
+  return `<div class="inf-sync-linha">
+      <button type="button" class="inf-btn-mini" data-acao="sincronizar-instagram"${m.sincronizando ? " disabled" : ""}>${m.sincronizando ? "Sincronizando…" : "Sincronizar com Instagram"}</button>
+      ${status}
+    </div>`;
 }
 
 function acordosHtml(m) {
@@ -95,7 +108,7 @@ export function influencerDrawerHtml(m) {
   if (!m.influenciador) {
     return `<div class="inf-drawer-vazio"><span class="material-symbols-outlined">person_search</span><strong>Selecione um influenciador</strong><p>Clique em uma linha da tabela para ver acordos, campanhas, crescimento e mídias vinculadas.</p></div>`;
   }
-  return `${topoHtml(m)}${acordosHtml(m)}${campanhasHtml(m.campanhas)}${crescimentoHtml(m)}${midiasHtml(m)}
+  return `${topoHtml(m)}${sincronizacaoHtml(m)}${acordosHtml(m)}${campanhasHtml(m.campanhas)}${crescimentoHtml(m)}${midiasHtml(m)}
     ${m.podeEditar ? `<button type="button" class="inf-btn-cta" data-acao="nova-midia"><span class="material-symbols-outlined">add_link</span><span>+ Vincular Nova URL</span></button>` : ""}`;
 }
 
@@ -107,6 +120,7 @@ export function bindInfluencerDrawer(raiz, cb) {
   acao("fechar", () => cb.aoFechar());
   acao("editar", () => cb.aoEditar());
   acao("nova-midia", () => cb.aoNovaMidia());
+  acao("sincronizar-instagram", () => cb.aoSincronizarInstagram());
 
   raiz.querySelectorAll("[data-editar-midia]").forEach((b) => { b.onclick = () => cb.aoEditarMidia(b.dataset.editarMidia); });
   raiz.querySelectorAll("[data-excluir-midia]").forEach((b) => { b.onclick = () => cb.aoExcluirMidia(b.dataset.excluirMidia); });

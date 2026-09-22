@@ -50,7 +50,8 @@ function novoEstado() {
     abertoId: null,
     selecionados: new Set(),
     subaba: "geral",
-    modal: null // { tipo: "influenciador" | "midia", ...estadoDoFormulario }
+    modal: null, // { tipo: "influenciador" | "midia", ...estadoDoFormulario }
+    sincronizando: null // id do influenciador sendo sincronizado com o Instagram agora, ou null
   };
 }
 
@@ -108,6 +109,7 @@ function modeloDrawer() {
     midias: grupo.midias,
     pontos: pontosCrescimento(grupo.snapshots),
     podeEditar: podeEditar(),
+    sincronizando: estado.sincronizando === influenciador.id,
     hoje
   };
 }
@@ -228,6 +230,20 @@ function ligarEventos() {
         await carregar();
       } catch (erro) {
         estado.erro = deps.safeErrorMessage(erro, "Não foi possível registrar os seguidores.");
+        pintar();
+      }
+    },
+    aoSincronizarInstagram: async () => {
+      const influenciadorId = estado.abertoId;
+      estado.sincronizando = influenciadorId;
+      pintar();
+      try {
+        await service.sincronizarInstagram(influenciadorId);
+        estado.sincronizando = null;
+        await carregar();
+      } catch (erro) {
+        estado.sincronizando = null;
+        estado.erro = deps.safeErrorMessage(erro, "Não foi possível sincronizar com o Instagram.");
         pintar();
       }
     }
