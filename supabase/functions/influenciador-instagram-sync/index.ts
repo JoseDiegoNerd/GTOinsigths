@@ -35,6 +35,19 @@ async function sincronizarUm(
     return { erro: "Sincronizacao automatica so esta disponivel para Instagram." };
   }
 
+  // Checa permissao de escrita ANTES de qualquer chamada privilegiada (leitura de token, API da
+  // Meta, upload no Storage) - sem isso, um usuario sem acesso de escrita a marca-alvo conseguiria
+  // disparar esses efeitos colaterais antes do bloqueio final (RLS so barrava o update final).
+  const { data: permissao, error: permissaoError } = await writeClient
+    .from("influenciadores")
+    .update({ instagram_sync_erro: null })
+    .eq("id", influenciador.id)
+    .select("id");
+  if (permissaoError) throw permissaoError;
+  if (!permissao || permissao.length === 0) {
+    return { erro: "Voce nao tem permissao para sincronizar este influenciador." };
+  }
+
   const { data: conta, error: contaError } = await admin
     .from("integracao_meta_contas")
     .select("instagram_business_account_id,access_token")
@@ -54,7 +67,12 @@ async function sincronizarUm(
   try {
     dados = await metaBusinessDiscovery(conta.instagram_business_account_id, influenciador.handle, conta.access_token);
   } catch (error) {
-    const erro = safeErrorMessage(error, "Falha ao consultar o Instagram. Tente novamente mais tarde.");
+    // Nao usa safeErrorMessage(error, fallback) aqui: metaGet manda o access_token como query
+    // param da URL, e um erro bruto de rede (DNS/timeout) do fetch no Deno pode incluir a URL
+    // completa na mensagem - vazaria o token pro banco (instagram_sync_erro) e pra resposta HTTP.
+    // O erro completo vai so pro log (console.error), nunca pro usuario.
+    console.error("Erro ao consultar Business Discovery:", error);
+    const erro = "Falha ao consultar o Instagram. Tente novamente mais tarde.";
     await writeClient.from("influenciadores").update({ instagram_sync_erro: erro }).eq("id", influenciador.id);
     return { erro };
   }
@@ -147,7 +165,14 @@ Deno.serve(withCors(async (req) => {
         } catch (error) {
           comErro += 1;
           const erro = safeErrorMessage(error, "Falha inesperada ao sincronizar com o Instagram.");
-          await admin.from("influenciadores").update({ instagram_sync_erro: erro }).eq("id", (influenciador as Influenciador).id);
+          // Essa gravacao tambem pode falhar (ex.: banco fora do ar) - se falhar, so loga e
+          // segue, pra nao derrubar o restante do lote (o mesmo problema que este catch existe
+          // pra evitar).
+          try {
+            await admin.from("influenciadores").update({ instagram_sync_erro: erro }).eq("id", (influenciador as Influenciador).id);
+          } catch (writeError) {
+            console.error("Falha ao gravar instagram_sync_erro apos excecao no lote:", writeError);
+          }
         }
       }
       return jsonResponse({ ok: true, sincronizados, com_erro: comErro });
