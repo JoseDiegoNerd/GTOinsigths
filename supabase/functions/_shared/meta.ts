@@ -268,3 +268,37 @@ export async function logMetaEvent(input: {
     payload_resumo: input.payload_resumo || {},
   });
 }
+
+// Business Discovery: consulta dados publicos (foto, seguidores, total de posts) de OUTRA conta
+// Instagram Business/Creator, sem essa conta autorizar nada - só exige que a CONTA CHAMADORA
+// (instagramBusinessAccountId, já conectada por OAuth via meta-oauth-callback) tenha o escopo
+// instagram_basic. Devolve null (não lança) quando a conta-alvo não existe, é privada, ou não é
+// Business/Creator - esses são os casos de "cai para manual", não um erro de infraestrutura.
+export async function metaBusinessDiscovery(
+  instagramBusinessAccountId: string,
+  handle: string,
+  accessToken: string,
+): Promise<{ followers_count: number; media_count: number; profile_picture_url: string } | null> {
+  const username = handle.replace(/^@/, "");
+  const field = `business_discovery.username(${username}){followers_count,media_count,profile_picture_url}`;
+
+  try {
+    const body = await metaGet(`/${instagramBusinessAccountId}`, {
+      fields: field,
+      access_token: accessToken,
+    });
+    const discovery = body?.business_discovery;
+    if (!discovery || typeof discovery.followers_count !== "number") return null;
+    return {
+      followers_count: discovery.followers_count,
+      media_count: typeof discovery.media_count === "number" ? discovery.media_count : 0,
+      profile_picture_url: String(discovery.profile_picture_url || ""),
+    };
+  } catch (error) {
+    // Erro #100 com "does not exist" ou similar = conta não encontrada/privada/pessoal.
+    // Qualquer outro erro (rede, token expirado, rate limit) deve propagar para o chamador tratar.
+    const message = error instanceof Error ? error.message : String(error);
+    if (/does not exist|cannot be loaded|Unsupported get request/i.test(message)) return null;
+    throw error;
+  }
+}
