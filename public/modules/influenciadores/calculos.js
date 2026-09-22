@@ -59,6 +59,18 @@ export function formatVariacao(valor) {
   return `${limpar(texto)}%`;
 }
 
+export function formatSincronizadoEm(timestamp, agora = new Date()) {
+  if (!timestamp) return "Nunca sincronizado";
+  const diffMs = agora.getTime() - new Date(timestamp).getTime();
+  const minutos = Math.floor(diffMs / 60000);
+  if (minutos < 1) return "Sincronizado agora mesmo";
+  if (minutos < 60) return `Sincronizado há ${minutos} ${minutos === 1 ? "minuto" : "minutos"}`;
+  const horas = Math.floor(minutos / 60);
+  if (horas < 24) return `Sincronizado há ${horas} ${horas === 1 ? "hora" : "horas"}`;
+  const dias = Math.floor(horas / 24);
+  return `Sincronizado há ${dias} ${dias === 1 ? "dia" : "dias"}`;
+}
+
 // Datas (strings ISO YYYY-MM-DD) ------------------------------------------------------------------
 export function mesChave(dataISO) {
   return String(dataISO ?? "").slice(0, 7);

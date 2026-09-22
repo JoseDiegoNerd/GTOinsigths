@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  formatBRL, formatBRLInteiro, formatInt, formatPct, formatVariacao,
+  formatBRL, formatBRLInteiro, formatInt, formatPct, formatVariacao, formatSincronizadoEm,
   mesChave, mesAnteriorChave, hojeISO, diasEntre, campanhaAtiva,
   calcularKpis, agregarInfluenciador, agruparPorInfluenciador, pontosCrescimento,
   iniciais, normalizarTexto, filtrarInfluenciadores, paginar, pluralCampanhas
@@ -215,4 +215,17 @@ test('pluralCampanhas', () => {
   assert.equal(pluralCampanhas(0), '0 campanhas');
   assert.equal(pluralCampanhas(1), '1 campanha');
   assert.equal(pluralCampanhas(3), '3 campanhas');
+});
+
+test('formatSincronizadoEm', () => {
+  const agora = new Date('2026-09-22T12:00:00Z');
+  assert.equal(formatSincronizadoEm(null, agora), 'Nunca sincronizado');
+  assert.equal(formatSincronizadoEm('', agora), 'Nunca sincronizado');
+  assert.equal(formatSincronizadoEm('2026-09-22T11:59:50Z', agora), 'Sincronizado agora mesmo');
+  assert.equal(formatSincronizadoEm('2026-09-22T11:45:00Z', agora), 'Sincronizado há 15 minutos');
+  assert.equal(formatSincronizadoEm('2026-09-22T11:59:00Z', agora), 'Sincronizado há 1 minuto');
+  assert.equal(formatSincronizadoEm('2026-09-22T09:00:00Z', agora), 'Sincronizado há 3 horas');
+  assert.equal(formatSincronizadoEm('2026-09-22T11:00:00Z', agora), 'Sincronizado há 1 hora');
+  assert.equal(formatSincronizadoEm('2026-09-20T12:00:00Z', agora), 'Sincronizado há 2 dias');
+  assert.equal(formatSincronizadoEm('2026-09-21T12:00:00Z', agora), 'Sincronizado há 1 dia');
 });
