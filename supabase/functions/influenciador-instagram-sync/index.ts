@@ -38,13 +38,15 @@ async function sincronizarUm(
   // Checa permissao de escrita ANTES de qualquer chamada privilegiada (leitura de token, API da
   // Meta, upload no Storage) - sem isso, um usuario sem acesso de escrita a marca-alvo conseguiria
   // disparar esses efeitos colaterais antes do bloqueio final (RLS so barrava o update final).
-  const { data: permissao, error: permissaoError } = await writeClient
-    .from("influenciadores")
-    .update({ instagram_sync_erro: null })
-    .eq("id", influenciador.id)
-    .select("id");
+  // Usa gto_pode_editar_influenciador (so leitura, espelha a RLS) em vez de um update no-op, para
+  // nao gravar uma linha de auditoria a cada sincronizacao - a gravacao final continua protegida
+  // pela RLS de verdade, que e a garantia de seguranca real.
+  const { data: podeEditar, error: permissaoError } = await writeClient.rpc(
+    "gto_pode_editar_influenciador",
+    { p_marca: influenciador.marca },
+  );
   if (permissaoError) throw permissaoError;
-  if (!permissao || permissao.length === 0) {
+  if (!podeEditar) {
     return { erro: "Voce nao tem permissao para sincronizar este influenciador." };
   }
 
