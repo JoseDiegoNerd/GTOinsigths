@@ -30,6 +30,7 @@ async function sincronizarUm(
   admin: ReturnType<typeof getAdminClient>,
   writeClient: ReturnType<typeof getAdminClient>,
   influenciador: Influenciador,
+  modoLote: boolean,
 ): Promise<{ erro: string | null; seguidores?: number; publicacoes_total?: number }> {
   if (influenciador.rede_social !== "Instagram") {
     return { erro: "Sincronizacao automatica so esta disponivel para Instagram." };
@@ -38,16 +39,24 @@ async function sincronizarUm(
   // Checa permissao de escrita ANTES de qualquer chamada privilegiada (leitura de token, API da
   // Meta, upload no Storage) - sem isso, um usuario sem acesso de escrita a marca-alvo conseguiria
   // disparar esses efeitos colaterais antes do bloqueio final (RLS so barrava o update final).
-  // Usa gto_pode_editar_influenciador (so leitura, espelha a RLS) em vez de um update no-op, para
-  // nao gravar uma linha de auditoria a cada sincronizacao - a gravacao final continua protegida
-  // pela RLS de verdade, que e a garantia de seguranca real.
-  const { data: podeEditar, error: permissaoError } = await writeClient.rpc(
-    "gto_pode_editar_influenciador",
-    { p_marca: influenciador.marca },
-  );
-  if (permissaoError) throw permissaoError;
-  if (!podeEditar) {
-    return { erro: "Voce nao tem permissao para sincronizar este influenciador." };
+  // So se aplica ao modo interativo (botao) - no modo lote, writeClient e o proprio admin (service
+  // role) chamado pelo cron, sem JWT de usuario: gto_meu_cargo() dentro de
+  // gto_pode_editar_influenciador depende de auth.uid(), que e null para o service role, entao a
+  // checagem bloquearia o lote inteiro por engano. O lote ja e autorizado por outro mecanismo (o
+  // segredo do cron + o pre-filtro por marcas com Instagram ativo em Conexoes), entao nao precisa
+  // (e nao pode) passar por esta checagem por-usuario.
+  if (!modoLote) {
+    // Usa gto_pode_editar_influenciador (so leitura, espelha a RLS) em vez de um update no-op,
+    // para nao gravar uma linha de auditoria a cada sincronizacao - a gravacao final continua
+    // protegida pela RLS de verdade, que e a garantia de seguranca real.
+    const { data: podeEditar, error: permissaoError } = await writeClient.rpc(
+      "gto_pode_editar_influenciador",
+      { p_marca: influenciador.marca },
+    );
+    if (permissaoError) throw permissaoError;
+    if (!podeEditar) {
+      return { erro: "Voce nao tem permissao para sincronizar este influenciador." };
+    }
   }
 
   const { data: conta, error: contaError } = await admin
@@ -178,7 +187,7 @@ Deno.serve(withCors(async (req) => {
         // influenciadores restantes do lote - o que contraria o requisito de que um erro isolado
         // nunca deve afetar os demais.
         try {
-          const resultado = await sincronizarUm(admin, admin, influenciador as Influenciador);
+          const resultado = await sincronizarUm(admin, admin, influenciador as Influenciador, true);
           if (resultado.erro) comErro += 1;
           else sincronizados += 1;
         } catch (error) {
@@ -221,7 +230,7 @@ Deno.serve(withCors(async (req) => {
       { global: { headers: { Authorization: req.headers.get("authorization") || "" } } },
     );
 
-    const resultado = await sincronizarUm(admin, writeClient, influenciador);
+    const resultado = await sincronizarUm(admin, writeClient, influenciador, false);
     if (resultado.erro) return jsonResponse({ error: resultado.erro }, 400);
     return jsonResponse({ ok: true, seguidores: resultado.seguidores, publicacoes_total: resultado.publicacoes_total });
   } catch (error) {
