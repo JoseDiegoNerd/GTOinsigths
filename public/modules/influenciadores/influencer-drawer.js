@@ -92,6 +92,7 @@ function midiaHtml(midia, podeEditar) {
       <div class="inf-midia-metricas">
         <div><div class="rotulo">Views</div><div class="num">${formatInt(midia.views)}</div></div>
         <div><div class="rotulo">Curtidas</div><div class="num">${formatInt(midia.curtidas)}</div></div>
+        <div><div class="rotulo">Comentários</div><div class="num">${formatInt(midia.comentarios)}</div></div>
         <div><div class="rotulo">Salvos</div><div class="num verde">${formatInt(midia.salvos)}</div></div></div>
     </article>`;
 }

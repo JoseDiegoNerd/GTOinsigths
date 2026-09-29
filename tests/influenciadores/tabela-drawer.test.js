@@ -77,7 +77,7 @@ test('tabela sem dados de crescimento mostra travessao', () => {
 // drawer -----------------------------------------------------------------------------------------
 const midia = {
   id: 'm1', titulo: 'Reel: Provador Tesoura de Ouro', url: 'https://www.instagram.com/reel/C8x9L_p/', plataforma: 'Instagram',
-  views: 1840000, curtidas: 94200, salvos: 14800
+  views: 1840000, curtidas: 94200, comentarios: 312, salvos: 14800
 };
 const modeloDrawer = {
   influenciador, avatarUrl: null, agregado,
@@ -99,7 +99,7 @@ test('drawer mostra os blocos do prototipo', () => {
     'Cupom Exclusivo:', 'SIM', 'TESOURA10',
     'Campanhas Realizadas', 'Campanha dos Pais 2026', 'Dia das Crianças',
     'Crescimento Semanal', '+17.400 novos seguidores', '▲ +1,2%', '<polyline',
-    'Mídias Vinculadas (Meta API)', '1 posts', 'Reel: Provador Tesoura de Ouro', 'Views', '1.840.000', 'Curtidas', '94.200', 'Salvos', '14.800',
+    'Mídias Vinculadas (Meta API)', '1 posts', 'Reel: Provador Tesoura de Ouro', 'Views', '1.840.000', 'Curtidas', '94.200', 'Comentários', '312', 'Salvos', '14.800',
     'instagram.com/reel/C8x9L_p/', '+ Vincular Nova URL']) {
     assert.ok(html.includes(texto), `faltou ${texto}`);
   }
