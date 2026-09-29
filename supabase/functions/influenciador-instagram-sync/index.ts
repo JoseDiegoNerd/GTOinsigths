@@ -7,6 +7,7 @@ import {
   jsonResponse,
   safeErrorMessage,
   metaBusinessDiscovery,
+  extrairShortcodeInstagram,
   withCors,
 } from "../_shared/meta.ts";
 
@@ -136,6 +137,36 @@ async function sincronizarUm(
     { onConflict: "influenciador_id,data" },
   );
   if (seguidoresError) throw seguidoresError;
+
+  // Curtidas/comentarios das midias ja vinculadas, casando pelo shortcode do post contra os ~50
+  // posts mais recentes devolvidos pela Business Discovery. Melhor esforco: post fora dessa janela
+  // (mais antigo, apagado) so fica sem match e mantem o valor manual - nunca falha a sincronizacao
+  // do influenciador por causa disso.
+  try {
+    if (dados.midias.length > 0) {
+      const { data: midiasVinculadas, error: midiasError } = await admin
+        .from("influenciador_midias")
+        .select("id,url")
+        .eq("influenciador_id", influenciador.id)
+        .eq("plataforma", "Instagram");
+      if (midiasError) throw midiasError;
+
+      for (const midia of midiasVinculadas || []) {
+        const shortcode = extrairShortcodeInstagram(String(midia.url));
+        if (!shortcode) continue;
+        const encontrada = dados.midias.find((m) => extrairShortcodeInstagram(m.permalink) === shortcode);
+        if (!encontrada) continue;
+
+        const { error: midiaUpdateError } = await writeClient
+          .from("influenciador_midias")
+          .update({ curtidas: encontrada.like_count, comentarios: encontrada.comments_count })
+          .eq("id", midia.id);
+        if (midiaUpdateError) console.error("Falha ao atualizar curtidas/comentarios da midia:", midiaUpdateError);
+      }
+    }
+  } catch (error) {
+    console.error("Falha ao sincronizar curtidas/comentarios das midias vinculadas:", error);
+  }
 
   return { erro: null, seguidores: dados.followers_count, publicacoes_total: dados.media_count };
 }

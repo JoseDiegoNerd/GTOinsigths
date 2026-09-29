@@ -165,9 +165,27 @@ test('formulario de midia mostra campos, campanhas e metricas', () => {
   const e = estadoInicialMidia({ midia, influenciador, campanhas, hoje: '2026-09-21' });
   const html = midiaFormHtml(e);
   for (const texto of ['Editar mídia', 'value="Reel: Provador"', 'value="https://www.instagram.com/reel/C8x9L_p/"',
-    '<option value="c1" selected>Pais 2026</option>', 'value="1840000"', 'id="infMForm"', 'Métricas informadas manualmente']) {
+    '<option value="c1" selected>Pais 2026</option>', 'value="1840000"', 'id="infMForm"']) {
     assert.ok(html.includes(texto), `faltou ${texto}`);
   }
+});
+
+test('midia do Instagram trava curtidas e comentarios como automaticos', () => {
+  const e = estadoInicialMidia({ midia, influenciador, campanhas, hoje: '2026-09-21' });
+  const html = midiaFormHtml(e);
+  assert.ok(html.includes('atualizados automaticamente na sincronização com Instagram'));
+  assert.match(html, /Curtidas.*\(automático\)[\s\S]*id="infMCurtidas"[^>]*readonly/);
+  assert.match(html, /Comentários.*\(automático\)[\s\S]*id="infMComentarios"[^>]*readonly/);
+  assert.ok(!/id="infMViews"[^>]*readonly/.test(html), 'views continua editavel');
+  assert.ok(!/id="infMSalvos"[^>]*readonly/.test(html), 'salvos continua editavel');
+});
+
+test('midia de outra rede mantem curtidas e comentarios editaveis', () => {
+  const e = estadoInicialMidia({ midia: { ...midia, plataforma: 'TikTok' }, influenciador, campanhas, hoje: '2026-09-21' });
+  const html = midiaFormHtml(e);
+  assert.ok(html.includes('Métricas informadas manualmente'));
+  assert.ok(!/id="infMCurtidas"[^>]*readonly/.test(html));
+  assert.ok(!/id="infMComentarios"[^>]*readonly/.test(html));
 });
 
 test('formulario de midia separa area rolavel do rodape fixo', () => {

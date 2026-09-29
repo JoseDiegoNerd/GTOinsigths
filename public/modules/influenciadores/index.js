@@ -361,6 +361,12 @@ function ligarModal(overlay) {
     return;
   }
 
+  const plataformaSelect = overlay.querySelector("#infMPlataforma");
+  if (plataformaSelect) plataformaSelect.onchange = () => {
+    estado.modal = lerMidiaForm(overlay, estado.modal);
+    pintarModal(); // repinta para travar/destravar curtidas e comentarios conforme a rede escolhida
+  };
+
   overlay.querySelector("#infMForm").onsubmit = async (evento) => {
     evento.preventDefault();
     estado.modal = lerMidiaForm(overlay, estado.modal);

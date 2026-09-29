@@ -10,6 +10,11 @@ const CAMPOS_METRICA = [
   ["compartilhamentos", "Compartilhamentos", "infMCompart"]
 ];
 
+// Curtidas e comentarios vem automaticamente da sincronizacao com Instagram (casados pelo
+// shortcode do post) - so pra midias dessa rede. Views/Alcance/Salvos/Compartilhamentos continuam
+// manuais em qualquer rede: a API do Instagram so expoe isso pro dono da conta, nunca pra terceiros.
+const CAMPOS_AUTOMATICOS_INSTAGRAM = ["curtidas", "comentarios"];
+
 export function estadoInicialMidia({ midia, influenciador, campanhas = [], hoje }) {
   const estado = {
     id: midia?.id ?? null,
@@ -38,8 +43,12 @@ export function midiaFormHtml(e) {
   const plataformas = [`<option value="">Detectar pela URL</option>`, ...REDES.map((r) => `<option value="${r}"${r === e.plataforma ? " selected" : ""}>${r}</option>`)].join("");
   const formatos = FORMATOS.map((f) => `<option value="${f}"${f === e.formato ? " selected" : ""}>${f}</option>`).join("");
   const campanhas = [`<option value="">Sem campanha</option>`, ...e.campanhas.map((c) => `<option value="${escapeHtml(c.id)}"${c.id === e.campanha_id ? " selected" : ""}>${escapeHtml(c.nome)}</option>`)].join("");
-  const metricas = CAMPOS_METRICA.map(([campo, rotulo, id]) =>
-    `<label>${rotulo}<input id="${id}" type="text" inputmode="numeric" value="${escapeHtml(e[campo])}" placeholder="0" />${erroDe(e.erros, campo)}</label>`).join("");
+  const ehInstagram = e.plataforma === "Instagram";
+  const metricas = CAMPOS_METRICA.map(([campo, rotulo, id]) => {
+    const automatico = ehInstagram && CAMPOS_AUTOMATICOS_INSTAGRAM.includes(campo);
+    const rotuloExibido = automatico ? `${rotulo} <span class="muted">(automático)</span>` : rotulo;
+    return `<label>${rotuloExibido}<input id="${id}" type="text" inputmode="numeric" value="${escapeHtml(e[campo])}" placeholder="0"${automatico ? " readonly" : ""} />${erroDe(e.erros, campo)}</label>`;
+  }).join("");
 
   return `<div class="modal-header"><div><h3>${novo ? "Vincular nova URL" : "Editar mídia"}</h3>
       <p class="muted">${escapeHtml(e.influenciadorNome)} · ${escapeHtml(e.marca)}</p></div>
@@ -55,7 +64,9 @@ export function midiaFormHtml(e) {
           <label>Publicado em<input id="infMData" type="date" value="${escapeHtml(e.publicada_em)}" />${erroDe(e.erros, "publicada_em")}</label>
           <label>Campanha<select id="infMCampanha">${campanhas}</select></label>
         </div>
-        <p class="muted" style="margin:0">Métricas informadas manualmente (copie do print de insights que o influenciador enviou).</p>
+        <p class="muted" style="margin:0">${ehInstagram
+          ? "Curtidas e comentários são atualizados automaticamente na sincronização com Instagram. As demais métricas são informadas manualmente (copie do print de insights que o influenciador enviou)."
+          : "Métricas informadas manualmente (copie do print de insights que o influenciador enviou)."}</p>
         <div class="inf-form-grid inf-form-grid-3">${metricas}</div>
       </div>
       <div class="inf-form-rodape"><div></div><div class="inf-form-botoes"><button type="button" class="secondary" data-fechar-modal>Cancelar</button>
