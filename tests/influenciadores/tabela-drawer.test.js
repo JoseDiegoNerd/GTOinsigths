@@ -171,6 +171,21 @@ test('drawer trata ausencia de campanhas, midias e base de crescimento', () => {
   assert.match(html, /Registre ao menos 2 dias/);
 });
 
+test('card de midia esconde Views/Salvos zerados mas sempre mostra Curtidas/Comentarios', () => {
+  const semManual = { ...midia, views: 0, curtidas: 0, comentarios: 0, salvos: 0 };
+  const html = influencerDrawerHtml({ ...modeloDrawer, midias: [semManual] });
+  assert.ok(html.includes('Curtidas'), 'curtidas sempre aparece, mesmo zerada');
+  assert.ok(html.includes('Comentários'), 'comentarios sempre aparece, mesmo zerado');
+  assert.ok(!html.includes('>Views<'), 'views some quando zerada (ninguem preencheu)');
+  assert.ok(!html.includes('>Salvos<'), 'salvos some quando zerado (ninguem preencheu)');
+});
+
+test('card de midia mostra Views/Salvos quando preenchidos manualmente', () => {
+  const html = influencerDrawerHtml(modeloDrawer);
+  assert.ok(html.includes('>Views<'));
+  assert.ok(html.includes('>Salvos<'));
+});
+
 test('drawer nao emite href perigoso e escapa dados do usuario', () => {
   const ruim = { ...midia, titulo: '<b>x</b>', url: 'javascript:alert(1)' };
   const html = influencerDrawerHtml({ ...modeloDrawer, midias: [ruim], campanhas: [{ id: 'c', nome: '<script>1</script>' }] });

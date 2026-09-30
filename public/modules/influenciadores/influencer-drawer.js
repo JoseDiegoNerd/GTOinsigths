@@ -82,6 +82,20 @@ function crescimentoHtml(m) {
       ${growthChartHtml(m.pontos)}${form}</section>`;
 }
 
+// Curtidas/Comentarios vem da sincronizacao automatica - aparecem sempre, mesmo zerados (um post
+// novo com 0 curtidas ainda e dado real). Views/Salvos continuam manuais (a API do Instagram nao
+// expoe isso pra contas de terceiros): so aparecem no card se alguem de fato preencheu um valor
+// maior que zero, pra nao poluir a tela com "0" em algo que ninguem inseriu.
+function metricasMidiaHtml(midia) {
+  const itens = [
+    { rotulo: "Curtidas", valor: midia.curtidas, classe: "" },
+    { rotulo: "Comentários", valor: midia.comentarios, classe: "" },
+    ...(midia.views > 0 ? [{ rotulo: "Views", valor: midia.views, classe: "" }] : []),
+    ...(midia.salvos > 0 ? [{ rotulo: "Salvos", valor: midia.salvos, classe: "verde" }] : [])
+  ];
+  return itens.map((it) => `<div><div class="rotulo">${it.rotulo}</div><div class="num${it.classe ? ` ${it.classe}` : ""}">${formatInt(it.valor)}</div></div>`).join("");
+}
+
 function midiaHtml(midia, podeEditar) {
   const id = escapeHtml(midia.id);
   return `<article class="inf-midia">
@@ -89,11 +103,7 @@ function midiaHtml(midia, podeEditar) {
         <div class="inf-midia-acoes"><a href="${escapeHtml(urlSegura(midia.url))}" target="_blank" rel="noopener noreferrer" title="Abrir post"><span class="material-symbols-outlined">open_in_new</span></a>
         ${podeEditar ? `<button type="button" data-editar-midia="${id}" title="Editar mídia"><span class="material-symbols-outlined">edit</span></button><button type="button" data-excluir-midia="${id}" title="Excluir mídia"><span class="material-symbols-outlined">delete</span></button>` : ""}</div></div>
       <div class="inf-midia-url">${escapeHtml(urlCurta(midia.url))}</div>
-      <div class="inf-midia-metricas">
-        <div><div class="rotulo">Views</div><div class="num">${formatInt(midia.views)}</div></div>
-        <div><div class="rotulo">Curtidas</div><div class="num">${formatInt(midia.curtidas)}</div></div>
-        <div><div class="rotulo">Comentários</div><div class="num">${formatInt(midia.comentarios)}</div></div>
-        <div><div class="rotulo">Salvos</div><div class="num verde">${formatInt(midia.salvos)}</div></div></div>
+      <div class="inf-midia-metricas">${metricasMidiaHtml(midia)}</div>
     </article>`;
 }
 
