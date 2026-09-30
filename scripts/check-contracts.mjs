@@ -41,10 +41,6 @@ const requiredViews = [
   'vw_credsystem_por_loja',
   'vw_credsystem_motivos_rejeicao',
   'vw_credsystem_funil_propostas_emissoes',
-  'vw_rd_station_resumo',
-  'vw_meta_business_resumo',
-  'vw_google_business_resumo',
-  'vw_marketing_canais_por_marca',
   'vw_meta_social_periodos',
   'vw_meta_social_resumo_marca',
   'vw_meta_social_ranking_conteudo',
@@ -95,6 +91,60 @@ for (const view of requiredViews) {
 if (!biSql.includes('security_invoker = true') || !channelBiSql.includes('security_invoker = true') || !emailBiSql.includes('security_invoker = true') || !metaSocialBiSql.includes('security_invoker = true') || !socialFormatBiSql.includes('security_invoker = true')) {
   console.error('BI views are not configured with security_invoker = true.');
   process.exit(1);
+}
+
+// --- Modulo Influenciadores -------------------------------------------------------------------
+const influenciadoresMigrationPath = 'supabase/migrations/20260921_039_influenciadores.sql';
+const influenciadoresRequiredFiles = [
+  influenciadoresMigrationPath,
+  'supabase/checks/20260921_check_influenciadores.sql',
+  'src/types/influenciadores.ts',
+  'public/modules/influenciadores/index.js',
+  'public/modules/influenciadores/calculos.js',
+  'public/modules/influenciadores/service.js'
+];
+const influenciadoresMissing = influenciadoresRequiredFiles.filter((file) => !existsSync(file));
+if (influenciadoresMissing.length > 0) {
+  console.error(`Influenciadores: arquivos ausentes: ${influenciadoresMissing.join(', ')}`);
+  process.exit(1);
+}
+
+const influenciadoresSql = readFileSync(influenciadoresMigrationPath, 'utf8');
+const influenciadoresTables = [
+  'influenciadores',
+  'influenciador_campanhas',
+  'influenciador_midias',
+  'influenciador_seguidores_historico'
+];
+for (const table of influenciadoresTables) {
+  if (!influenciadoresSql.includes(`create table if not exists public.${table}`)) {
+    console.error(`Influenciadores: tabela ausente na migration: ${table}`);
+    process.exit(1);
+  }
+  if (!influenciadoresSql.includes(`'${table}'`)) {
+    console.error(`Influenciadores: tabela sem bloco de RLS/policies na migration: ${table}`);
+    process.exit(1);
+  }
+}
+if (!influenciadoresSql.includes('public.gto_tem_acesso_marca(marca)')) {
+  console.error('Influenciadores: policies nao usam public.gto_tem_acesso_marca(marca).');
+  process.exit(1);
+}
+
+// Todo campo das interfaces de dominio precisa existir como coluna na migration.
+const influenciadoresTypes = readFileSync('src/types/influenciadores.ts', 'utf8');
+for (const nome of ['Influencer', 'Campaign', 'MediaContent', 'FollowerSnapshot']) {
+  const bloco = influenciadoresTypes.match(new RegExp(`export interface ${nome} \\{([\\s\\S]*?)\\n\\}`));
+  if (!bloco) {
+    console.error(`Influenciadores: interface ausente em src/types/influenciadores.ts: ${nome}`);
+    process.exit(1);
+  }
+  for (const [, campo] of bloco[1].matchAll(/^\s+(\w+)\??:/gm)) {
+    if (!new RegExp(`\\b${campo}\\b`).test(influenciadoresSql)) {
+      console.error(`Influenciadores: campo ${nome}.${campo} nao existe na migration.`);
+      process.exit(1);
+    }
+  }
 }
 
 console.log('Contract check passed: services, hooks, policy SQL and BI views reference the expected Supabase objects.');

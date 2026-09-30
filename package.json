@@ -9,6 +9,7 @@
     "preview": "node scripts/serve-static.mjs",
     "check:env": "node scripts/check-env.mjs",
     "check:contracts": "node scripts/check-contracts.mjs",
+    "test:influenciadores": "node --test \"tests/influenciadores/*.test.js\"",
     "sync:netlify": "node scripts/sync-netlify-deploy.mjs"
   },
   "dependencies": {

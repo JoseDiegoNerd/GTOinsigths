@@ -268,3 +268,68 @@ export async function logMetaEvent(input: {
     payload_resumo: input.payload_resumo || {},
   });
 }
+
+export type MidiaDiscovery = { permalink: string; like_count: number; comments_count: number };
+
+// Business Discovery: consulta dados publicos (foto, seguidores, total de posts, e curtidas/
+// comentarios dos posts mais recentes) de OUTRA conta Instagram Business/Creator, sem essa conta
+// autorizar nada - só exige que a CONTA CHAMADORA (instagramBusinessAccountId, já conectada por
+// OAuth via meta-oauth-callback) tenha o escopo instagram_basic. Devolve null (não lança) quando a
+// conta-alvo não existe, é privada, ou não é Business/Creator - esses são os casos de "cai para
+// manual", não um erro de infraestrutura.
+//
+// midias: só traz permalink/like_count/comments_count dos ~50 posts mais recentes do perfil - a
+// API de Business Discovery nao expoe metricas de terceiros alem dessas (views/alcance/salvos so
+// existem via Insights, so acessivel pelo dono da conta com o proprio token). O chamador casa por
+// shortcode contra as midias ja vinculadas; posts fora dessa janela simplesmente nao aparecem
+// aqui, e o chamador trata isso como "sem match" (mantem o valor manual).
+export async function metaBusinessDiscovery(
+  instagramBusinessAccountId: string,
+  handle: string,
+  accessToken: string,
+): Promise<{ followers_count: number; media_count: number; profile_picture_url: string; midias: MidiaDiscovery[] } | null> {
+  const username = handle.replace(/^@/, "");
+  const field =
+    `business_discovery.username(${username})` +
+    `{followers_count,media_count,profile_picture_url,media.limit(50){permalink,like_count,comments_count}}`;
+
+  try {
+    const body = await metaGet(`/${instagramBusinessAccountId}`, {
+      fields: field,
+      access_token: accessToken,
+    });
+    const discovery = body?.business_discovery;
+    if (!discovery || typeof discovery.followers_count !== "number") return null;
+
+    const midiasBrutas = Array.isArray(discovery.media?.data) ? discovery.media.data : [];
+    const midias: MidiaDiscovery[] = midiasBrutas
+      .filter((m: JsonRecord) => typeof m.permalink === "string")
+      .map((m: JsonRecord) => ({
+        permalink: String(m.permalink),
+        like_count: typeof m.like_count === "number" ? m.like_count : 0,
+        comments_count: typeof m.comments_count === "number" ? m.comments_count : 0,
+      }));
+
+    return {
+      followers_count: discovery.followers_count,
+      media_count: typeof discovery.media_count === "number" ? discovery.media_count : 0,
+      profile_picture_url: String(discovery.profile_picture_url || ""),
+      midias,
+    };
+  } catch (error) {
+    // Erro #100 com "does not exist" ou similar = conta não encontrada/privada/pessoal.
+    // Qualquer outro erro (rede, token expirado, rate limit) deve propagar para o chamador tratar.
+    const message = error instanceof Error ? error.message : String(error);
+    if (/does not exist|cannot be loaded|Unsupported get request/i.test(message)) return null;
+    throw error;
+  }
+}
+
+// Extrai o shortcode (o codigo do post, ex.: "Ddyxj2UO1g1") de uma URL do Instagram, aceitando
+// /p/, /reel/, /reels/ e /tv/, com ou sem prefixo de username antes. Devolve null se a URL nao
+// bater com nenhum desses formatos - usado pra casar uma midia vinculada manualmente com a lista
+// de posts recentes devolvida por metaBusinessDiscovery.
+export function extrairShortcodeInstagram(url: string): string | null {
+  const match = /instagram\.com\/(?:[^/]+\/)?(?:p|reel|reels|tv)\/([A-Za-z0-9_-]+)/i.exec(url);
+  return match ? match[1] : null;
+}

@@ -415,3 +415,11 @@ enabled = true
 # declarative_schema_path = "./database"
 # JSON string passed through to pg-delta SQL formatting.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":80,\"commaStyle\":\"trailing\"}"
+
+# Desliga a verificacao de JWT da plataforma para esta Edge Function especifica: o modo cron
+# (rotina diaria) chama a funcao so com x-cron-secret, sem Authorization, e seria rejeitado com
+# 401 antes de chegar no codigo se essa checagem estivesse ligada. A funcao ja faz sua propria
+# validacao de JWT internamente (getAuthenticatedUser/assertAal2) no modo botao, entao isso nao
+# abre nenhuma brecha - so remove uma segunda camada redundante que bloquearia o modo cron.
+[functions.influenciador-instagram-sync]
+verify_jwt = false
