@@ -1680,6 +1680,7 @@
               <button id="navCred" class="${state.page === "credsystem" ? "active" : ""}"><span class="material-symbols-outlined">credit_card</span>Cartão Próprio</button>
               <button id="navEmail" class="${state.page === "email" ? "active" : ""}"><span class="material-symbols-outlined">mail</span>Email Marketing</button>
               <button id="navGMN" class="${state.page === "google_business" ? "active" : ""}"><span class="material-symbols-outlined">store</span>Google Meu Negócio</button>
+              <button id="navReputacao" class="${state.page === "reputation" ? "active" : ""}"><span class="material-symbols-outlined">forum</span>Reputação</button>
               ${isAdmin ? `<button id="navConnections" class="${state.page === "connections" ? "active" : ""}"><span class="material-symbols-outlined">link</span>Conexões</button>` : ""}
               ${isAdmin ? `<button id="navImport" class="${state.page === "import" ? "active" : ""}"><span class="material-symbols-outlined">upload_file</span>Importar Planilhas</button>` : ""}
               ${isAdmin ? `<button id="navConfiguracoes" class="${state.page === "configuracoes" ? "active" : ""}"><span class="material-symbols-outlined">settings</span>Configurações</button>` : ""}
@@ -1721,6 +1722,7 @@
         document.querySelector("#navInfluenciadores").onclick = () => { state.page = "influenciadores"; render(); };
         document.querySelector("#navAds").onclick = () => { state.page = "ads"; render(); };
         document.querySelector("#navGMN").onclick = () => { state.page = "google_business"; render(); };
+        document.querySelector("#navReputacao").onclick = () => { state.page = "reputation"; render(); };
         // Conexoes e Importar Planilhas so existem no DOM para Admin (ver nav acima) - querySelector
         // retorna null pros demais cargos, por isso o guard antes de atribuir o onclick.
         const navConnectionsBtn = document.querySelector("#navConnections");
@@ -1744,6 +1746,7 @@
         if (state.page === "ads") await renderMetaAds();
         if (state.page === "connections") await renderConnections();
         if (state.page === "google_business") await renderGoogleBusiness();
+        if (state.page === "reputation") await renderReputacao();
         if (state.page === "import") renderImport();
         if (state.page === "configuracoes") await renderConfiguracoes();
         if (state.page === "sugestoes") await renderSugestoes();
@@ -1758,6 +1761,7 @@
         if (state.page === "ads") return "Anúncios Meta";
         if (state.page === "connections") return "Conexões";
         if (state.page === "google_business") return "Google Meu Negócio";
+        if (state.page === "reputation") return "Reputação e Sentimento";
         if (state.page === "configuracoes") return "Configurações do Sistema";
         if (state.page === "sugestoes") return "Sugestões & Melhorias";
         return "Pipeline de importação";
@@ -7288,7 +7292,30 @@
           paintGoogleBusiness(statusMessage);
         } catch (error) {
           if (state.page !== "google_business" || state.marca !== key) return;
-          if (!cached) content.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
+          if (!cached) {
+            content.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
+          } else {
+            const status = document.querySelector("#googleActionStatus");
+            if (status) status.innerHTML = `<div class="alert error">Não foi possível atualizar agora; exibindo os últimos dados carregados. ${escapeHtml(safeErrorMessage(error))}</div>`;
+          }
+        }
+      }
+
+      let googleFlash = null;
+
+      // Bloqueia os botoes enquanto uma acao roda: cada clique repetido vira mais chamadas a API do
+      // Google, que tem cota por minuto. Os botoes voltam sozinhos quando a tela e repintada.
+      let googleBusy = false;
+      async function runGoogleAction(action) {
+        if (googleBusy) return;
+        googleBusy = true;
+        const buttons = [...document.querySelectorAll("#content button")].filter((button) => !button.disabled);
+        buttons.forEach((button) => { button.disabled = true; });
+        try {
+          await action();
+        } finally {
+          googleBusy = false;
+          buttons.forEach((button) => { if (button.isConnected) button.disabled = false; });
         }
       }
 
@@ -7302,16 +7329,31 @@
         const ratingPorLocal = g.ratingPorLocal || {};
         const kpis = g.kpis || { totalUnidades: 0, avaliacaoMedia: 0, visualizacoes: 0, solicitacoesRota: 0 };
 
+        // O retorno do OAuth chega em query params; captura uma vez e limpa a URL pra o aviso
+        // nao reaparecer a cada refresh da pagina.
         const urlParams = new URLSearchParams(location.search);
-        const googleConnected = urlParams.get("google_connected");
-        const googleError = urlParams.get("google_error");
+        if (["google_connected", "google_error", "google_warning"].some((key) => urlParams.has(key))) {
+          googleFlash = {
+            connected: urlParams.get("google_connected"),
+            error: urlParams.get("google_error"),
+            warning: urlParams.get("google_warning"),
+          };
+          ["google_connected", "google_error", "google_warning"].forEach((key) => urlParams.delete(key));
+          const cleanQuery = urlParams.toString();
+          history.replaceState({}, document.title, location.pathname + (cleanQuery ? `?${cleanQuery}` : "") + location.hash);
+        }
+        const googleConnected = googleFlash?.connected;
+        const googleError = googleFlash?.error;
+        const googleWarning = googleFlash?.warning;
         const statusHtml = statusMessage
           ? `<div class="alert success">${escapeHtml(statusMessage)}</div>`
           : googleError
             ? `<div class="alert error">Google retornou erro: ${escapeHtml(googleError)}</div>`
-            : googleConnected
-              ? `<div class="alert success">${escapeHtml(googleConnected)} conta(s) Google recebida(s). Revise abaixo quais pertencem à marca antes de sincronizar.</div>`
-              : "";
+            : googleWarning
+              ? `<div class="alert">${escapeHtml(googleWarning)}</div>`
+              : googleConnected
+                ? `<div class="alert success">${escapeHtml(googleConnected)} conta(s) Google recebida(s). Revise abaixo quais pertencem à marca antes de sincronizar.</div>`
+                : "";
 
         const podeEditarLocal = podeGerenciarGoogleLocais();
         const podeResponder = podeResponderGoogleAvaliacoes();
@@ -7326,10 +7368,10 @@
           </div>
           ${statusHtml}
           <div class="grid kpis">
-            ${kpi("Total de Unidades", fmt.format(kpis.totalUnidades), "storefront")}
-            ${kpi("Avaliação Média", kpis.avaliacaoMedia ? `${kpis.avaliacaoMedia.toFixed(1)} / 5.0` : "-", "grade")}
-            ${kpi("Visualizações Locais", fmt.format(kpis.visualizacoes), "visibility")}
-            ${kpi("Solicitações de Rota", fmt.format(kpis.solicitacoesRota), "directions_car")}
+            ${kpi("Total de Unidades", locais.length ? fmt.format(kpis.totalUnidades) : "—", "storefront")}
+            ${kpi("Avaliação Média", kpis.avaliacaoMedia ? `${kpis.avaliacaoMedia.toFixed(1)} / 5.0` : "—", "grade")}
+            ${kpi("Visualizações Locais", locais.length ? fmt.format(kpis.visualizacoes) : "—", "visibility")}
+            ${kpi("Solicitações de Rota", locais.length ? fmt.format(kpis.solicitacoesRota) : "—", "directions_car")}
           </div>
           <section class="card">
             <div class="page-head" style="align-items:center">
@@ -7448,13 +7490,13 @@
           </div>`;
 
         wireMarcaPills(renderGoogleBusiness);
-        document.querySelector("#refreshGoogle").onclick = () => renderGoogleBusiness("", { force: true });
-        document.querySelector("#connectGoogle").onclick = connectGoogleBusiness;
-        document.querySelector("#syncAllGoogle").onclick = () => syncGoogleBusiness();
-        document.querySelectorAll(".google-sync-one").forEach((button) => { button.onclick = () => syncGoogleBusiness(button.dataset.id); });
-        document.querySelectorAll(".google-confirm-one").forEach((button) => { button.onclick = () => saveGoogleConnectionMapping(button.dataset.id, "confirm"); });
-        document.querySelectorAll(".google-ignore-one").forEach((button) => { button.onclick = () => saveGoogleConnectionMapping(button.dataset.id, "ignore"); });
-        document.querySelectorAll(".google-reactivate-one").forEach((button) => { button.onclick = () => saveGoogleConnectionMapping(button.dataset.id, "reactivate"); });
+        document.querySelector("#refreshGoogle").onclick = () => runGoogleAction(() => renderGoogleBusiness("", { force: true }));
+        document.querySelector("#connectGoogle").onclick = () => runGoogleAction(connectGoogleBusiness);
+        document.querySelector("#syncAllGoogle").onclick = () => runGoogleAction(() => syncGoogleBusiness());
+        document.querySelectorAll(".google-sync-one").forEach((button) => { button.onclick = () => runGoogleAction(() => syncGoogleBusiness(button.dataset.id)); });
+        document.querySelectorAll(".google-confirm-one").forEach((button) => { button.onclick = () => runGoogleAction(() => saveGoogleConnectionMapping(button.dataset.id, "confirm")); });
+        document.querySelectorAll(".google-ignore-one").forEach((button) => { button.onclick = () => runGoogleAction(() => saveGoogleConnectionMapping(button.dataset.id, "ignore")); });
+        document.querySelectorAll(".google-reactivate-one").forEach((button) => { button.onclick = () => runGoogleAction(() => saveGoogleConnectionMapping(button.dataset.id, "reactivate")); });
         document.querySelectorAll(".google-edit-toggle").forEach((button) => {
           button.onclick = () => {
             state.google.openEditLocalId = state.google.openEditLocalId === button.dataset.id ? null : button.dataset.id;
@@ -7466,7 +7508,7 @@
             const id = button.dataset.id;
             const telefone = document.querySelector(`#editTelefone-${id}`).value.trim();
             const descricao = document.querySelector(`#editDescricao-${id}`).value.trim();
-            updateGoogleLocation(id, { telefone, descricao });
+            runGoogleAction(() => updateGoogleLocation(id, { telefone, descricao }));
           };
         });
         document.querySelectorAll(".google-reply-toggle").forEach((button) => {
@@ -7480,11 +7522,11 @@
             const id = button.dataset.id;
             const texto = document.querySelector(`#replyText-${id}`).value.trim();
             if (!texto) return;
-            replyGoogleReview(id, texto);
+            runGoogleAction(() => replyGoogleReview(id, texto));
           };
         });
         document.querySelectorAll(".google-reply-delete").forEach((button) => {
-          button.onclick = () => deleteGoogleReviewReply(button.dataset.id);
+          button.onclick = () => runGoogleAction(() => deleteGoogleReviewReply(button.dataset.id));
         });
       }
 
@@ -7545,7 +7587,7 @@
 
       async function syncGoogleBusiness(integracaoId = null) {
         const status = document.querySelector("#googleActionStatus") || document.querySelector("#content");
-        status.innerHTML = `<div class="alert">Sincronizando dados do Google Meu Negócio das contas confirmadas...</div>`;
+        status.innerHTML = `<div class="alert">Sincronizando dados do Google Meu Negócio das contas confirmadas... Pode levar alguns minutos se o Google limitar as requisições. Não feche esta página.</div>`;
 
         const body = integracaoId ? { integracao_id: integracaoId } : { marca: state.marca };
         const { data, error } = await supabase.functions.invoke("google-gbp-sync", { body });
@@ -7556,10 +7598,17 @@
         }
 
         const results = data?.results || [];
+        if (!results.length) {
+          await renderGoogleBusiness(data?.message || "Nenhuma conta Google confirmada para sincronizar.", { force: true });
+          return;
+        }
         const totalReviews = results.reduce((sum, row) => sum + num(row.reviewsImported), 0);
+        const totalMetricas = results.reduce((sum, row) => sum + num(row.metricasImportadas), 0);
+        const totalWarnings = results.reduce((sum, row) => sum + (row.warnings?.length || 0), 0);
         const errors = results.filter((row) => row.error).map((row) => `${row.marca}: ${row.error}`);
         const details = errors.length ? ` Erros: ${errors.slice(0, 2).join(" | ")}` : "";
-        await renderGoogleBusiness(`Sincronização concluída: ${fmt.format(totalReviews)} avaliações processadas.${details}`, { force: true });
+        const avisos = totalWarnings ? ` ${totalWarnings} aviso(s) da API do Google (ex.: cota ou permissão); veja os logs de integração.` : "";
+        await renderGoogleBusiness(`Sincronização concluída: ${fmt.format(totalReviews)} avaliações e ${fmt.format(totalMetricas)} dias de métricas processados.${avisos}${details}`, { force: true });
       }
 
       async function replyGoogleReview(reviewId, texto) {
@@ -7601,6 +7650,211 @@
         }
         state.google.openEditLocalId = null;
         await renderGoogleBusiness("Cadastro da loja atualizado.", { force: true });
+      }
+
+      // Hub de Reputacao e Sentimento: le a tabela comments_reputation (a IA roda na sincronizacao,
+      // nunca ao carregar a pagina). Os KPIs ignoram os filtros de sentimento e preco; so a lista os aplica.
+      const REPUTACAO_FONTES = [
+        { value: "todos", label: "Todos" },
+        { value: "meta_instagram", label: "Instagram", icon: "photo_camera" },
+        { value: "meta_facebook", label: "Facebook", icon: "groups" },
+        { value: "google_business", label: "Google Maps", icon: "place" },
+        { value: "reclame_aqui", label: "Reclame Aqui", icon: "campaign", emBreve: true },
+      ];
+      const REPUTACAO_SENTIMENTOS = [
+        { value: "todos", label: "Todos" },
+        { value: "positivo", label: "Positivos", singular: "Positivo", cor: "#16a34a" },
+        { value: "neutro", label: "Neutros", singular: "Neutro", cor: "#64748b" },
+        { value: "negativo", label: "Negativos", singular: "Negativo", cor: "#dc2626" },
+      ];
+      const REPUTACAO_CATEGORIAS = { preco: "Preço", atendimento: "Atendimento", qualidade_produto: "Qualidade do produto", trocas: "Trocas", outro: "Outro" };
+      const REPUTACAO_FEED_LIMITE = 200;
+
+      function reputacaoFiltros() {
+        state.reputacao ||= { fonte: "todos", sentimento: "todos", apenasPreco: false };
+        return state.reputacao;
+      }
+
+      function reputacaoCacheKey() {
+        const f = reputacaoFiltros();
+        return [state.marca, state.periodo, state.periodoDe, state.periodoAte, f.fonte, f.sentimento, f.apenasPreco].join("|");
+      }
+
+      function aplicarFiltrosReputacao(query, { sentimento = true, preco = true } = {}) {
+        const f = reputacaoFiltros();
+        if (state.marca !== "Todas") query = query.eq("marca", state.marca);
+        const de = fromDate();
+        const ate = toDate();
+        if (de) query = query.gte("created_at", `${de}T00:00:00`);
+        if (ate) query = query.lte("created_at", `${ate}T23:59:59`);
+        if (f.fonte !== "todos") query = query.eq("source", f.fonte);
+        if (sentimento && f.sentimento !== "todos") query = query.eq("sentiment", f.sentimento);
+        if (preco && f.apenasPreco) query = query.eq("is_price_complaint", true);
+        return query;
+      }
+
+      async function loadReputacao() {
+        const contagem = () => aplicarFiltrosReputacao(
+          supabase.from("comments_reputation").select("id", { count: "exact", head: true }),
+          { sentimento: false, preco: false },
+        );
+        const feedQuery = aplicarFiltrosReputacao(
+          supabase.from("comments_reputation")
+            .select("id,source,branch_name,author_name,content,rating,created_at,sentiment,is_price_complaint,category_tag"),
+        ).order("created_at", { ascending: false }).limit(REPUTACAO_FEED_LIMITE);
+
+        const [total, positivos, neutros, negativos, precos, feed] = await Promise.all([
+          contagem(),
+          contagem().eq("sentiment", "positivo"),
+          contagem().eq("sentiment", "neutro"),
+          contagem().eq("sentiment", "negativo"),
+          contagem().eq("is_price_complaint", true),
+          feedQuery,
+        ]);
+        const erro = [total, positivos, neutros, negativos, precos, feed].find((r) => r.error)?.error;
+        if (erro) throw erro;
+
+        return {
+          total: total.count || 0,
+          sentimentos: { positivo: positivos.count || 0, neutro: neutros.count || 0, negativo: negativos.count || 0 },
+          precos: precos.count || 0,
+          feed: feed.data || [],
+        };
+      }
+
+      function reputacaoShellHtml(conteudo) {
+        const f = reputacaoFiltros();
+        const fontesHtml = REPUTACAO_FONTES.map((fonte) => `
+          <button type="button" class="pill reputacao-fonte ${f.fonte === fonte.value ? "active" : ""}" data-fonte="${fonte.value}" ${fonte.emBreve ? "disabled" : ""}>
+            ${fonte.label}${fonte.emBreve ? ` <small style="opacity:.75">(Em breve)</small>` : ""}
+          </button>`).join("");
+        const sentimentosHtml = REPUTACAO_SENTIMENTOS.map((s) => `
+          <button type="button" class="pill reputacao-sentimento ${f.sentimento === s.value ? "active" : ""}" data-sentimento="${s.value}">${s.label}</button>`).join("");
+        const destaqueAtivo = "background:#c2410c;color:#fff;border:1px solid #c2410c";
+        const destaqueInativo = "background:#fff7ed;color:#9a3412;border:1px solid #fdba74";
+
+        return `
+          <div class="page-head">
+            <div><div class="eyebrow">Hub de Reputação e Sentimento</div><h2>Reputação</h2><p class="muted">Comentários e avaliações de todas as redes, classificados por IA.</p></div>
+            <div class="filters">${marcaPillsHtml()}${periodoDropdownHtml()}<button id="refreshReputacao" class="secondary">Atualizar</button></div>
+          </div>
+          <section class="card" style="margin-top:16px">
+            <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between">
+              <div>
+                <div class="muted" style="font-size:11px;font-weight:800;text-transform:uppercase">Origem</div>
+                <div class="pills" style="margin-top:6px">${fontesHtml}</div>
+              </div>
+              <div>
+                <div class="muted" style="font-size:11px;font-weight:800;text-transform:uppercase">Sentimento</div>
+                <div class="pills" style="margin-top:6px">${sentimentosHtml}</div>
+              </div>
+              <button type="button" id="toggleReclamacaoPreco" style="${f.apenasPreco ? destaqueAtivo : destaqueInativo};border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+                <span class="material-symbols-outlined" style="font-size:18px">sell</span> Apenas reclamações de preço
+              </button>
+            </div>
+          </section>
+          ${conteudo}`;
+      }
+
+      function reputacaoBarraHtml(sentimentos) {
+        const total = sentimentos.positivo + sentimentos.neutro + sentimentos.negativo;
+        if (!total) return `<p class="muted" style="margin:12px 0 0">Nenhum comentário classificado no período.</p>`;
+        const segmentos = REPUTACAO_SENTIMENTOS.slice(1).map((s) => {
+          const qtd = sentimentos[s.value];
+          return { ...s, qtd, pct: (qtd / total) * 100 };
+        });
+        return `
+          <div style="display:flex;height:14px;border-radius:999px;overflow:hidden;margin-top:14px;background:#f1f5f9">
+            ${segmentos.map((s) => `<div title="${s.label}: ${s.qtd}" style="width:${s.pct}%;background:${s.cor}"></div>`).join("")}
+          </div>
+          <div class="muted" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:10px;font-size:12px">
+            ${segmentos.map((s) => `<span><strong style="color:${s.cor}">${fmt.format(s.qtd)}</strong> ${s.label.toLowerCase()} (${s.pct.toFixed(0)}%)</span>`).join("")}
+          </div>`;
+      }
+
+      function reputacaoPrecoHtml(model) {
+        const negativos = model.sentimentos.negativo;
+        const pctTotal = model.total ? (model.precos / model.total) * 100 : 0;
+        const pctNegativos = negativos ? (model.precos / negativos) * 100 : 0;
+        return `
+          <div style="font-size:30px;font-weight:800;margin-top:6px">${fmt.format(model.precos)}</div>
+          <div class="muted" style="font-size:12px;margin-top:6px">${pctTotal.toFixed(1)}% dos comentários analisados · ${pctNegativos.toFixed(0)}% das negativas</div>`;
+      }
+
+      function reputacaoLinhaHtml(row) {
+        const fonte = REPUTACAO_FONTES.find((f) => f.value === row.source) || { label: row.source, icon: "chat" };
+        const sentimento = REPUTACAO_SENTIMENTOS.find((s) => s.value === row.sentiment);
+        const badgeSentimento = sentimento
+          ? `<span class="status-pill" style="background:${sentimento.cor}1a;color:${sentimento.cor}">${sentimento.singular}</span>`
+          : `<span class="status-pill" style="background:#f1f5f9;color:#64748b">${row.content ? "Não classificado" : "Sem texto"}</span>`;
+        const badgeCategoria = row.category_tag
+          ? `<span class="status-pill" style="background:#eff6ff;color:#1d4ed8">${escapeHtml(REPUTACAO_CATEGORIAS[row.category_tag] || row.category_tag)}</span>`
+          : "";
+        const badgePreco = row.is_price_complaint
+          ? `<span class="status-pill" style="background:#fef3c7;color:#92400e">Reclamação de preço</span>`
+          : "";
+        return `
+          <tr>
+            <td style="white-space:nowrap"><span class="material-symbols-outlined" style="vertical-align:middle;font-size:18px">${fonte.icon || "chat"}</span> ${escapeHtml(fonte.label)}</td>
+            <td>${escapeHtml(row.branch_name || "-")}</td>
+            <td>${escapeHtml(row.author_name || "-")}</td>
+            <td style="white-space:nowrap">${escapeHtml(formatDateTime(row.created_at))}</td>
+            <td style="min-width:260px;white-space:pre-wrap">${escapeHtml(row.content || "(sem texto)")}${row.rating ? `<div>${renderStars(row.rating)}</div>` : ""}</td>
+            <td><div style="display:flex;flex-wrap:wrap;gap:6px">${badgeSentimento}${badgeCategoria}${badgePreco}</div></td>
+          </tr>`;
+      }
+
+      function paintReputacao(model) {
+        return reputacaoShellHtml(`
+          <div class="grid kpis" style="margin-top:16px">
+            ${kpi("Comentários analisados", fmt.format(model.total), "forum")}
+            <article class="card kpi"><div class="kpi-top"><span>Proporção de sentimentos</span><span class="material-symbols-outlined">sentiment_satisfied</span></div>${reputacaoBarraHtml(model.sentimentos)}</article>
+            <article class="card kpi"><div class="kpi-top"><span>Reclamações de preço/valor</span><span class="material-symbols-outlined">sell</span></div>${reputacaoPrecoHtml(model)}</article>
+          </div>
+          <section class="card" style="margin-top:16px">
+            <h3>Comentários</h3>
+            <p class="muted">Até ${REPUTACAO_FEED_LIMITE} mais recentes, com os filtros aplicados.</p>
+            <div class="table-wrap" style="margin-top:16px">
+              <table>
+                <thead><tr><th>Origem</th><th>Loja</th><th>Autor</th><th>Data</th><th>Comentário</th><th>Análise IA</th></tr></thead>
+                <tbody>${model.feed.map(reputacaoLinhaHtml).join("") || `<tr><td colspan="6">Nenhum comentário encontrado com estes filtros.</td></tr>`}</tbody>
+              </table>
+            </div>
+          </section>`);
+      }
+
+      function wireReputacao() {
+        document.querySelector("#refreshReputacao")?.addEventListener("click", () => renderReputacao({ force: true }));
+        document.querySelectorAll(".reputacao-fonte").forEach((button) => {
+          button.onclick = () => { reputacaoFiltros().fonte = button.dataset.fonte; renderReputacao(); };
+        });
+        document.querySelectorAll(".reputacao-sentimento").forEach((button) => {
+          button.onclick = () => { reputacaoFiltros().sentimento = button.dataset.sentimento; renderReputacao(); };
+        });
+        document.querySelector("#toggleReclamacaoPreco")?.addEventListener("click", () => {
+          const f = reputacaoFiltros();
+          f.apenasPreco = !f.apenasPreco;
+          renderReputacao();
+        });
+        wireMarcaPills(() => renderReputacao());
+        wirePeriodoDropdown(() => renderReputacao());
+      }
+
+      async function renderReputacao({ force = false } = {}) {
+        const key = reputacaoCacheKey();
+        return renderCachedPage({
+          pageName: "reputation",
+          cacheKey: key,
+          isStillActive: () => state.page === "reputation" && reputacaoCacheKey() === key,
+          fetchModel: loadReputacao,
+          paintHtml: paintReputacao,
+          skeletonHtml: () => reputacaoShellHtml(`
+            <div class="grid kpis" style="margin-top:16px">${Array.from({ length: 3 }, () => skeletonKpiHtml()).join("")}</div>
+            <section class="card" style="margin-top:16px"><div class="skel skel-block" style="height:260px"></div></section>`),
+          wireInteractions: wireReputacao,
+          renderError: (error) => reputacaoShellHtml(`<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`),
+          force,
+        });
       }
 
       // Wizard "Importar planilhas" (Destino & Marca -> Campanha & Upload -> Preview & Confirmacao)

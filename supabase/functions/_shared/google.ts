@@ -131,25 +131,78 @@ export async function verifyGoogleState(state: string) {
   return payload as JsonRecord;
 }
 
+export class GoogleApiError extends Error {
+  status: number;
+  isQuota: boolean;
+
+  constructor(message: string, status: number, isQuota: boolean) {
+    super(message);
+    this.name = "GoogleApiError";
+    this.status = status;
+    this.isQuota = isQuota;
+  }
+}
+
+const RETRY_MAX_ATTEMPTS = 4;
+const RETRY_BASE_DELAY_MS = 3000;
+const RETRY_MAX_DELAY_MS = 30000;
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Segundos ("30") ou data HTTP. Retorna ms, ou null se ausente/invalido.
+function parseRetryAfterMs(header: string | null): number | null {
+  if (!header) return null;
+  const seconds = Number(header);
+  if (Number.isFinite(seconds)) return Math.max(0, seconds * 1000);
+  const date = Date.parse(header);
+  return Number.isNaN(date) ? null : Math.max(0, date - Date.now());
+}
+
+// Backoff exponencial com jitter: ~3s, 6s, 12s (teto de 30s), respeitando Retry-After quando o
+// Google manda. 429 e sempre reenviado (a requisicao foi rejeitada, nao executada); 5xx so em
+// metodos idempotentes de leitura, pra nao duplicar POST/PATCH que possam ter sido aplicados.
 export async function googleFetch(
   url: string,
   accessToken: string,
   init: RequestInit = {},
 ) {
-  const response = await fetch(url, {
-    ...init,
-    headers: {
-      ...(init.headers || {}),
-      authorization: `Bearer ${accessToken}`,
-      "content-type": "application/json",
-    },
-  });
+  const method = (init.method || "GET").toUpperCase();
+  const readOnly = method === "GET" || method === "HEAD";
 
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(body?.error?.message || `Google API error on ${url}`);
+  for (let attempt = 1; ; attempt++) {
+    const response = await fetch(url, {
+      ...init,
+      headers: {
+        ...(init.headers || {}),
+        authorization: `Bearer ${accessToken}`,
+        "content-type": "application/json",
+      },
+    });
+
+    const body = await response.json().catch(() => ({}));
+    if (response.ok) return body;
+
+    const isQuota = response.status === 429 || body?.error?.status === "RESOURCE_EXHAUSTED";
+    const retryable = isQuota || (readOnly && [500, 502, 503, 504].includes(response.status));
+
+    if (retryable && attempt < RETRY_MAX_ATTEMPTS) {
+      const exponential = RETRY_BASE_DELAY_MS * 2 ** (attempt - 1);
+      const jitter = Math.random() * 1000;
+      const retryAfter = parseRetryAfterMs(response.headers.get("retry-after"));
+      const delay = Math.min(RETRY_MAX_DELAY_MS, Math.max(retryAfter ?? 0, exponential + jitter));
+      console.warn(`Google API ${response.status} em ${url} (tentativa ${attempt}/${RETRY_MAX_ATTEMPTS}); nova tentativa em ${Math.round(delay)}ms.`);
+      await sleep(delay);
+      continue;
+    }
+
+    const rawMessage = body?.error?.message || `Google API error on ${url}`;
+    const message = isQuota
+      ? `Cota da API do Google excedida (limite de requisicoes por minuto). Aguarde 1-2 minutos e tente novamente. Se persistir, o projeto Google Cloud ainda nao tem cota liberada (aprovacao da Business Profile API). Detalhe: ${rawMessage}`
+      : rawMessage;
+    throw new GoogleApiError(message, response.status, isQuota);
   }
-  return body;
 }
 
 type IntegracaoGoogleConta = {
