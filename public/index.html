@@ -8192,10 +8192,21 @@
 
       // Corta a matriz de linhas na primeira linha de TOTAL/nota (inclusive) - tudo antes disso
       // sao as linhas de dados de verdade da tabela.
+      // Tambem para na primeira linha totalmente vazia DEPOIS que a tabela comecou: abas de dados
+      // costumam empilhar outros blocos abaixo da tabela de disparos, separados por linha em
+      // branco (ex: "Definicoes dos indicadores", "Estrutura do e-mail", "Fontes"). Sem esse
+      // corte, essas linhas eram lidas com o cabecalho da tabela de cima e viravam disparos
+      // fantasmas (incidente 07/10/2026, campanha Havaianas: "Aberturas unicas ÷ Entregues" com
+      // "10.09%" na coluna de data virou disparo de 09/10/2001).
       function truncateAtStopRow(linhas) {
         const resultado = [];
         for (const linha of linhas) {
           if (isStopRow(linha)) break;
+          const vazia = !(linha || []).some((cell) => String(cell ?? "").trim() !== "");
+          if (vazia) {
+            if (resultado.length) break;
+            continue;
+          }
           resultado.push(linha);
         }
         return resultado;
@@ -8264,6 +8275,11 @@
           return `${ano}-${month}-${day}T${hour}:${minute}:${second}`;
         }
 
+        // O fallback de normalizeDateTime() usa new Date(raw), que aceita quase qualquer coisa
+        // (new Date("10.09%") = 09/10/2001). So deixa passar valores com cara de data de verdade:
+        // dia/mes/ano separados por "/" ou "-", sem "%".
+        if (raw.includes("%") || !/\d{1,4}[\/-]\d{1,2}[\/-]\d{1,4}/.test(raw)) return null;
+
         return normalizeDateTime(raw);
       }
 
@@ -8272,7 +8288,7 @@
           nome_disparo: String(row.nome_disparo || row.disparo || row.envio || row.campanha || nomeDisparoFallback || "Disparo").trim() || nomeDisparoFallback,
           data_hora: normalizeDisparoDateTime(row.data_hora || row.data_e_hora || row.data_envio || row.enviado_em || row.data || row.data_referencia),
           assunto_email: row.assunto_email || row.assunto_do_e_mail || row.assunto || row.subject || null,
-          segmentacao: row.segmentacao || row.lista || row.publico || row.audience || null,
+          segmentacao: row.segmentacao || row.listas_de_segmentacao || row.lista || row.listas || row.publico || row.audience || null,
           enviados: numDisparo(row.enviados || row.sent),
           entregues: numDisparo(row.entregues || row.delivered || row.recebidos),
           aberturas_unicas: rawNumDisparo(row.aberturas_unicas ?? row.aberturas ?? row.opens_unicos ?? row.unique_opens),
@@ -8351,9 +8367,12 @@
         }
 
         const text = await readCsvText(file);
-        const todasLinhas = text.split(/\r?\n/).filter(Boolean);
-        if (!todasLinhas.length) return { disparos: [] };
-        const sep = todasLinhas[0].includes(";") ? ";" : ",";
+        // Mantem as linhas vazias: e por elas que truncateAtStopRow sabe onde a tabela de
+        // disparos termina e comeca o proximo bloco da planilha.
+        const todasLinhas = text.split(/\r?\n/);
+        const primeiraLinha = todasLinhas.find((linha) => linha.trim());
+        if (!primeiraLinha) return { disparos: [] };
+        const sep = primeiraLinha.includes(";") ? ";" : ",";
         const matriz = todasLinhas.map((linha) => linha.split(sep));
         const headerIdx = findBestHeaderRow(matriz);
         const rows = sheetRowsToObjects(matriz, headerIdx);
