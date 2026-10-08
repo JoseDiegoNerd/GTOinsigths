@@ -3909,6 +3909,38 @@
         return data || [];
       }
 
+      // Quantos disparos das campanhas escolhidas ficaram FORA do Periodo, e em que datas. As
+      // campanhas sao escolhidas por data_importacao, mas os disparos sao filtrados por data_hora
+      // (data real do envio) - uma campanha importada hoje com envios de agosto zerava todos os KPIs
+      // no periodo padrao de 30 dias sem explicar o motivo (incidente 08/10/2026: Havaianas e
+      // Jeans + Basicos importadas em 08/10 com disparos de 14-19/08). null quando nada ficou de fora.
+      async function fetchDisparosForaDoPeriodo(campanhaIds, disparosNoPeriodo) {
+        if (!campanhaIds.length || (!fromDate() && !toDate())) return null;
+        const { data, error } = await supabase.from("campanha_disparos").select("data_hora").in("campanha_id", campanhaIds);
+        if (error) throw error;
+        const todos = data || [];
+        const fora = todos.length - disparosNoPeriodo.length;
+        if (fora <= 0) return null;
+        const datas = todos.map((d) => d.data_hora).filter(Boolean).sort();
+        return { fora, total: todos.length, primeira: datas[0] || null, ultima: datas[datas.length - 1] || null };
+      }
+
+      function emailForaDoPeriodoAvisoHtml(foraDoPeriodo) {
+        if (!foraDoPeriodo) return "";
+        const { fora, total, primeira, ultima } = foraDoPeriodo;
+        const dia = (iso) => new Date(iso).toLocaleDateString("pt-BR");
+        const intervalo = primeira && ultima
+          ? (dia(primeira) === dia(ultima) ? ` (enviado${total > 1 ? "s" : ""} em ${dia(primeira)})` : ` (enviados entre ${dia(primeira)} e ${dia(ultima)})`)
+          : "";
+        const botao = primeira
+          ? `<button type="button" class="secondary" id="emailIncluirDatasDisparos" data-de="${escapeHtml(String(primeira).slice(0, 10))}" style="margin-left:8px">Ver período dos disparos</button>`
+          : "";
+        return `<div class="alert" style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <span>${fora} de ${total} disparo(s) das campanhas abaixo estão fora do período selecionado${escapeHtml(intervalo)} e não entram nos indicadores.</span>
+          ${botao}
+        </div>`;
+      }
+
       async function fetchEmailModel() {
         if (state.marca === "Todas") {
           const ultimasPorMarca = await fetchUltimasCampanhasPorMarca();
@@ -3921,12 +3953,14 @@
               : Promise.resolve({ data: [], error: null })
           ]);
           if (analiseResult.error) throw analiseResult.error;
+          const foraDoPeriodo = await fetchDisparosForaDoPeriodo(idsConsolidados, disparosConsolidados);
 
           emailModeloAtual = {
             modo: "todas",
             ultimasPorMarca,
             disparosConsolidados,
-            analiseConsolidada: analiseResult.data || []
+            analiseConsolidada: analiseResult.data || [],
+            foraDoPeriodo
           };
           return emailModeloAtual;
         }
@@ -3948,12 +3982,14 @@
             : Promise.resolve({ data: [], error: null })
         ]);
         if (analiseResult.error) throw analiseResult.error;
+        const foraDoPeriodo = await fetchDisparosForaDoPeriodo(ids, disparos);
 
         emailModeloAtual = {
           modo: "marca",
           campanhas,
           disparos,
-          analise: analiseResult.data || []
+          analise: analiseResult.data || [],
+          foraDoPeriodo
         };
         return emailModeloAtual;
       }
@@ -4075,9 +4111,11 @@
         </tr>`).join("") || `<tr><td colspan="7">Sem itens de análise.</td></tr>`}</tbody></table></div>`;
       }
 
-      function emailMarcaComparativoSectionHtml(disparos, analiseConsolidada) {
+      function emailMarcaComparativoSectionHtml(disparos, analiseConsolidada, temCampanhas) {
         if (!disparos.length) {
-          return `<p class="muted">Nenhuma campanha de e-mail marketing importada ainda. Use "Importar Planilhas" para começar.</p>`;
+          return temCampanhas
+            ? `<p class="muted">Nenhum disparo das últimas campanhas no período selecionado.</p>`
+            : `<p class="muted">Nenhuma campanha de e-mail marketing importada ainda. Use "Importar Planilhas" para começar.</p>`;
         }
         return `<div class="grid" style="gap:16px;margin-top:16px;min-width:0">
           <section class="card"><h4>Comparativo entre Disparos</h4>${emailMarcaComparativoHtml(disparos)}</section>
@@ -4218,14 +4256,14 @@
         // Sem botao "Atualizar": marca dispara renderEmailBI() direto na troca (ver
         // wireEmailInteractions), sempre buscando dado fresco - mesmo padrao ja usado em Redes
         // Sociais/Anuncios (indicador passivo em vez de botao manual, ver ultimaAtualizacaoHtml()).
-        // O filtro de periodo fica na tela por consistencia visual com as outras paginas, mas nao
-        // filtra mais nada aqui: a regra "Ultima(s) Campanha(s)" e sempre a(s) mais recente(s) de
-        // verdade, independente de qualquer janela de datas.
+        // As campanhas sao sempre as mais recentes importadas, mas os disparos delas respeitam o
+        // Periodo (ver fetchDisparosDoPeriodo); o aviso abaixo explica quando algum ficou de fora.
 
         if (model.modo === "todas") {
           const { ultimasPorMarca, disparosConsolidados, analiseConsolidada } = model;
           return `${cabecalho}
             ${emailConsolidacaoBannerHtml(ultimasPorMarca)}
+            ${emailForaDoPeriodoAvisoHtml(model.foraDoPeriodo)}
             <div id="emailKpiRow">${emailPreviewOverviewHtml(disparosConsolidados)}</div>
             <section class="card">
               <div class="page-head" style="align-items:start">
@@ -4234,12 +4272,13 @@
                   <p class="muted">Consolidado dos disparos das últimas campanhas ativas de cada marca.</p>
                 </div>
               </div>
-              ${emailMarcaComparativoSectionHtml(disparosConsolidados, analiseConsolidada)}
+              ${emailMarcaComparativoSectionHtml(disparosConsolidados, analiseConsolidada, ultimasPorMarca.some((u) => u.campanha))}
             </section>`;
         }
 
         const { campanhas, disparos, analise } = model;
         return `${cabecalho}
+          ${emailForaDoPeriodoAvisoHtml(model.foraDoPeriodo)}
           <div id="emailKpiRow">${emailPreviewOverviewHtml(disparos)}</div>
           <section class="card">
             <div class="page-head" style="align-items:start">
@@ -4259,6 +4298,17 @@
         // fetch novo - os dados das ate 3 campanhas ja estao todos em emailModeloAtual).
         wireMarcaPills(() => { state.emailSelectedCampanhaId = null; renderEmailBI(); });
         wirePeriodoDropdown(() => renderEmailBI());
+        // Amplia o Periodo pra comecar no primeiro disparo das campanhas, sem limite final
+        // (periodoAte vazio = toDate() null), assim nenhum envio posterior fica de fora.
+        const incluirDatas = document.querySelector("#emailIncluirDatasDisparos");
+        if (incluirDatas) {
+          incluirDatas.onclick = () => {
+            state.periodo = "custom";
+            state.periodoDe = incluirDatas.dataset.de;
+            state.periodoAte = "";
+            renderEmailBI();
+          };
+        }
         const campanhaSelect = document.querySelector("#emailCampanhaSelect");
         if (campanhaSelect) {
           campanhaSelect.onchange = (event) => {
