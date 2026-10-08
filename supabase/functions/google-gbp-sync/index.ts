@@ -13,6 +13,7 @@ import {
   safeErrorMessage,
   withCors,
 } from "../_shared/google.ts";
+import { classificarPendentes } from "../_shared/reputation.ts";
 
 type Integracao = {
   id: string;
@@ -26,6 +27,7 @@ type Integracao = {
 type Local = {
   id: string;
   location_id: string;
+  nome_loja: string | null;
 };
 
 const STAR_RATING: Record<string, number> = { ONE: 1, TWO: 2, THREE: 3, FOUR: 4, FIVE: 5 };
@@ -66,7 +68,7 @@ async function syncLocais(integracao: Integracao, accessToken: string, warnings:
   const supabase = getAdminClient();
   const { data: locais } = await supabase
     .from("integracao_google_locais")
-    .select("id,location_id")
+    .select("id,location_id,nome_loja")
     .eq("integracao_id", integracao.id);
 
   return (locais || []) as Local[];
@@ -110,6 +112,25 @@ async function syncReviews(integracao: Integracao, local: Local, accessToken: st
       }, { onConflict: "marca,review_id" });
 
     if (error) throw error;
+
+    // Espelha a avaliacao na tabela unificada do Hub de Reputacao (mesma chave marca+review_id).
+    const { error: espelhoError } = await supabase
+      .from("comments_reputation")
+      .upsert({
+        source: "google_business",
+        external_id: reviewId,
+        marca: integracao.marca,
+        local_id: local.id,
+        store_id: local.location_id,
+        branch_name: local.nome_loja,
+        author_name: review.reviewer?.displayName || null,
+        content: review.comment || null,
+        rating: STAR_RATING[String(review.starRating)] || null,
+        created_at: review.createTime || new Date().toISOString(),
+        atualizado_em: new Date().toISOString(),
+      }, { onConflict: "marca,source,external_id" });
+
+    if (espelhoError) throw espelhoError;
     imported += 1;
   }
 
@@ -373,9 +394,16 @@ Deno.serve(withCors(async (req) => {
 
     await refreshStageResumo(syncedMarcas);
 
+    // Classificacao por IA em lote; falhas aqui nao derrubam a sincronizacao.
+    const classificacao = await classificarPendentes(syncedMarcas).catch((erro) => {
+      console.error("Falha na classificacao de reputacao", erro);
+      return null;
+    });
+
     return jsonResponse({
       ok: true,
       results,
+      classificacao,
       message: `Sincronizacao concluida para ${results.length} conta(s).`,
     });
   } catch (error) {

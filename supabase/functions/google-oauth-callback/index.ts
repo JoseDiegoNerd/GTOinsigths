@@ -4,6 +4,7 @@ import {
   GOOGLE_ACCOUNTS_API,
   GOOGLE_BUSINESS_INFO_API,
   getRequiredEnv,
+  GoogleApiError,
   googleFetch,
   jsonResponse,
   logGoogleEvent,
@@ -27,6 +28,10 @@ const LOCATION_READ_MASK = [
   "profile",
   "openInfo",
 ].join(",");
+
+// Locais sincronizados ha menos que isso nao sao rebuscados no Google ao reconectar a conta:
+// a listagem conta na cota por minuto e os dados cadastrais quase nao mudam.
+const LOCATIONS_CACHE_TTL_MS = 10 * 60 * 1000;
 
 function redirectTo(appReturnUrl: string, params: Record<string, string | number>) {
   const url = new URL(appReturnUrl || "http://127.0.0.1:5173");
@@ -104,10 +109,38 @@ Deno.serve(withCors(async (req) => {
     const tokenExpiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
     const scopes = String(tokens.scope || "").split(" ").filter(Boolean);
 
-    const accountsResponse = await googleFetch(`${GOOGLE_ACCOUNTS_API}/accounts`, accessToken);
+    const supabase = getAdminClient();
+
+    let accountsResponse;
+    try {
+      accountsResponse = await googleFetch(`${GOOGLE_ACCOUNTS_API}/accounts`, accessToken);
+    } catch (accountsError) {
+      if (!(accountsError instanceof GoogleApiError) || !accountsError.isQuota) throw accountsError;
+
+      // Cota estourada mesmo apos o backoff: se a marca ja tem contas salvas, mantem o que esta no
+      // banco e avisa em vez de tratar como falha de conexao.
+      const { count } = await supabase
+        .from("integracao_google_contas")
+        .select("id", { count: "exact", head: true })
+        .eq("marca", marca);
+
+      await logGoogleEvent({
+        marca,
+        tipo_evento: "oauth_callback",
+        status: "aviso",
+        mensagem: accountsError.message,
+      });
+
+      if (count) {
+        return redirectTo(appReturnUrl, {
+          google_connected: count,
+          google_warning: "Cota da API do Google excedida ao atualizar a lista de contas. Mantivemos as contas ja salvas; tente reconectar em alguns minutos.",
+        });
+      }
+      throw accountsError;
+    }
     const accounts = accountsResponse.accounts || [];
 
-    const supabase = getAdminClient();
     let contasSalvas = 0;
 
     for (const account of accounts) {
@@ -144,10 +177,23 @@ Deno.serve(withCors(async (req) => {
       if (contaError) throw contaError;
       contasSalvas += 1;
 
-      const locationsResponse = await googleFetch(
-        `${GOOGLE_BUSINESS_INFO_API}/${googleAccountId}/locations?readMask=${LOCATION_READ_MASK}`,
-        accessToken,
-      ).catch(() => ({ locations: [] }));
+      const { data: ultimoLocal } = await supabase
+        .from("integracao_google_locais")
+        .select("atualizado_em")
+        .eq("integracao_id", conta.id)
+        .order("atualizado_em", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const locaisEmCache = ultimoLocal?.atualizado_em
+        && Date.now() - new Date(ultimoLocal.atualizado_em).getTime() < LOCATIONS_CACHE_TTL_MS;
+
+      const locationsResponse = locaisEmCache
+        ? { locations: [] }
+        : await googleFetch(
+          `${GOOGLE_BUSINESS_INFO_API}/${googleAccountId}/locations?readMask=${LOCATION_READ_MASK}`,
+          accessToken,
+        ).catch(() => ({ locations: [] }));
 
       for (const location of locationsResponse.locations || []) {
         const locationId = String(location.name || "");
@@ -170,6 +216,7 @@ Deno.serve(withCors(async (req) => {
             horario_especial: location.specialHours || {},
             status: location.openInfo?.status || null,
             payload_bruto: location,
+            atualizado_em: new Date().toISOString(),
           }, { onConflict: "marca,location_id" });
 
         if (localError) throw localError;
