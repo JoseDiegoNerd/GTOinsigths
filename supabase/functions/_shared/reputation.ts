@@ -46,7 +46,9 @@ function validarClassificacao(payload: unknown): Classificacao {
 // Chama o Gemini com saida em JSON estruturado. A chave vai no header (nao na URL) para nao
 // aparecer em logs de acesso.
 export async function classificarTexto(texto: string): Promise<{ classificacao: Classificacao; modelo: string }> {
-  const modelo = Deno.env.get("GEMINI_MODEL") || "gemini-2.5-flash";
+  // gemini-2.5-flash foi descontinuado para projetos novos em 2026 (a API passou a responder 404
+  // pedindo a troca). gemini-3.5-flash e o equivalente estavel atual.
+  const modelo = Deno.env.get("GEMINI_MODEL") || "gemini-3.5-flash";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`;
 
   const corpo = {
