@@ -4,6 +4,7 @@ import {
   getAdminClient,
   getAuthenticatedUser,
   getValidAccessToken,
+  GoogleApiError,
   GOOGLE_BUSINESS_INFO_API,
   GOOGLE_MYBUSINESS_LEGACY_API,
   GOOGLE_PERFORMANCE_API,
@@ -11,6 +12,7 @@ import {
   jsonResponse,
   logGoogleEvent,
   safeErrorMessage,
+  sleepMs,
   withCors,
 } from "../_shared/google.ts";
 import { classificarPendentes } from "../_shared/reputation.ts";
@@ -54,10 +56,21 @@ function daysAgo(days: number) {
   return date;
 }
 
-async function tryFetch<T>(label: string, fn: () => Promise<T>, warnings: string[]): Promise<T | null> {
+// A cota da Business Profile API e por projeto Google Cloud (nao por loja ou marca): se uma
+// chamada esgota a cota mesmo apos o backoff de googleFetch, as proximas tem a mesma certeza de
+// falhar. Esse estado e compartilhado por toda a execucao da funcao para parar de insistir assim
+// que a cota acaba, em vez de gastar o backoff (ate ~30s por chamada) em cada loja/conta restante.
+type EstadoCota = { esgotada: boolean };
+
+// Pausa entre lojas para espacar as chamadas dentro do limite de requisicoes por minuto do Google.
+const PACING_ENTRE_LOJAS_MS = 400;
+
+async function tryFetch<T>(label: string, fn: () => Promise<T>, warnings: string[], estadoCota: EstadoCota): Promise<T | null> {
+  if (estadoCota.esgotada) return null;
   try {
     return await fn();
   } catch (error) {
+    if (error instanceof GoogleApiError && error.isQuota) estadoCota.esgotada = true;
     const message = error instanceof Error ? error.message : String(error);
     warnings.push(`${label}: ${message}`);
     return null;
@@ -74,12 +87,13 @@ async function syncLocais(integracao: Integracao, accessToken: string, warnings:
   return (locais || []) as Local[];
 }
 
-async function syncReviews(integracao: Integracao, local: Local, accessToken: string, warnings: string[]) {
+async function syncReviews(integracao: Integracao, local: Local, accessToken: string, warnings: string[], estadoCota: EstadoCota) {
   const parent = `${integracao.google_account_id}/${local.location_id}`;
   const response = await tryFetch(
     `Reviews ${local.location_id}`,
     () => googleFetch(`${GOOGLE_MYBUSINESS_LEGACY_API}/${parent}/reviews`, accessToken),
     warnings,
+    estadoCota,
   );
 
   if (!response?.reviews?.length) return 0;
@@ -137,7 +151,7 @@ async function syncReviews(integracao: Integracao, local: Local, accessToken: st
   return imported;
 }
 
-async function syncMetricas(integracao: Integracao, local: Local, accessToken: string, warnings: string[]) {
+async function syncMetricas(integracao: Integracao, local: Local, accessToken: string, warnings: string[], estadoCota: EstadoCota) {
   const start = isoDateParts(daysAgo(30));
   const end = isoDateParts(new Date());
 
@@ -154,6 +168,7 @@ async function syncMetricas(integracao: Integracao, local: Local, accessToken: s
     `Metricas ${local.location_id}`,
     () => googleFetch(`${GOOGLE_PERFORMANCE_API}/${local.location_id}:fetchMultiDailyMetricsTimeSeries?${params}`, accessToken),
     warnings,
+    estadoCota,
   );
 
   if (!response?.multiDailyMetricTimeSeries?.length) return 0;
@@ -215,11 +230,12 @@ async function syncMetricas(integracao: Integracao, local: Local, accessToken: s
   return imported;
 }
 
-async function syncFotos(integracao: Integracao, local: Local, accessToken: string, warnings: string[]) {
+async function syncFotos(integracao: Integracao, local: Local, accessToken: string, warnings: string[], estadoCota: EstadoCota) {
   const response = await tryFetch(
     `Fotos ${local.location_id}`,
     () => googleFetch(`${GOOGLE_BUSINESS_INFO_API}/${local.location_id}/media`, accessToken),
     warnings,
+    estadoCota,
   );
 
   if (!response?.mediaItems?.length) return 0;
@@ -322,8 +338,24 @@ Deno.serve(withCors(async (req) => {
 
     const results = [];
     const syncedMarcas: string[] = [];
+    // Compartilhado entre todas as contas desta execucao: a cota e por projeto Google Cloud, nao
+    // por conta, entao uma vez esgotada nao ha motivo pra continuar tentando as contas seguintes.
+    const estadoCota: EstadoCota = { esgotada: false };
 
     for (const integracao of integracoes as Integracao[]) {
+      if (estadoCota.esgotada) {
+        results.push({
+          id: integracao.id,
+          marca: integracao.marca,
+          reviewsImported: 0,
+          metricasImportadas: 0,
+          fotosImportadas: 0,
+          warnings: ["Cota da API do Google esgotada nesta execucao — conta nao sincronizada. Tente novamente em alguns minutos."],
+          error: undefined,
+        });
+        continue;
+      }
+
       await logGoogleEvent({
         integracao_id: integracao.id,
         marca: integracao.marca,
@@ -351,10 +383,16 @@ Deno.serve(withCors(async (req) => {
           warnings.push("Nenhum local sincronizado ainda para esta conta — rode a conexao novamente se lojas foram adicionadas.");
         }
 
-        for (const local of locais) {
-          result.reviewsImported += await syncReviews(integracao, local, accessToken, warnings);
-          result.metricasImportadas += await syncMetricas(integracao, local, accessToken, warnings);
-          result.fotosImportadas += await syncFotos(integracao, local, accessToken, warnings);
+        for (const [indice, local] of locais.entries()) {
+          if (estadoCota.esgotada) {
+            warnings.push("Cota da API do Google esgotada — lojas restantes desta conta nao foram sincronizadas nesta execucao.");
+            break;
+          }
+          if (indice > 0) await sleepMs(PACING_ENTRE_LOJAS_MS);
+
+          result.reviewsImported += await syncReviews(integracao, local, accessToken, warnings, estadoCota);
+          result.metricasImportadas += await syncMetricas(integracao, local, accessToken, warnings, estadoCota);
+          result.fotosImportadas += await syncFotos(integracao, local, accessToken, warnings, estadoCota);
         }
 
         await supabase

@@ -7301,6 +7301,14 @@
         }
       }
 
+      // Detecta mensagens de cota da API do Google (nossas, ou o texto bruto do Google) pra mostrar
+      // um aviso mais amigavel do que um erro generico, enquanto a aprovacao da Business Profile
+      // API nao chega — ver docs/google-business-api-setup.md.
+      function pareceErroDeCota(texto) {
+        return /cota|quota|resource_exhausted|requests per minute/i.test(String(texto || ""));
+      }
+      const GOOGLE_COTA_PENDENTE_MSG = "O Google ainda está processando a liberação de cota da API do Business Profile para este projeto. Isso é esperado enquanto a aprovação está em andamento e pode levar alguns dias — tente sincronizar novamente mais tarde.";
+
       let googleFlash = null;
 
       // Bloqueia os botoes enquanto uma acao roda: cada clique repetido vira mais chamadas a API do
@@ -7348,9 +7356,11 @@
         const statusHtml = statusMessage
           ? `<div class="alert success">${escapeHtml(statusMessage)}</div>`
           : googleError
-            ? `<div class="alert error">Google retornou erro: ${escapeHtml(googleError)}</div>`
+            ? pareceErroDeCota(googleError)
+              ? `<div class="alert">${escapeHtml(GOOGLE_COTA_PENDENTE_MSG)}</div>`
+              : `<div class="alert error">Google retornou erro: ${escapeHtml(googleError)}</div>`
             : googleWarning
-              ? `<div class="alert">${escapeHtml(googleWarning)}</div>`
+              ? `<div class="alert">${escapeHtml(pareceErroDeCota(googleWarning) ? GOOGLE_COTA_PENDENTE_MSG : googleWarning)}</div>`
               : googleConnected
                 ? `<div class="alert success">${escapeHtml(googleConnected)} conta(s) Google recebida(s). Revise abaixo quais pertencem à marca antes de sincronizar.</div>`
                 : "";
@@ -7604,10 +7614,18 @@
         }
         const totalReviews = results.reduce((sum, row) => sum + num(row.reviewsImported), 0);
         const totalMetricas = results.reduce((sum, row) => sum + num(row.metricasImportadas), 0);
-        const totalWarnings = results.reduce((sum, row) => sum + (row.warnings?.length || 0), 0);
+        const todosAvisos = results.flatMap((row) => row.warnings || []);
         const errors = results.filter((row) => row.error).map((row) => `${row.marca}: ${row.error}`);
+        const teveCota = todosAvisos.some(pareceErroDeCota) || errors.some(pareceErroDeCota);
+
+        if (teveCota) {
+          const detailsCota = errors.length ? ` Erros: ${errors.filter((e) => !pareceErroDeCota(e)).slice(0, 2).join(" | ")}` : "";
+          await renderGoogleBusiness(`${GOOGLE_COTA_PENDENTE_MSG} (${fmt.format(totalReviews)} avaliações e ${fmt.format(totalMetricas)} dias de métricas processados antes de parar.)${detailsCota}`, { force: true });
+          return;
+        }
+
         const details = errors.length ? ` Erros: ${errors.slice(0, 2).join(" | ")}` : "";
-        const avisos = totalWarnings ? ` ${totalWarnings} aviso(s) da API do Google (ex.: cota ou permissão); veja os logs de integração.` : "";
+        const avisos = todosAvisos.length ? ` ${todosAvisos.length} aviso(s) da API do Google; veja os logs de integração.` : "";
         await renderGoogleBusiness(`Sincronização concluída: ${fmt.format(totalReviews)} avaliações e ${fmt.format(totalMetricas)} dias de métricas processados.${avisos}${details}`, { force: true });
       }
 

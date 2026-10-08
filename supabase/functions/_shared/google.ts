@@ -151,6 +151,10 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// Exportado para quem precisa espacar chamadas fora do backoff de 429 (ex.: pacing entre lojas
+// no google-gbp-sync), sem duplicar a função.
+export const sleepMs = sleep;
+
 // Segundos ("30") ou data HTTP. Retorna ms, ou null se ausente/invalido.
 function parseRetryAfterMs(header: string | null): number | null {
   if (!header) return null;
