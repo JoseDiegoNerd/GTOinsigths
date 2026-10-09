@@ -3869,11 +3869,10 @@
       // Visao mensal (acumulado do mes). O filtro desta tela e proprio (state.emailMes), separado
       // do Periodo global das outras paginas: um mes selecionado soma TODOS os disparos com
       // data_hora (data real do envio) dentro dele, e "all" soma tudo. As opcoes do dropdown saem
-      // dos meses que tem disparo salvo no Supabase. Dois modos, pelo filtro de marca do topo:
-      //   "Todas"          -> KPIs do mes somando as 3 marcas + Comparativo entre Marcas.
-      //   marca especifica -> KPIs do mes da marca + comparativo entre as campanhas do mes.
-      //                       Escolher uma campanha no seletor isola os disparos dela e leva o
-      //                       filtro pro mes do envio, entao os cards nao zeram por causa do mes.
+      // dos meses que tem disparo salvo no Supabase. Sem mes escolhido, abre no mes atual se ele
+      // tiver disparos, senao no mes mais recente com dados.
+      // Abaixo dos KPIs, "Campanhas de <mes>" lista as campanhas do mes; "Ver metricas" numa linha
+      // (state.emailSelectedCampanhaId) faz os KPIs e o detalhamento mostrarem so aquela campanha.
       // Historico: antes as campanhas eram as ultimas por data_importacao e os disparos eram
       // filtrados pelo Periodo global (30 dias) - campanhas importadas em 08/10/2026 com envios de
       // agosto zeravam todos os KPIs.
@@ -3893,9 +3892,6 @@
         const [ano, mes] = key.split("-").map(Number);
         return `${MESES_PT[mes - 1]}/${ano}`;
       }
-      function emailMesSelecionado() {
-        return state.emailMes || mesAtualKey();
-      }
       // Primeiro instante do mes ate o primeiro instante do mes seguinte (exclusivo), em horario
       // local convertido pra ISO - startOfMonth/endOfMonth sem perder o ultimo dia por fuso.
       function mesRange(key) {
@@ -3903,113 +3899,127 @@
         return { de: new Date(ano, mes - 1, 1).toISOString(), ate: new Date(ano, mes, 1).toISOString() };
       }
       function emailCacheKey() {
-        return [state.marca, emailMesSelecionado(), state.emailSelectedCampanhaId || ""].join("|");
+        return [state.marca, state.emailMes || "", state.emailSelectedCampanhaId || ""].join("|");
       }
 
       async function fetchEmailModel() {
         const marca = state.marca;
-        const mes = emailMesSelecionado();
 
-        // Indice leve (campanha_id + data_hora) de todos os disparos visiveis: alimenta as opcoes
-        // de mes do dropdown, o atalho "Existem disparos salvos em ..." e o mes de cada campanha.
+        // Indice leve (campanha_id + data_hora) de todos os disparos visiveis: define os meses do
+        // dropdown e o mes padrao quando o usuario ainda nao escolheu nenhum.
         let indiceQuery = supabase.from("campanha_disparos").select("campanha_id,data_hora");
         if (marca !== "Todas") indiceQuery = indiceQuery.eq("marca", marca);
-        const campanhasQuery = marca !== "Todas"
-          ? supabase.from("campanhas_email").select("id,nome_campanha,marca,data_importacao").eq("marca", marca).order("data_importacao", { ascending: false }).limit(50)
-          : Promise.resolve({ data: [], error: null });
-        const [indiceResult, campanhasResult] = await Promise.all([indiceQuery, campanhasQuery]);
+        const indiceResult = await indiceQuery;
         if (indiceResult.error) throw indiceResult.error;
-        if (campanhasResult.error) throw campanhasResult.error;
-
         const indice = indiceResult.data || [];
-        const campanhas = campanhasResult.data || [];
         const mesesDisponiveis = [...new Set(indice.map((d) => mesKeyDe(d.data_hora)))].sort().reverse();
-        const mesPorCampanha = {};
-        for (const d of indice) {
-          const key = mesKeyDe(d.data_hora);
-          if (!mesPorCampanha[d.campanha_id] || key < mesPorCampanha[d.campanha_id]) mesPorCampanha[d.campanha_id] = key;
-        }
 
-        // Campanha escolhida no seletor sobrepoe o mes: traz todos os disparos dela.
-        const campanhaId = campanhas.some((c) => c.id === state.emailSelectedCampanhaId) ? state.emailSelectedCampanhaId : null;
-        let disparosQuery = supabase.from("campanha_disparos").select("*").order("data_hora");
-        if (campanhaId) {
-          disparosQuery = disparosQuery.eq("campanha_id", campanhaId);
-        } else {
-          if (marca !== "Todas") disparosQuery = disparosQuery.eq("marca", marca);
-          if (mes !== "all") {
-            const { de, ate } = mesRange(mes);
-            disparosQuery = disparosQuery.gte("data_hora", de).lt("data_hora", ate);
-          }
-        }
-        const disparosResult = await disparosQuery;
-        if (disparosResult.error) throw disparosResult.error;
-        const disparos = disparosResult.data || [];
+        const atual = mesAtualKey();
+        const mes = state.emailMes || (mesesDisponiveis.includes(atual) || !mesesDisponiveis.length ? atual : mesesDisponiveis[0]);
+        const campanhaId = indice.some((d) => d.campanha_id === state.emailSelectedCampanhaId) ? state.emailSelectedCampanhaId : null;
 
-        const idsCampanhas = [...new Set(disparos.map((d) => d.campanha_id))];
-        const analiseResult = idsCampanhas.length
-          ? await supabase.from("campanha_analise_estrategica").select("*").in("campanha_id", idsCampanhas)
-          : { data: [], error: null };
+        let disparosMesQuery = supabase.from("campanha_disparos").select("*").order("data_hora");
+        if (marca !== "Todas") disparosMesQuery = disparosMesQuery.eq("marca", marca);
+        if (mes !== "all") {
+          const { de, ate } = mesRange(mes);
+          disparosMesQuery = disparosMesQuery.gte("data_hora", de).lt("data_hora", ate);
+        }
+        const [disparosMesResult, disparosCampanhaResult] = await Promise.all([
+          disparosMesQuery,
+          campanhaId
+            ? supabase.from("campanha_disparos").select("*").eq("campanha_id", campanhaId).order("data_hora")
+            : Promise.resolve({ data: null, error: null })
+        ]);
+        if (disparosMesResult.error) throw disparosMesResult.error;
+        if (disparosCampanhaResult.error) throw disparosCampanhaResult.error;
+        const disparosMes = disparosMesResult.data || [];
+        // KPIs e detalhamento: a campanha inteira quando selecionada, senao o mes.
+        const disparos = disparosCampanhaResult.data || disparosMes;
+
+        const idsCampanhas = [...new Set([...disparosMes, ...disparos].map((d) => d.campanha_id))];
+        const idsKpi = [...new Set(disparos.map((d) => d.campanha_id))];
+        const [campanhasResult, analiseResult] = await Promise.all([
+          idsCampanhas.length
+            ? supabase.from("campanhas_email").select("id,nome_campanha,marca,data_importacao").in("id", idsCampanhas)
+            : Promise.resolve({ data: [], error: null }),
+          idsKpi.length
+            ? supabase.from("campanha_analise_estrategica").select("*").in("campanha_id", idsKpi)
+            : Promise.resolve({ data: [], error: null })
+        ]);
+        if (campanhasResult.error) throw campanhasResult.error;
         if (analiseResult.error) throw analiseResult.error;
 
-        return { marca, mes, campanhaId, campanhas, disparos, analise: analiseResult.data || [], mesesDisponiveis, mesPorCampanha };
+        return {
+          marca,
+          mes,
+          campanhaId,
+          campanhas: campanhasResult.data || [],
+          disparosMes,
+          disparos,
+          analise: analiseResult.data || [],
+          mesesDisponiveis,
+          temCampanhas: indice.length > 0
+        };
       }
 
       // Dropdown de mes da tela. O menu fica sempre no DOM (so escondido): abrir/fechar nao
       // precisa re-renderizar a pagina nem buscar dado.
       function emailMesDropdownHtml(model) {
         const atual = mesAtualKey();
+        const meses = model.mesesDisponiveis.includes(atual) ? model.mesesDisponiveis : [atual, ...model.mesesDisponiveis];
         const opcoes = [
-          [atual, `Mês atual (${mesLabel(atual)})`],
-          ...model.mesesDisponiveis.filter((key) => key !== atual).map((key) => [key, mesLabel(key)]),
+          ...meses.map((key) => [key, key === atual ? `${mesLabel(key)} (atual)` : mesLabel(key)]),
           ["all", "Todo o período"]
         ];
-        const rotulo = model.campanhaId ? mesLabel(model.mesPorCampanha[model.campanhaId] || model.mes) : (model.mes === atual ? "Mês atual" : mesLabel(model.mes));
         return `
           <div class="dropdown" id="emailMesDropdown">
-            <button type="button" class="pill" id="emailMesToggle" style="display:inline-flex;align-items:center;gap:4px"><span class="material-symbols-outlined" style="font-size:16px">calendar_month</span>${escapeHtml(rotulo)} <span class="material-symbols-outlined" style="font-size:18px">expand_more</span></button>
+            <button type="button" class="pill" id="emailMesToggle" style="display:inline-flex;align-items:center;gap:4px"><span class="material-symbols-outlined" style="font-size:16px">calendar_month</span>${escapeHtml(mesLabel(model.mes))} <span class="material-symbols-outlined" style="font-size:18px">expand_more</span></button>
             <div class="dropdown-menu" id="emailMesMenu" hidden>
-              ${opcoes.map(([value, label]) => `<button type="button" class="dropdown-item email-mes-opt ${!model.campanhaId && model.mes === value ? "active" : ""}" data-mes="${escapeHtml(value)}">${escapeHtml(label)}</button>`).join("")}
+              ${opcoes.map(([value, label]) => `<button type="button" class="dropdown-item email-mes-opt ${model.mes === value ? "active" : ""}" data-mes="${escapeHtml(value)}">${escapeHtml(label)}</button>`).join("")}
             </div>
           </div>`;
       }
 
-      // Avisos acionaveis acima dos KPIs: campanha isolada (com atalho pra voltar ao mes) ou mes
-      // vazio com disparos salvos em outro mes (com atalho "Ir para <mes>").
-      function emailAvisoMesHtml(model) {
-        const { mes, campanhaId, campanhas, disparos, mesesDisponiveis, mesPorCampanha } = model;
-        if (campanhaId) {
-          const campanha = campanhas.find((c) => c.id === campanhaId);
-          const mesCampanha = mesPorCampanha[campanhaId];
-          return `<div class="alert" style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-            <span>Mostrando só a campanha <b>${escapeHtml(campanha?.nome_campanha || "")}</b>${mesCampanha ? ` (enviada em ${escapeHtml(mesLabel(mesCampanha))})` : ""}.</span>
-            <button type="button" class="secondary email-ir-mes" data-mes="${escapeHtml(mesCampanha || mes)}">Ver todas as campanhas do mês</button>
-          </div>`;
-        }
-        if (disparos.length || mes === "all" || !mesesDisponiveis.length) return "";
-        const alvo = mesesDisponiveis.find((key) => key < mes) || mesesDisponiveis[0];
-        return `<div class="alert" style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-          <span>Não há disparos em ${escapeHtml(mesLabel(mes))}. Existem disparos salvos em <b>${escapeHtml(mesLabel(alvo))}</b>.</span>
-          <button type="button" class="secondary email-ir-mes" data-mes="${escapeHtml(alvo)}">Ir para ${escapeHtml(mesLabel(alvo))}</button>
-        </div>`;
-      }
+      // "Campanhas de <mes>": uma linha por campanha com disparo no mes (data do 1o disparo e
+      // totais da campanha dentro do mes). "Ver metricas" filtra KPIs e detalhamento pra ela.
+      function emailCampanhasDoMesHtml(model) {
+        const { mes, campanhaId, campanhas, disparosMes } = model;
+        const porId = new Map(campanhas.map((c) => [c.id, c]));
+        const grupos = [...new Set(disparosMes.map((d) => d.campanha_id))]
+          .map((id) => ({ id, campanha: porId.get(id), disparos: disparosMes.filter((d) => d.campanha_id === id) }))
+          .sort((a, b) => String(b.disparos[0].data_hora).localeCompare(String(a.disparos[0].data_hora)));
+        const pct = (v) => `${v.toFixed(2).replace(".", ",")}%`;
 
-      // Banner do modo "Todas": o que cada marca contribuiu pros KPIs do mes selecionado.
-      function emailConsolidacaoBannerHtml(disparos, mes) {
-        return `<div class="card" style="background:#fdf2f8;border-color:#fbcfe8;margin-bottom:16px">
-          <p style="margin:0 0 10px;font-weight:700;color:#831843">📌 Visão Consolidada — ${escapeHtml(mesLabel(mes))}</p>
-          <div style="display:flex;flex-wrap:wrap;gap:8px">
-            ${Object.keys(CORES_MARCA).map((marca) => {
-              const daMarca = disparos.filter((d) => d.marca === marca);
-              const nCampanhas = new Set(daMarca.map((d) => d.campanha_id)).size;
-              return `
-              <span class="pill" style="cursor:default;background:white">
-                <b style="color:${CORES_MARCA[marca] || "#831843"}">${escapeHtml(marca)}:</b>
-                ${daMarca.length ? ` ${daMarca.length} disparo(s) · ${nCampanhas} campanha(s)` : ` <span class="muted">sem disparos</span>`}
-              </span>`;
-            }).join("")}
+        const linhas = grupos.map(({ id, campanha, disparos }) => {
+          const agg = weightedDisparosAggregate(disparos);
+          const selecionada = id === campanhaId;
+          const marca = campanha?.marca || disparos[0].marca;
+          return `<tr${selecionada ? ` style="background:#f1f5f9"` : ""}>
+            <td><span class="marca-chip ${marcaChipClass(marca)}">${escapeHtml(marca)}</span></td>
+            <td>${escapeHtml(campanha?.nome_campanha || "")}</td>
+            <td>${escapeHtml(formatDateTime(disparos[0].data_hora))}${disparos.length > 1 ? ` <span class="muted">(+${disparos.length - 1})</span>` : ""}</td>
+            <td>${fmt.format(agg.enviados)} / ${fmt.format(agg.entregues)}</td>
+            <td>${pct(agg.taxaAbertura)} / ${pct(agg.ctr)}</td>
+            <td class="row-actions">${selecionada
+              ? `<button type="button" class="secondary email-campanha-limpar" title="Voltar ao consolidado do mês">Selecionada ✕</button>`
+              : `<button type="button" class="secondary email-campanha-ver" data-campanha="${escapeHtml(id)}">Ver métricas</button>`}</td>
+          </tr>`;
+        }).join("");
+
+        return `<section class="card">
+          <div class="page-head" style="align-items:start">
+            <div>
+              <h3>${mes === "all" ? "Campanhas — Todo o período" : `Campanhas de ${escapeHtml(mesLabel(mes))}`}</h3>
+              <p class="muted">${campanhaId ? "Os indicadores acima mostram só a campanha selecionada." : "Os indicadores acima somam todas as campanhas da lista."}</p>
+            </div>
           </div>
-        </div>`;
+          ${grupos.length
+            ? `<div class="table-wrap"><table>
+                <thead><tr><th>Marca</th><th>Campanha</th><th>Data/Hora do disparo</th><th>Enviados / Entregues</th><th>Abertura / CTR</th><th>Ação</th></tr></thead>
+                <tbody>${linhas}</tbody>
+              </table></div>`
+            : `<p class="muted">${model.temCampanhas ? `Nenhuma campanha disparada em ${escapeHtml(mesLabel(mes))}.` : `Nenhuma campanha de e-mail marketing importada ainda. Use "Importar Planilhas" para começar.`}</p>`}
+        </section>`;
       }
 
       // Agrupa os disparos consolidados (3 ultimas campanhas) por marca - base dos
@@ -4188,52 +4198,47 @@
         </div>`;
       }
 
-      // Secao do modo "marca especifica". O seletor lista as campanhas da marca com o mes de envio;
-      // "Todas as campanhas" mostra o mes inteiro (comparativo entre as campanhas do mes quando ha
-      // 2+, ou o detalhamento direto quando ha 1 so) e uma campanha escolhida mostra so os disparos
-      // dela.
-      function emailHistoricoMarcaSectionHtml(model) {
-        const { mes, campanhaId, campanhas, disparos, analise, mesPorCampanha } = model;
-        if (!campanhas.length) {
-          return `<p class="muted">Nenhuma campanha de e-mail marketing importada ainda para esta marca. Use "Importar Planilhas" para começar.</p>`;
+      // Secao de analise abaixo da lista de campanhas. Campanha selecionada (ou so 1 no mes):
+      // detalhamento por disparo dela. Senao: "Todas" compara as marcas e uma marca especifica
+      // compara as campanhas do mes entre si.
+      function emailAnaliseSectionHtml(model) {
+        const { marca, mes, campanhaId, campanhas, disparos, analise } = model;
+        const campanhasDoMes = campanhas.filter((c) => disparos.some((d) => d.campanha_id === c.id));
+        const campanha = campanhas.find((c) => c.id === campanhaId);
+
+        if (campanhaId || (marca !== "Todas" && campanhasDoMes.length === 1)) {
+          const alvo = campanha || campanhasDoMes[0];
+          return `<section class="card">
+            <h3>Detalhamento por Disparo — ${escapeHtml(alvo?.nome_campanha || "")}</h3>
+            ${emailCampanhaDetalheHtml(disparos, analise)}
+          </section>`;
+        }
+        if (!disparos.length) return "";
+
+        if (marca === "Todas") {
+          return `<section class="card">
+            <h3>Comparativo de Desempenho entre Marcas</h3>
+            <p class="muted">Consolidado de todos os disparos de cada marca em ${escapeHtml(mesLabel(mes))}.</p>
+            ${emailMarcaComparativoSectionHtml(disparos, analise, "")}
+          </section>`;
         }
 
-        const idsNoMes = new Set(disparos.map((d) => d.campanha_id));
-        const campanhasDoMes = campanhas.filter((c) => idsNoMes.has(c.id));
-        let corpo;
-        if (campanhaId || campanhasDoMes.length === 1) {
-          corpo = `<div>${emailCampanhaDetalheHtml(disparos, analise)}</div>`;
-        } else if (!disparos.length) {
-          corpo = `<p class="muted" style="margin-top:16px">Nenhum disparo desta marca em ${escapeHtml(mesLabel(mes))}.</p>`;
-        } else {
-          corpo = `<div class="grid" style="gap:16px;margin-top:16px;min-width:0">
+        return `<section class="card">
+          <h3>Comparativo entre Campanhas de ${escapeHtml(marca)}</h3>
+          <p class="muted">Campanhas com disparos em ${escapeHtml(mesLabel(mes))}, comparadas entre si.</p>
+          <div class="grid" style="gap:16px;margin-top:16px;min-width:0">
             <section class="card"><h4>Comparativo entre Campanhas</h4>${emailCampanhaComparativoHtml(campanhasDoMes, disparos)}</section>
             <section class="card"><h4>Qualidade da Base por Campanha</h4>${emailCampanhaQualidadeBaseHtml(campanhasDoMes, disparos)}</section>
             <section class="card"><h4>Eficiência do Clique por Campanha (CTR × CTOR)</h4>${emailCampanhaCtrCtorHtml(campanhasDoMes, disparos)}</section>
-            <section class="card"><h4>Tabela de Disparos</h4>${emailPreviewDisparosTableHtml(disparos)}</section>
-          </div>`;
-        }
-
-        return `<div style="margin-top:16px">
-          <div class="page-head" style="align-items:start">
-            <div>
-              <h4 style="margin:0">Detalhamento por Disparo</h4>
-              <p class="muted">Escolha uma campanha para isolar os disparos dela. O mês acompanha a data de envio.</p>
-            </div>
-            <div class="filters">
-              <select id="emailCampanhaSelect">
-                <option value="" ${campanhaId ? "" : "selected"}>Todas as campanhas${mes === "all" ? "" : ` de ${escapeHtml(mesLabel(mes))}`}</option>
-                ${campanhas.map((c) => `<option value="${escapeHtml(c.id)}" data-mes="${escapeHtml(mesPorCampanha[c.id] || "")}" ${c.id === campanhaId ? "selected" : ""}>${escapeHtml(c.nome_campanha)} · ${mesPorCampanha[c.id] ? escapeHtml(mesLabel(mesPorCampanha[c.id])) : "sem disparos"}</option>`).join("")}
-              </select>
-            </div>
           </div>
-          ${corpo}
-        </div>`;
+        </section>`;
       }
 
       function paintEmailHtml(model) {
         const ultimaImportacao = lastImportTimestamp(["campanha_disparos"]);
-        const cabecalho = `
+        // Sem botao "Atualizar": marca/mes/campanha disparam renderEmailBI() direto na troca (ver
+        // wireEmailInteractions), sempre buscando dado fresco.
+        return `
           <div class="page-head">
             <div><div class="eyebrow">Campanhas importadas</div><h2>Email Marketing</h2><p class="muted">Campanhas, disparos, qualidade de base e análise estratégica por marca, no acumulado do mês.</p></div>
             <div class="filters">
@@ -4241,46 +4246,16 @@
               <span class="pill" style="cursor:default"><span class="material-symbols-outlined" style="font-size:16px;vertical-align:-3px;margin-right:4px">sync</span>Última importação: ${escapeHtml(formatDateTime(ultimaImportacao))}</span>
               ${emailMesDropdownHtml(model)}
             </div>
-          </div>`;
-        // Sem botao "Atualizar": marca/mes/campanha disparam renderEmailBI() direto na troca (ver
-        // wireEmailInteractions), sempre buscando dado fresco.
-
-        if (model.marca === "Todas") {
-          const { disparos, analise, mes } = model;
-          return `${cabecalho}
-            ${emailAvisoMesHtml(model)}
-            ${emailConsolidacaoBannerHtml(disparos, mes)}
-            <div id="emailKpiRow">${emailPreviewOverviewHtml(disparos)}</div>
-            <section class="card">
-              <div class="page-head" style="align-items:start">
-                <div>
-                  <h3>Comparativo de Desempenho entre Marcas</h3>
-                  <p class="muted">Consolidado de todos os disparos de cada marca em ${escapeHtml(mesLabel(mes))}.</p>
-                </div>
-              </div>
-              ${emailMarcaComparativoSectionHtml(disparos, analise, `Nenhum disparo em ${mesLabel(mes)}.`)}
-            </section>`;
-        }
-
-        return `${cabecalho}
-          ${emailAvisoMesHtml(model)}
+          </div>
           <div id="emailKpiRow">${emailPreviewOverviewHtml(model.disparos)}</div>
-          <section class="card">
-            <div class="page-head" style="align-items:start">
-              <div>
-                <h3>Campanhas de ${escapeHtml(state.marca)}</h3>
-                <p class="muted">${model.campanhaId ? "Campanha selecionada, com todos os disparos dela." : `Campanhas com disparos em ${escapeHtml(mesLabel(model.mes))}, comparadas entre si.`}</p>
-              </div>
-            </div>
-            ${emailHistoricoMarcaSectionHtml(model)}
-          </section>`;
+          ${emailCampanhasDoMesHtml(model)}
+          ${emailAnaliseSectionHtml(model)}`;
       }
 
       let emailMesOutsideClickBound = false;
       function wireEmailInteractions() {
         // Marca, mes e campanha mudam a cacheKey e sempre buscam de novo (renderEmailBI com
-        // force:true). Trocar o mes manualmente solta a campanha isolada; escolher uma campanha
-        // leva o mes pro mes de envio dela.
+        // force:true). Trocar marca ou mes solta a campanha selecionada.
         wireMarcaPills(() => { state.emailSelectedCampanhaId = null; renderEmailBI(); });
 
         const toggle = document.querySelector("#emailMesToggle");
@@ -4299,24 +4274,25 @@
           });
         }
 
-        const irParaMes = (mes) => {
-          state.emailMes = mes;
-          state.emailSelectedCampanhaId = null;
-          renderEmailBI();
-        };
-        document.querySelectorAll(".email-mes-opt, .email-ir-mes").forEach((button) => {
-          button.onclick = () => irParaMes(button.dataset.mes);
-        });
-
-        const campanhaSelect = document.querySelector("#emailCampanhaSelect");
-        if (campanhaSelect) {
-          campanhaSelect.onchange = (event) => {
-            const option = event.target.selectedOptions[0];
-            state.emailSelectedCampanhaId = event.target.value || null;
-            if (option?.dataset.mes) state.emailMes = option.dataset.mes;
+        document.querySelectorAll(".email-mes-opt").forEach((button) => {
+          button.onclick = () => {
+            state.emailMes = button.dataset.mes;
+            state.emailSelectedCampanhaId = null;
             renderEmailBI();
           };
-        }
+        });
+        document.querySelectorAll(".email-campanha-ver").forEach((button) => {
+          button.onclick = () => {
+            state.emailSelectedCampanhaId = button.dataset.campanha;
+            renderEmailBI();
+          };
+        });
+        document.querySelectorAll(".email-campanha-limpar").forEach((button) => {
+          button.onclick = () => {
+            state.emailSelectedCampanhaId = null;
+            renderEmailBI();
+          };
+        });
       }
 
       async function renderEmailBI() {
