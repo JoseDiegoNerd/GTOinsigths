@@ -236,18 +236,40 @@ export function errorMessage(error: unknown): string {
   return String(error);
 }
 
+const META_RETRY_MAX_ATTEMPTS = 4;
+const META_RETRY_BASE_DELAY_MS = 2000;
+const META_RETRY_MAX_DELAY_MS = 20000;
+
+function metaSleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Backoff exponencial com jitter em erro de limite da Graph API (code 4/17/32, "User request
+// limit reached") ou 5xx - mesmo padrao do googleFetch em _shared/google.ts. O formato do erro
+// final (Error simples com a mensagem da Meta) nao muda, so demora mais pra desistir.
 export async function metaGet(path: string, params: Record<string, string | number | boolean | undefined | null>) {
   const url = new URL(`https://graph.facebook.com/${getGraphVersion()}${path}`);
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null) url.searchParams.set(key, String(value));
   });
 
-  const response = await fetch(url);
-  const body = await response.json();
-  if (!response.ok) {
+  for (let attempt = 1; ; attempt++) {
+    const response = await fetch(url);
+    const body = await response.json();
+    if (response.ok) return body;
+
+    const codigoLimite = [4, 17, 32, 613].includes(Number(body?.error?.code));
+    const retryable = codigoLimite || [500, 502, 503, 504].includes(response.status);
+
+    if (retryable && attempt < META_RETRY_MAX_ATTEMPTS) {
+      const delay = Math.min(META_RETRY_MAX_DELAY_MS, META_RETRY_BASE_DELAY_MS * 2 ** (attempt - 1) + Math.random() * 1000);
+      console.warn(`Meta API erro em ${path} (tentativa ${attempt}/${META_RETRY_MAX_ATTEMPTS}); nova tentativa em ${Math.round(delay)}ms.`);
+      await metaSleep(delay);
+      continue;
+    }
+
     throw new Error(body?.error?.message || `Meta API error on ${path}`);
   }
-  return body;
 }
 
 export async function logMetaEvent(input: {
