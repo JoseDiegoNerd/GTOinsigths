@@ -18,6 +18,11 @@ const DEFAULT_SCOPES = [
   "instagram_basic",
   "instagram_manage_insights",
   "ads_read",
+  // Hub de Reputacao (comentarios): Standard Access em modo Development - so funciona para quem
+  // tem papel (Admin/Developer/Tester) no app ate a Meta liberar Acesso Avancado. Contas ja
+  // conectadas precisam reconectar: o token antigo nao carrega essas permissoes novas.
+  "instagram_business_manage_comments",
+  "pages_read_user_content",
 ];
 
 Deno.serve(withCors(async (req) => {

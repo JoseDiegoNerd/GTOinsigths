@@ -1,11 +1,10 @@
 // Sincroniza comentarios do Instagram e Facebook para o Hub de Reputacao (comments_reputation).
 //
-// PENDENTE: os escopos instagram_manage_comments e pages_read_user_content ainda nao foram
-// adicionados ao login da Meta em meta-oauth-start (DEFAULT_SCOPES) - adicionar um escopo ainda
-// nao aprovado la quebraria a conexao de quem nao tem papel no app, em modo Development. Ate essa
-// decisao ser tomada e as contas reconectadas com o escopo novo, toda chamada aqui deve falhar com
-// erro de permissao (OAuthException) - e o comportamento esperado, nao um bug. Ver conversa em
-// docs/google-business-api-setup.md para o equivalente do lado Google.
+// Os escopos instagram_business_manage_comments e pages_read_user_content estao em Standard
+// Access (app em modo Development): so funcionam para contas com papel (Admin/Developer/Tester)
+// no app ate a Meta liberar Acesso Avancado apos a primeira chamada real. Contas conectadas antes
+// desses escopos entrarem em meta-oauth-start precisam reconectar - o token antigo nao carrega
+// as permissoes novas.
 import {
   assertAdminOrGestor,
   errorMessage,
@@ -71,7 +70,7 @@ async function postsRecentes(integracao: Integracao): Promise<PostRef[]> {
 // terminar - detecta pra deixar o aviso claro em vez de um erro generico.
 function mensagemAmigavel(mensagemBruta: string) {
   if (/OAuthException|does not have permission|permission|scope/i.test(mensagemBruta)) {
-    return `Sem permissao para ler comentarios desta conta - reconecte-a apos a aprovacao dos escopos instagram_manage_comments/pages_read_user_content pela Meta. Detalhe: ${mensagemBruta}`;
+    return `Sem permissao para ler comentarios desta conta - reconecte-a (ela precisa ter um papel de Admin/Developer/Tester no app Meta, ou a Meta ja ter liberado Acesso Avancado para instagram_business_manage_comments/pages_read_user_content). Detalhe: ${mensagemBruta}`;
   }
   return mensagemBruta;
 }
