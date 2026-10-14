@@ -41,7 +41,7 @@ MFA (TOTP) e opcional por usuario, com UI de ativacao/desafio em `public/index.h
 
 ## Integracao Meta Business (organico: Facebook + Instagram)
 
-As Edge Functions `meta-oauth-start`, `meta-oauth-callback` e `meta-sync-insights` (`supabase/functions/`) implementam a conexao com a Graph API. O app tem uma tela dedicada para isso. Escopos pedidos hoje: `pages_show_list`, `pages_read_engagement`, `business_management`, `read_insights`, `instagram_basic`, `instagram_manage_insights`, `ads_read` (este ultimo cobre a integracao de anuncios, ver secao propria abaixo), `instagram_business_manage_comments` e `pages_read_user_content` (leitura de comentarios para o Hub de Reputacao, `meta-sync-comments` — em Standard Access, so funcionam para contas com papel no app ate a Meta liberar Acesso Avancado).
+As Edge Functions `meta-oauth-start`, `meta-oauth-callback` e `meta-sync-insights` (`supabase/functions/`) implementam a conexao com a Graph API. O app tem uma tela dedicada para isso. Escopos pedidos hoje: `pages_show_list`, `pages_read_engagement`, `business_management`, `read_insights`, `instagram_basic`, `instagram_manage_insights`, `ads_read` (este ultimo cobre a integracao de anuncios, ver secao propria abaixo), `instagram_manage_comments` e `pages_read_user_content` (leitura de comentarios para o Hub de Reputacao, `meta-sync-comments` — em Standard Access, so funcionam para contas com papel no app ate a Meta liberar Acesso Avancado).
 
 ### Conectar/testar pela UI
 

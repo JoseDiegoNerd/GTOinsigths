@@ -21,7 +21,10 @@ const DEFAULT_SCOPES = [
   // Hub de Reputacao (comentarios): Standard Access em modo Development - so funciona para quem
   // tem papel (Admin/Developer/Tester) no app ate a Meta liberar Acesso Avancado. Contas ja
   // conectadas precisam reconectar: o token antigo nao carrega essas permissoes novas.
-  "instagram_business_manage_comments",
+  // "instagram_business_manage_comments" (nome exibido no painel de Permissoes e recursos da
+  // Meta) nao e um escopo valido de OAuth - o dialogo de login rejeita com "Invalid Scopes".
+  // O identificador real pedido no login e instagram_manage_comments.
+  "instagram_manage_comments",
   "pages_read_user_content",
 ];
 

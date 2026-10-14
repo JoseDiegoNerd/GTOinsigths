@@ -1,6 +1,6 @@
 // Sincroniza comentarios do Instagram e Facebook para o Hub de Reputacao (comments_reputation).
 //
-// Os escopos instagram_business_manage_comments e pages_read_user_content estao em Standard
+// Os escopos instagram_manage_comments e pages_read_user_content estao em Standard
 // Access (app em modo Development): so funcionam para contas com papel (Admin/Developer/Tester)
 // no app ate a Meta liberar Acesso Avancado apos a primeira chamada real. Contas conectadas antes
 // desses escopos entrarem em meta-oauth-start precisam reconectar - o token antigo nao carrega
@@ -70,7 +70,7 @@ async function postsRecentes(integracao: Integracao): Promise<PostRef[]> {
 // terminar - detecta pra deixar o aviso claro em vez de um erro generico.
 function mensagemAmigavel(mensagemBruta: string) {
   if (/OAuthException|does not have permission|permission|scope/i.test(mensagemBruta)) {
-    return `Sem permissao para ler comentarios desta conta - reconecte-a (ela precisa ter um papel de Admin/Developer/Tester no app Meta, ou a Meta ja ter liberado Acesso Avancado para instagram_business_manage_comments/pages_read_user_content). Detalhe: ${mensagemBruta}`;
+    return `Sem permissao para ler comentarios desta conta - reconecte-a (ela precisa ter um papel de Admin/Developer/Tester no app Meta, ou a Meta ja ter liberado Acesso Avancado para instagram_manage_comments/pages_read_user_content). Detalhe: ${mensagemBruta}`;
   }
   return mensagemBruta;
 }
