@@ -6985,6 +6985,7 @@
               <div class="actions">
                 <button id="connectMeta"><span class="material-symbols-outlined" style="vertical-align:middle">add_link</span> Conectar Meta Business</button>
                 <button id="syncAllMeta" class="secondary"><span class="material-symbols-outlined" style="vertical-align:middle">sync</span> Sincronizar confirmadas</button>
+                <button id="syncAllMetaComments" class="secondary"><span class="material-symbols-outlined" style="vertical-align:middle">forum</span> Sincronizar comentários</button>
               </div>
             </div>
             <div id="connectionActionStatus" style="margin-top:14px"></div>
@@ -7047,6 +7048,7 @@
         document.querySelector("#refreshConnections").onclick = () => renderConnections();
         document.querySelector("#connectMeta").onclick = connectMetaBusiness;
         document.querySelector("#syncAllMeta").onclick = () => syncMetaInsights();
+        document.querySelector("#syncAllMetaComments").onclick = () => syncMetaComments();
         document.querySelector("#syncAllMetaAds").onclick = () => syncMetaAds();
         document.querySelectorAll(".sync-one").forEach((button) => { button.onclick = () => syncMetaInsights(button.dataset.id); });
         document.querySelectorAll(".confirm-one").forEach((button) => { button.onclick = () => saveConnectionMapping(button.dataset.id, "confirm"); });
@@ -7180,6 +7182,39 @@
         const details = errors.length ? ` Erros: ${errors.slice(0, 2).join(" | ")}` : totalWarnings ? ` Avisos da Meta: ${totalWarnings}. Veja logs_integracao_meta para detalhes.` : "";
         await renderConnections(`Sincronização concluída: ${fmt.format(totalInstagram)} registros do Instagram e ${fmt.format(totalFacebook)} registros do Facebook.${details}`);
       }
+      async function syncMetaComments(integracaoId = null) {
+        const status = document.querySelector("#connectionActionStatus") || document.querySelector("#content");
+        status.innerHTML = `<div class="alert">Sincronizando comentários do Instagram e Facebook...</div>`;
+
+        const body = integracaoId ? { integracao_id: integracaoId } : { marca: state.marca };
+        const { data, error } = await supabase.functions.invoke("meta-sync-comments", { body });
+
+        if (error) {
+          status.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
+          return;
+        }
+
+        const results = data?.results || [];
+        if (!results.length) {
+          await renderConnections(data?.message || "Nenhuma conta Meta ativa para sincronizar comentários.");
+          return;
+        }
+
+        const totalImportados = results.reduce((sum, row) => sum + num(row.importados), 0);
+        const todosAvisos = results.flatMap((row) => row.warnings || []);
+        const errors = results.filter((row) => row.error).map((row) => `${row.marca}: ${row.error}`);
+        const semPermissao = todosAvisos.some((a) => /permiss/i.test(a)) || errors.some((e) => /permiss/i.test(e));
+
+        if (semPermissao) {
+          await renderConnections(`${fmt.format(totalImportados)} comentário(s) importado(s). Pelo menos uma conta ainda não tem a permissão de comentários liberada pela Meta — isso é esperado até o Acesso Avançado ser aprovado. Detalhe nos logs de integração.`);
+          return;
+        }
+
+        const details = errors.length ? ` Erros: ${errors.slice(0, 2).join(" | ")}` : "";
+        const avisos = todosAvisos.length ? ` ${todosAvisos.length} aviso(s); veja os logs de integração.` : "";
+        await renderConnections(`Sincronização de comentários concluída: ${fmt.format(totalImportados)} comentário(s) importado(s).${avisos}${details}`);
+      }
+
       function googleReturnUrl() {
         if (location.protocol === "file:") return "http://127.0.0.1:5173/?page=google_business";
         return `${location.origin}${location.pathname}?page=google_business`;

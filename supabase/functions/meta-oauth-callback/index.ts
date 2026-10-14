@@ -10,16 +10,6 @@
   withCors,
 } from "../_shared/meta.ts";
 
-const META_SCOPES = [
-  "pages_show_list",
-  "pages_read_engagement",
-  "business_management",
-  "read_insights",
-  "instagram_basic",
-  "instagram_manage_insights",
-  "ads_read",
-];
-
 function redirectTo(appReturnUrl: string, params: Record<string, string | number>) {
   const url = new URL(appReturnUrl || "http://127.0.0.1:5173");
   Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, String(value)));
@@ -74,6 +64,25 @@ Deno.serve(withCors(async (req) => {
     const expiresIn = Number(longToken.expires_in || shortToken.expires_in || 0);
     const tokenExpiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000).toISOString() : null;
 
+    // A coluna scopes precisa refletir o que a Meta REALMENTE concedeu, nao uma lista fixa no
+    // codigo (o token exchange da Meta nao devolve o scope concedido, diferente do Google) -
+    // sem isso, nao ha como saber se um escopo pedido foi de fato aprovado (ex.: em Standard
+    // Access, so vale para contas com papel no app) ou silenciosamente negado.
+    const permissoesResponse = await metaGet("/me/permissions", { access_token: userAccessToken })
+      .catch((permissoesError) => {
+        logMetaEvent({
+          marca,
+          tipo_evento: "oauth_callback_permissions",
+          status: "aviso",
+          mensagem: errorMessage(permissoesError),
+        });
+        return { data: [] };
+      });
+    const scopesConcedidos = (permissoesResponse.data || [])
+      .filter((permissao: { status?: string }) => permissao.status === "granted")
+      .map((permissao: { permission?: string }) => String(permissao.permission || ""))
+      .filter(Boolean);
+
     const pages = await metaGet("/me/accounts", {
       fields: "id,name,access_token,instagram_business_account{id,username}",
       access_token: userAccessToken,
@@ -105,7 +114,7 @@ Deno.serve(withCors(async (req) => {
           access_token: pageToken,
           token_type: longToken.token_type || shortToken.token_type || "bearer",
           token_expires_at: tokenExpiresAt,
-          scopes: META_SCOPES,
+          scopes: scopesConcedidos,
           ativo: existingAccount?.ignorada ? false : true,
           conta_confirmada: existingAccount?.conta_confirmada ?? false,
           ignorada: existingAccount?.ignorada ?? false,
@@ -166,7 +175,7 @@ Deno.serve(withCors(async (req) => {
           access_token: userAccessToken,
           token_type: longToken.token_type || shortToken.token_type || "bearer",
           token_expires_at: tokenExpiresAt,
-          scopes: META_SCOPES,
+          scopes: scopesConcedidos,
           ativo: existingAdAccount?.ignorada ? false : true,
           conta_confirmada: existingAdAccount?.conta_confirmada ?? false,
           ignorada: existingAdAccount?.ignorada ?? false,
