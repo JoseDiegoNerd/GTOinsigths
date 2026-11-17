@@ -11,7 +11,8 @@
     <style>
       :root { --accent: #2563eb; --accent-rgb: 37,99,235; }
       * { box-sizing: border-box; }
-      body { margin: 0; font-family: Inter, system-ui, sans-serif; background: #f8fafc; color: #111c2d; overflow-x: hidden; }
+      body { margin: 0; font-family: Inter, system-ui, sans-serif; background: #f8fafc; color: #111c2d; }
+      img, svg, video, canvas { max-width: 100%; }
       button, input, select { font: inherit; }
       button { border: 0; border-radius: 8px; background: var(--accent); color: white; padding: 10px 14px; font-weight: 700; cursor: pointer; }
       button.secondary { background: white; color: #334155; border: 1px solid #cbd5e1; }
@@ -20,14 +21,15 @@
       button.danger:hover { background: #b91c1c; }
       button.danger:disabled { background: #fca5a5; cursor: not-allowed; }
       input, select { border: 1px solid #d8e3fb; border-radius: 8px; padding: 10px 12px; background: white; }
-      label { display: grid; gap: 6px; color: #475569; font-size: 12px; font-weight: 800; text-transform: uppercase; }
+      input, select, textarea { max-width: 100%; min-width: 0; }
+      label { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; color: #475569; font-size: 12px; font-weight: 800; text-transform: uppercase; }
       code { font-size: 12px; }
       .material-symbols-outlined { font-family: "Material Symbols Outlined"; line-height: 1; }
       .login { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
       .login-card { width: min(420px, 100%); display: grid; gap: 16px; background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 28px; box-shadow: 0 12px 30px rgba(15,23,42,.1); }
       .brand { width: 44px; height: 44px; border-radius: 10px; display: grid; place-items: center; background: #2563eb; color: white; font-weight: 800; }
-      .shell { display: flex; height: 100vh; overflow: hidden; }
-      aside { width: 260px; height: 100vh; flex: none; background: #0f172a; color: white; padding: 16px 12px; display: flex; flex-direction: column; justify-content: space-between; gap: 12px; overflow-y: auto; }
+      .shell { display: flex; height: 100vh; height: 100dvh; overflow: hidden; }
+      aside { width: 260px; height: 100vh; height: 100dvh; flex: none; background: #0f172a; color: white; padding: 16px 12px; display: flex; flex-direction: column; justify-content: space-between; gap: 12px; overflow-y: auto; }
       .side-brand { display: flex; align-items: center; gap: 12px; padding: 0 10px; flex: none; }
       .side-brand-logo { height: 40px; width: 40px; object-fit: contain; flex: none; display: block; }
       .login-card-logo { height: 56px; width: auto; max-width: 100%; object-fit: contain; display: block; margin: 0 auto 4px; }
@@ -45,8 +47,24 @@
       .icon-btn .material-symbols-outlined { font-size: 15px; }
       .icon-btn:hover { background: rgba(255,255,255,.18); color: white; }
       .icon-btn[title]:hover::after { content: attr(title); position: absolute; bottom: calc(100% + 7px); left: 50%; transform: translateX(-50%); background: #1e293b; color: white; font-size: 11px; font-weight: 600; padding: 4px 8px; border-radius: 6px; white-space: nowrap; box-shadow: 0 6px 16px rgba(0,0,0,.35); pointer-events: none; z-index: 5; }
-      main { min-width: 0; flex: 1; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
-      header { min-height: 64px; flex: none; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 32px; background: white; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 2; }
+      main { min-width: 0; flex: 1; height: 100vh; height: 100dvh; overflow-y: auto; display: flex; flex-direction: column; }
+      header { min-height: 64px; flex: none; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 32px; background: white; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 20; }
+      .header-title { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1 1 auto; }
+      .header-title-text { display: grid; min-width: 0; }
+      .header-title-text strong { overflow-wrap: anywhere; }
+      .content:focus { outline: none; }
+      /* Menu responsivo: escondidos no desktop largo; ver @media (max-width: 1279.98px) abaixo. */
+      .side-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex: none; }
+      .side-brand-text { min-width: 0; }
+      .nav-toggle, .nav-close { display: none; flex: none; width: 44px; height: 44px; padding: 0; border-radius: 10px; align-items: center; justify-content: center; }
+      .nav-toggle { background: transparent; color: #0f172a; border: 1px solid #e2e8f0; }
+      .nav-toggle:hover { background: #f1f5f9; }
+      .nav-close { background: rgba(255,255,255,.08); color: #e2e8f0; }
+      .nav-close:hover { background: rgba(255,255,255,.18); color: white; }
+      .nav-toggle:focus-visible, .nav-close:focus-visible, nav button:focus-visible, .icon-btn:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
+      .nav-backdrop { display: none; }
+      .sr-only, .nav-label-hidden { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+      .nav-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .content { padding: 32px; display: grid; gap: 24px; min-width: 0; flex: 1; }
       .content > * { min-width: 0; }
       .page-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; align-items: end; }
@@ -154,7 +172,7 @@
       .drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
       .hidden { display: none !important; }
       .review-card { border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; background: #f8fafc; display: grid; gap: 8px; }
-      .review-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+      .review-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 8px 12px; }
       .stars { color: #f59e0b; white-space: nowrap; }
       .stars .material-symbols-outlined { font-size: 16px; vertical-align: middle; }
       .stars .off { color: #cbd5e1; }
@@ -165,7 +183,7 @@
       .photo-thumb { aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: #e2e8f0; }
       .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
       .edit-row td { background: #f8fafc; }
-      .edit-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; align-items: end; }
+      .edit-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 12px; align-items: end; }
       input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--accent-rgb),.15); }
       thead th { position: sticky; top: 0; z-index: 1; }
       tbody tr:hover { background: #f1f5f9; }
@@ -186,10 +204,10 @@
       .pills { display: flex; gap: 8px; flex-wrap: wrap; }
       .pill { border-radius: 999px; padding: 8px 16px; background: white; border: 1px solid #d8e3fb; color: #475569; font-weight: 700; font-size: 13px; cursor: pointer; }
       .pill.active { background: var(--accent); color: white; border-color: var(--accent); }
-      .segmented { display: inline-flex; background: #eef2ff; border-radius: 999px; padding: 4px; gap: 2px; }
+      .segmented { display: inline-flex; flex-wrap: wrap; max-width: 100%; background: #eef2ff; border-radius: 999px; padding: 4px; gap: 2px; }
       .segmented button { background: transparent; color: #475569; padding: 8px 16px; border-radius: 999px; font-size: 13px; }
       .segmented button.active { background: white; color: var(--accent); box-shadow: 0 1px 3px rgba(15,23,42,.12); }
-      .subtabs { display: inline-flex; justify-self: start; align-self: start; width: fit-content; background: #f1f5f9; border-radius: 12px; padding: 4px; gap: 4px; }
+      .subtabs { display: inline-flex; flex-wrap: wrap; max-width: 100%; justify-self: start; align-self: start; width: fit-content; background: #f1f5f9; border-radius: 12px; padding: 4px; gap: 4px; }
       .subtabs button { background: transparent; color: #475569; padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; transition: background-color .15s ease, color .15s ease; }
       .subtabs button:hover { color: #0f172a; }
       .subtabs button.active { background: white; color: #2563eb; box-shadow: 0 1px 2px rgba(15,23,42,.08); }
@@ -220,10 +238,10 @@
       .chart-tooltip strong { display: block; margin-bottom: 2px; }
       .diag-trigger { padding: 6px 10px; font-size: 12px; font-weight: 800; }
       .diag-trigger:hover { filter: brightness(0.96); }
-      .profile-avatar-row { display: flex; align-items: center; gap: 16px; }
+      .profile-avatar-row { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
       .profile-avatar { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 800; flex: none; overflow: hidden; }
       .profile-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
-      .profile-avatar-actions { display: grid; gap: 4px; }
+      .profile-avatar-actions { display: grid; gap: 4px; flex: 1 1 180px; min-width: 0; }
       .profile-avatar-actions label { text-transform: none; font-size: 13px; font-weight: 700; color: #334155; }
       .field-hint { font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: none; margin: 4px 0 0; }
       .field-error { font-size: 11px; color: #dc2626; font-weight: 700; text-transform: none; margin: 4px 0 0; }
@@ -265,14 +283,14 @@
       .switch input:disabled + .slider { opacity: .5; cursor: not-allowed; }
       .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid #e2e8f0; }
       .switch-row:last-child { border-bottom: 0; }
-      .switch-row-label { display: grid; gap: 2px; }
+      .switch-row-label { display: grid; gap: 2px; min-width: 0; }
       .switch-row-label strong { font-size: 14px; color: #1f2937; font-weight: 700; }
       .switch-row-label span { font-size: 12px; color: #64748b; font-weight: 500; text-transform: none; }
       .modal-section-title { margin: 4px 0 0; font-size: 12px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: .04em; }
       .profile-modal-form { display: grid; gap: 16px; }
       .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,.55); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
       .modal-overlay[hidden] { display: none; }
-      .modal-panel { background: #fff; border-radius: 16px; max-width: 560px; width: 100%; max-height: 88vh; overflow-y: auto; box-shadow: 0 24px 64px rgba(15,23,42,.35); }
+      .modal-panel { background: #fff; border-radius: 16px; max-width: 560px; width: 100%; max-height: 88vh; max-height: 88dvh; overflow-y: auto; overscroll-behavior: contain; box-shadow: 0 24px 64px rgba(15,23,42,.35); }
       .modal-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 20px 22px 14px; border-bottom: 1px solid #e2e8f0; }
       .modal-close { background: transparent; color: #64748b; padding: 4px; border-radius: 8px; line-height: 0; }
       .modal-close:hover { background: #f1f5f9; }
@@ -288,7 +306,7 @@
       .drop-zone { position: relative; display: grid; gap: 8px; place-items: center; min-height: 190px; border: 2px dashed #93c5fd; border-radius: 12px; background: #eff6ff; text-align: center; padding: 20px; transition: border-color .15s, background-color .15s; }
       .drop-zone.dragover { border-color: #1d4ed8; background: #dbeafe; }
       .drop-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-      .message-tabs { display: flex; gap: 6px; border-bottom: 1px solid #e2e8f0; margin-bottom: 4px; }
+      .message-tabs { display: flex; flex-wrap: wrap; gap: 6px; border-bottom: 1px solid #e2e8f0; margin-bottom: 4px; }
       .message-tab { background: transparent; border: none; border-bottom: 2px solid transparent; padding: 8px 4px; font-weight: 700; font-size: 13px; color: #64748b; border-radius: 0; }
       .message-tab.active { color: #1d4ed8; border-bottom-color: #1d4ed8; }
       .message-textarea { width: 100%; font: inherit; border: 1px solid #d8e3fb; border-radius: 8px; padding: 10px 12px; min-height: 160px; resize: vertical; }
@@ -303,7 +321,17 @@
       .login-hero p { color: #cbd5e1; font-size: 16px; }
       .login-hero .side-brand { padding: 0; }
       .login-form-side { display: flex; align-items: center; justify-content: center; padding: 24px; }
-      @media (max-width: 860px) { .login-split { grid-template-columns: 1fr; } .login-hero { padding: 32px 24px; } }
+      @media (max-width: 860px) {
+        .login-split { grid-template-columns: minmax(0, 1fr); }
+        .login-hero { padding: 32px 24px; gap: 16px; }
+        /* No celular o formulario vem primeiro - o texto institucional fica logo abaixo. */
+        .login-form-side { order: -1; padding: 24px 16px; }
+      }
+      @media (max-width: 640px) {
+        .login-hero h1 { font-size: 24px; }
+        .login-hero p { font-size: 14px; }
+        .login-card { padding: 22px 18px; }
+      }
       .settings-row { grid-template-columns: minmax(0, 7fr) minmax(280px, 5fr); }
       .bandeira-grid { display: grid; gap: 12px; }
       .bandeira-card { padding: 16px; }
@@ -318,14 +346,97 @@
       .settings-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-top: 1px solid #e2e8f0; padding: 16px 4px 4px; font-size: 12px; }
       .settings-footer .link-btn { color: #64748b; text-decoration: underline; text-underline-offset: 2px; }
       .settings-footer .link-btn:hover { color: var(--accent); }
+      /* Grades que antes vinham com grid-template-columns inline (e por isso ignoravam os @media). */
+      .grid.cols.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .grid.cols.cols-1 { grid-template-columns: minmax(0, 1fr); }
+      .grid.kpis.kpis-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .grid.kpis.kpis-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+      .chart-scroll { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
+      .chart-scroll > .chart-svg { display: block; }
+
+      /* ---------------------------------------------------------------------------------------
+         Responsividade do layout geral. Breakpoints escolhidos pelo conteudo, nao por aparelho:
+         >= 1280px  menu lateral completo (260px) - desktop/notebook;
+         1024-1279  trilho compacto de icones (76px) + menu completo sobreposto sob demanda;
+         < 1024px   menu recolhido fora da tela, aberto pelo botao do cabecalho (celular/tablet);
+         <= 980px   grades de 2 colunas e graficos/cards em coluna unica;
+         <= 640px   cabecalho e espacamentos compactos; <= 520px KPIs em coluna unica.
+         ------------------------------------------------------------------------------------- */
+      @media (max-width: 1279.98px) {
+        .nav-toggle { display: inline-flex; }
+        aside.open .nav-close { display: inline-flex; }
+        body.nav-open { overflow: hidden; }
+        body.nav-open .nav-backdrop { display: block; position: fixed; inset: 0; z-index: 55; background: rgba(15,23,42,.55); }
+        aside { position: fixed; top: 0; bottom: 0; left: 0; z-index: 60; }
+        aside.open { width: min(300px, 86vw); box-shadow: 0 0 48px rgba(15,23,42,.45); }
+        aside.open nav button { min-height: 44px; }
+        header { padding: 10px 24px; }
+        .content { padding: 24px; }
+        .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .grid.kpis.kpis-5 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .conexoes-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      }
+      @media (min-width: 1024px) and (max-width: 1279.98px) {
+        .shell main { margin-left: 76px; }
+        aside { width: 76px; padding: 16px 10px; transition: width .2s ease, box-shadow .2s ease; }
+        aside:not(.open) .side-top { justify-content: center; }
+        aside:not(.open) .side-brand { padding: 0; }
+        aside:not(.open) .side-brand-text, aside:not(.open) .nav-label, aside:not(.open) .profile-info { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+        aside:not(.open) nav button { justify-content: center; padding: 10px 0; min-height: 44px; }
+        aside:not(.open) .profile { flex-direction: column; padding: 10px 0; }
+        aside:not(.open) .profile-actions { flex-direction: column; gap: 8px; }
+        aside:not(.open) .icon-btn { width: 36px; height: 36px; }
+        .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      }
+      @media (max-width: 1023.98px) {
+        .shell { display: block; height: auto; overflow: visible; }
+        main { height: auto; min-height: 100vh; min-height: 100dvh; overflow: visible; }
+        aside { width: min(300px, 86vw); height: 100%; transform: translateX(-100%); visibility: hidden; transition: transform .22s ease, visibility 0s linear .22s; }
+        aside.open { transform: none; visibility: visible; transition: transform .22s ease; }
+        aside nav button { min-height: 44px; }
+        .profile .icon-btn { width: 40px; height: 40px; }
+      }
+      @media (prefers-reduced-motion: reduce) { aside, aside.open { transition: none; } }
       @media (max-width: 980px) {
-        .kpis, .cols, .insight-grid, .channel-grid, .highlight-grid, .channel-grid .kpis, .settings-row, .conexoes-grid { grid-template-columns: 1fr; }
+        .cols, .grid.cols.cols-2, .insight-grid, .channel-grid, .settings-row { grid-template-columns: minmax(0, 1fr); }
+        .highlight-grid, .channel-grid .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .settings-footer { flex-direction: column; align-items: flex-start; }
-        .shell { flex-direction: column; height: auto; overflow: visible; }
-        aside { width: 100%; height: auto; overflow: visible; }
-        main { height: auto; overflow: visible; }
-        .page-head, .filters { flex-direction: column; align-items: stretch; }
-        .bar-row { grid-template-columns: 1fr; }
+        .page-head { flex-direction: column; align-items: stretch; }
+        .filters { justify-content: flex-start; }
+        .bar-row { grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; }
+        .bar-row .track { grid-column: 1 / -1; grid-row: 2; }
+      }
+      @media (max-width: 640px) {
+        header { padding: 8px 12px; min-height: 60px; gap: 8px; }
+        .header-subtitle { display: none; }
+        .header-title-text strong { font-size: 15px; line-height: 1.25; }
+        .status-online-text, .topbar-greeting { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+        .status-online-pill { padding: 0; width: 32px; height: 32px; justify-content: center; }
+        .topbar-actions { gap: 6px; flex-wrap: nowrap; }
+        .topbar-profile-trigger { padding: 4px 6px 4px 4px; min-height: 44px; }
+        .content { padding: 16px 12px; gap: 16px; }
+        .page-head h2 { font-size: 24px; }
+        .card { padding: 14px; }
+        .grid.kpis.kpis-5, .conexoes-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .modal-overlay { padding: 12px; }
+        .modal-header { padding: 16px 16px 12px; }
+        .modal-body { padding: 14px 16px 18px; }
+        .modal-panel.inf-modal-panel .inf-form-scroll { padding: 14px 16px; }
+        .modal-panel.inf-modal-panel .inf-form-rodape { padding: 12px 16px; }
+        .chart-scroll > .chart-svg-wide { min-width: 540px; }
+        input, select, textarea { font-size: 16px; }
+        th, td { padding: 10px; }
+        .segmented { border-radius: 16px; }
+        .actions button, .row-actions button { white-space: normal; max-width: 100%; text-align: center; }
+      }
+      @media (max-width: 520px) {
+        .kpis, .grid.kpis.kpis-5, .highlight-grid, .channel-grid .kpis, .conexoes-grid { grid-template-columns: minmax(0, 1fr); }
+        .podium-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      }
+      @media (pointer: coarse) {
+        .pill, .segmented button, .subtabs button, .inf-pill, .inf-subabas button, .message-tab { min-height: 44px; }
+        .modal-close { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+        .icon-btn { width: 40px; height: 40px; }
       }
 
       /* Modulo Influenciadores ------------------------------------------------------------------ */
@@ -365,10 +476,10 @@
       .inf-tabela-titulo { display: flex; align-items: center; gap: 8px; }
       .inf-tabela-titulo h3 { margin: 0; font-size: 17px; }
       .inf-badge-contagem { padding: 2px 8px; border-radius: 999px; background: #eff6ff; color: #1D4ED8; font-size: 11px; font-weight: 700; }
-      .inf-tabela-ferramentas { display: flex; align-items: center; gap: 10px; }
+      .inf-tabela-ferramentas { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; min-width: 0; }
       .inf-busca { position: relative; }
       .inf-busca .material-symbols-outlined { position: absolute; left: 10px; top: 9px; color: #94a3b8; font-size: 15px; }
-      .inf-busca input { padding: 7px 10px 7px 32px; font-size: 12px; background: #f8fafc; width: 190px; }
+      .inf-busca input { padding: 7px 10px 7px 32px; font-size: 12px; background: #f8fafc; width: min(190px, 100%); }
       .inf-btn-primario { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; }
       .inf-table { font-size: 12px; }
       .inf-table th, .inf-table td { padding: 12px 10px; }
@@ -429,7 +540,7 @@
       .inf-status.ativo { background: #d1fae5; color: #065f46; }
       .inf-status.pausado { background: #fef3c7; color: #92400e; }
       .inf-status.encerrado { background: #f1f5f9; color: #64748b; }
-      .inf-valores { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .inf-valores { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
       .inf-valor { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; text-align: center; }
       .inf-valor.destaque { background: #eff6ff; border-color: #bfdbfe; }
       .inf-valor .rotulo { font-size: 10px; color: #94a3b8; text-transform: uppercase; font-weight: 700; }
@@ -460,7 +571,7 @@
       .inf-midias .inf-bloco-titulo .material-symbols-outlined.rosa { color: #db2777; }
       .inf-midia { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
       .inf-midia-topo { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px; }
-      .inf-midia-titulo { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 12px; color: #1e293b; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .inf-midia-titulo { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 12px; color: #1e293b; max-width: 220px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .inf-midia-acoes { display: flex; gap: 6px; align-items: center; }
       .inf-midia-acoes a, .inf-midia-acoes button { color: #64748b; display: inline-flex; }
       .inf-midia-acoes a .material-symbols-outlined, .inf-midia-acoes button .material-symbols-outlined { font-size: 15px; }
@@ -481,7 +592,7 @@
       .inf-input-oculto { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
       .inf-form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
       .inf-form-grid-3 { grid-template-columns: repeat(3, 1fr); }
-      .inf-form-checks { grid-column: 1 / -1; display: flex; gap: 16px; }
+      .inf-form-checks { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 16px; }
       .inf-check { display: flex; flex-direction: row; align-items: center; gap: 6px; text-transform: none; font-weight: 500; color: #334155; }
       .inf-fixo { padding: 10px 12px; background: #f1f5f9; border-radius: 8px; font-weight: 700; color: #334155; font-size: 13px; }
       .inf-erro { color: #b91c1c; font-weight: 600; text-transform: none; }
@@ -500,7 +611,7 @@
          genericos). Cabecalho e rodape ficam fixos; so o miolo (.inf-form-scroll) rola, e sempre na
          vertical - overflow-x: hidden evita a rolagem horizontal que a grade antiga de campanha
          causava (o navegador computa overflow-x como "auto" quando so overflow-y e definido). */
-      .modal-panel.inf-modal-panel { max-width: 720px; display: flex; flex-direction: column; max-height: 88vh; overflow: hidden; }
+      .modal-panel.inf-modal-panel { max-width: 720px; display: flex; flex-direction: column; max-height: 88vh; max-height: 88dvh; overflow: hidden; }
       .modal-panel.inf-modal-panel .modal-header { flex: none; }
       .modal-panel.inf-modal-panel .modal-body { display: flex; flex-direction: column; flex: 1; min-height: 0; padding: 0; gap: 0; }
       .modal-panel.inf-modal-panel .inf-form-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 18px 22px; display: grid; gap: 14px; align-content: start; }
@@ -508,6 +619,18 @@
       @media (max-width: 980px) {
         .inf-layout, .inf-form-grid, .inf-camp-detalhes { grid-template-columns: 1fr; }
         .inf-kpis { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      }
+      @media (max-width: 640px) {
+        .inf-kpi-valor { font-size: 22px; }
+        .inf-tabela-topo, .inf-tabela-rodape { padding-left: 14px; padding-right: 14px; }
+        .inf-drawer { padding: 16px; }
+        .inf-midia-titulo { max-width: 100%; }
+        .inf-form-rodape, .inf-form-exclusao { flex-wrap: wrap; }
+      }
+      @media (max-width: 520px) {
+        .inf-kpis { grid-template-columns: minmax(0,1fr); }
+        .inf-valores { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .inf-valores .inf-valor.destaque { grid-column: 1 / -1; }
       }
     </style>
   </head>
@@ -1573,8 +1696,8 @@
         return `
           <div class="topbar-actions">
             <span class="status-online-pill" title="Conexão com o Supabase ativa">
-              <span class="status-online-dot"><span class="status-online-ping"></span></span>
-              Dados Sincronizados
+              <span class="status-online-dot" aria-hidden="true"><span class="status-online-ping"></span></span>
+              <span class="status-online-text">Dados Sincronizados</span>
             </span>
             <div class="dropdown topbar-profile" id="topbarProfile">
               <button type="button" class="topbar-profile-trigger" id="topbarProfileTrigger" aria-haspopup="true" aria-expanded="${state.topbarMenuOpen ? "true" : "false"}">
@@ -1658,8 +1781,115 @@
         el.textContent = `${saudacaoPorHorario()}, ${nomeExibicao}!`;
       }, 60000);
 
+      // Menu lateral responsivo. Abaixo de 1280px o aside deixa de ser fixo na largura total:
+      // - 1024-1279px (notebook pequeno / tablet paisagem): trilho compacto so com icones;
+      // - < 1024px (celular / tablet retrato): painel recolhido, fora da tela.
+      // Em ambos, o botao do cabecalho abre o menu completo como painel sobreposto (com fundo
+      // escurecido), que fecha ao escolher uma pagina, clicar fora, no X ou com Escape. Enquanto
+      // aberto, o <main> fica inert (fora do foco/leitor de tela), a rolagem do fundo e bloqueada e
+      // o Tab circula so dentro do menu. Os limites batem com os @media do CSS (.nav-*).
+      const navCollapsibleQuery = window.matchMedia("(max-width: 1279.98px)");
+
+      function navFocusables() {
+        const sidebar = document.querySelector("#sidebar");
+        if (!sidebar) return [];
+        return [...sidebar.querySelectorAll("button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex='-1'])")]
+          .filter((el) => el.offsetParent !== null || getComputedStyle(el).position === "fixed");
+      }
+
+      function applyNavState({ moveFocus = false, restoreFocus = false } = {}) {
+        const open = Boolean(state.navOpen) && navCollapsibleQuery.matches;
+        state.navOpen = open;
+        const sidebar = document.querySelector("#sidebar");
+        const toggle = document.querySelector("#navToggle");
+        const main = document.querySelector("main");
+        sidebar?.classList.toggle("open", open);
+        document.body.classList.toggle("nav-open", open);
+        if (main) main.inert = open;
+        if (toggle) {
+          toggle.setAttribute("aria-expanded", open ? "true" : "false");
+          toggle.setAttribute("aria-label", open ? "Fechar menu" : "Abrir menu");
+        }
+        if (open && moveFocus) {
+          (sidebar?.querySelector("nav button.active") || document.querySelector("#navClose"))?.focus();
+        } else if (!open && restoreFocus) {
+          toggle?.focus();
+        }
+      }
+
+      function setNavOpen(open) {
+        const wasOpen = Boolean(state.navOpen);
+        state.navOpen = open;
+        applyNavState({ moveFocus: open && !wasOpen, restoreFocus: !open && wasOpen });
+      }
+
+      function wireResponsiveNav() {
+        document.querySelector("#navToggle")?.addEventListener("click", () => setNavOpen(!state.navOpen));
+        document.querySelector("#navClose")?.addEventListener("click", () => setNavOpen(false));
+        document.querySelector("#navBackdrop")?.addEventListener("click", () => setNavOpen(false));
+        applyNavState();
+      }
+
+      let responsiveNavBound = false;
+      function bindResponsiveNavGlobals() {
+        if (responsiveNavBound) return;
+        responsiveNavBound = true;
+        document.addEventListener("keydown", (event) => {
+          if (!state.navOpen) return;
+          if (event.key === "Escape") {
+            event.preventDefault();
+            setNavOpen(false);
+            return;
+          }
+          if (event.key === "Tab") {
+            const items = navFocusables();
+            if (!items.length) return;
+            const first = items[0];
+            const last = items[items.length - 1];
+            const inside = document.querySelector("#sidebar")?.contains(document.activeElement);
+            if (event.shiftKey && (document.activeElement === first || !inside)) {
+              event.preventDefault();
+              last.focus();
+            } else if (!event.shiftKey && (document.activeElement === last || !inside)) {
+              event.preventDefault();
+              first.focus();
+            }
+          }
+        });
+        // Ao girar o tablet ou redimensionar a janela para a faixa de desktop, o painel sobreposto
+        // deixa de existir - fecha o estado para nao deixar o fundo travado/inert.
+        navCollapsibleQuery.addEventListener("change", () => {
+          if (!navCollapsibleQuery.matches && state.navOpen) setNavOpen(false);
+        });
+      }
+      bindResponsiveNavGlobals();
+
+      // Os dropdowns (Periodo, mes do Email, perfil) abrem ancorados a direita do gatilho. Em telas
+      // estreitas o gatilho pode ficar a esquerda/no meio e o menu sairia da tela - aqui o menu
+      // aberto e deslocado (so visualmente, via transform) para caber na viewport com 8px de folga.
+      function fitDropdownMenusToViewport() {
+        const vw = document.documentElement.clientWidth;
+        const margem = 8;
+        document.querySelectorAll(".dropdown-menu").forEach((menu) => {
+          if (menu.hidden || !menu.offsetParent) return;
+          menu.style.transform = "";
+          const r = menu.getBoundingClientRect();
+          let desloc = 0;
+          if (r.right > vw - margem) desloc = vw - margem - r.right;
+          if (r.left + desloc < margem) desloc = margem - r.left;
+          if (desloc) menu.style.transform = `translateX(${Math.round(desloc)}px)`;
+        });
+      }
+      new MutationObserver(() => requestAnimationFrame(fitDropdownMenusToViewport))
+        .observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden"] });
+      window.addEventListener("resize", fitDropdownMenusToViewport);
+
       async function render() {
-        if (!state.session) return renderLogin();
+        if (!state.session) {
+          state.navOpen = false;
+          document.body.classList.remove("nav-open");
+          return renderLogin();
+        }
         // Conexoes e Importar Planilhas sao restritas ao cargo Admin: alem de ficarem fora do nav
         // (abaixo), qualquer state.page setado pra uma delas por um cargo diferente e revertido
         // aqui, no unico lugar que pinta a tela - cobre clique de nav (ja escondido), ?page= na URL
@@ -1669,27 +1899,37 @@
           state.page = "dashboard";
         }
         applyBrandTheme();
+        // Conexoes, Importar Planilhas e Configuracoes so entram na lista para Admin (o guard acima
+        // continua sendo a protecao real; aqui e so o que aparece no menu).
+        const navItems = [
+          ["navDash", "dashboard", "dashboard", "Dashboard Geral"],
+          ["navSocial", "social", "diversity_3", "Redes Sociais"],
+          ["navInfluenciadores", "influenciadores", "group", "Influenciadores"],
+          ["navAds", "ads", "campaign", "Anúncios"],
+          ["navCred", "credsystem", "credit_card", "Cartão Próprio"],
+          ["navEmail", "email", "mail", "Email Marketing"],
+          ["navGMN", "google_business", "store", "Google Meu Negócio"],
+          ["navReputacao", "reputation", "forum", "Reputação"],
+          ...(isAdmin ? [
+            ["navConnections", "connections", "link", "Conexões"],
+            ["navImport", "import", "upload_file", "Importar Planilhas"],
+            ["navConfiguracoes", "configuracoes", "settings", "Configurações"]
+          ] : []),
+          ["navSugestoes", "sugestoes", "lightbulb", "Sugestões"]
+        ];
         app.className = "shell";
         app.innerHTML = `
-          <aside>
-            <div class="side-brand"><img src="logo-gto-icon.png" alt="GTO Insights" class="side-brand-logo"><div><h1>GTO Insights</h1><small>BI Platform</small></div></div>
-            <nav>
-              <button id="navDash" class="${state.page === "dashboard" ? "active" : ""}"><span class="material-symbols-outlined">dashboard</span>Dashboard Geral</button>
-              <button id="navSocial" class="${state.page === "social" ? "active" : ""}"><span class="material-symbols-outlined">diversity_3</span>Redes Sociais</button>
-              <button id="navInfluenciadores" class="${state.page === "influenciadores" ? "active" : ""}"><span class="material-symbols-outlined">group</span>Influenciadores</button>
-              <button id="navAds" class="${state.page === "ads" ? "active" : ""}"><span class="material-symbols-outlined">campaign</span>Anúncios</button>
-              <button id="navCred" class="${state.page === "credsystem" ? "active" : ""}"><span class="material-symbols-outlined">credit_card</span>Cartão Próprio</button>
-              <button id="navEmail" class="${state.page === "email" ? "active" : ""}"><span class="material-symbols-outlined">mail</span>Email Marketing</button>
-              <button id="navGMN" class="${state.page === "google_business" ? "active" : ""}"><span class="material-symbols-outlined">store</span>Google Meu Negócio</button>
-              <button id="navReputacao" class="${state.page === "reputation" ? "active" : ""}"><span class="material-symbols-outlined">forum</span>Reputação</button>
-              ${isAdmin ? `<button id="navConnections" class="${state.page === "connections" ? "active" : ""}"><span class="material-symbols-outlined">link</span>Conexões</button>` : ""}
-              ${isAdmin ? `<button id="navImport" class="${state.page === "import" ? "active" : ""}"><span class="material-symbols-outlined">upload_file</span>Importar Planilhas</button>` : ""}
-              ${isAdmin ? `<button id="navConfiguracoes" class="${state.page === "configuracoes" ? "active" : ""}"><span class="material-symbols-outlined">settings</span>Configurações</button>` : ""}
-              <button id="navSugestoes" class="${state.page === "sugestoes" ? "active" : ""}"><span class="material-symbols-outlined">lightbulb</span>Sugestões</button>
+          <aside id="sidebar" class="${state.navOpen ? "open" : ""}" aria-label="Menu principal">
+            <div class="side-top">
+              <div class="side-brand"><img src="logo-gto-icon.png" alt="GTO Insights" class="side-brand-logo"><div class="side-brand-text"><h1>GTO Insights</h1><small>BI Platform</small></div></div>
+              <button type="button" id="navClose" class="nav-close" aria-label="Fechar menu"><span class="material-symbols-outlined" aria-hidden="true">close</span></button>
+            </div>
+            <nav aria-label="Páginas">
+              ${navItems.map(([id, page, icon, label]) => `<button type="button" id="${id}" data-page="${page}" class="${state.page === page ? "active" : ""}" title="${label}"${state.page === page ? ` aria-current="page"` : ""}><span class="material-symbols-outlined" aria-hidden="true">${icon}</span><span class="nav-label">${label}</span></button>`).join("")}
             </nav>
             <div class="profile">
               <div class="profile-info">
-                <strong>${escapeHtml(state.perfil?.nome || state.session.user.email)}</strong>
+                <strong title="${escapeHtml(state.perfil?.nome || state.session.user.email)}">${escapeHtml(state.perfil?.nome || state.session.user.email)}</strong>
                 <span>${escapeHtml(state.perfil?.cargo_oficial || state.perfil?.cargo || "Perfil")} · ${escapeHtml(state.perfil?.marca_vinculada || "Todas as marcas")}</span>
               </div>
               <div class="profile-actions">
@@ -1698,9 +1938,16 @@
               </div>
             </div>
           </aside>
+          <div class="nav-backdrop" id="navBackdrop" aria-hidden="true"></div>
           <main>
-            <header><div><strong>${pageTitle()}</strong><br><span class="muted">Supabase com RLS por marca</span></div>${topbarProfileMenuHtml()}</header>
-            <div class="content" id="content"></div>
+            <header>
+              <div class="header-title">
+                <button type="button" id="navToggle" class="nav-toggle" aria-label="Abrir menu" aria-controls="sidebar" aria-expanded="${state.navOpen ? "true" : "false"}"><span class="material-symbols-outlined" aria-hidden="true">menu</span></button>
+                <div class="header-title-text"><strong>${pageTitle()}</strong><span class="muted header-subtitle">Supabase com RLS por marca</span></div>
+              </div>
+              ${topbarProfileMenuHtml()}
+            </header>
+            <div class="content" id="content" tabindex="-1"></div>
           </main>
           <div class="chart-tooltip" id="chartTooltip"></div>
           <div class="modal-overlay" id="diagnosticoModal" hidden></div>
@@ -1716,23 +1963,19 @@
         document.querySelector("#logout").onclick = signOut;
         document.querySelector("#editProfile").onclick = openProfileModal;
         wireTopbarProfileMenu();
-        document.querySelector("#navDash").onclick = () => { state.page = "dashboard"; render(); };
-        document.querySelector("#navCred").onclick = () => { state.page = "credsystem"; render(); };
-        document.querySelector("#navEmail").onclick = () => { state.page = "email"; render(); };
-        document.querySelector("#navSocial").onclick = () => { state.page = "social"; render(); };
-        document.querySelector("#navInfluenciadores").onclick = () => { state.page = "influenciadores"; render(); };
-        document.querySelector("#navAds").onclick = () => { state.page = "ads"; render(); };
-        document.querySelector("#navGMN").onclick = () => { state.page = "google_business"; render(); };
-        document.querySelector("#navReputacao").onclick = () => { state.page = "reputation"; render(); };
-        // Conexoes e Importar Planilhas so existem no DOM para Admin (ver nav acima) - querySelector
-        // retorna null pros demais cargos, por isso o guard antes de atribuir o onclick.
-        const navConnectionsBtn = document.querySelector("#navConnections");
-        if (navConnectionsBtn) navConnectionsBtn.onclick = () => { state.page = "connections"; render(); };
-        const navImportBtn = document.querySelector("#navImport");
-        if (navImportBtn) navImportBtn.onclick = () => { state.page = "import"; render(); };
-        const navConfiguracoesBtn = document.querySelector("#navConfiguracoes");
-        if (navConfiguracoesBtn) navConfiguracoesBtn.onclick = () => { state.page = "configuracoes"; render(); };
-        document.querySelector("#navSugestoes").onclick = () => { state.page = "sugestoes"; render(); };
+        // Conexoes/Importar/Configuracoes so existem no DOM para Admin (ver navItems acima).
+        // Navegar sempre fecha o menu recolhido (celular/tablet) e leva o foco para o conteudo novo.
+        document.querySelectorAll("#sidebar nav button[data-page]").forEach((button) => {
+          button.onclick = () => {
+            const vinhaDoMenuAberto = state.navOpen;
+            state.page = button.dataset.page;
+            state.navOpen = false;
+            render();
+            if (vinhaDoMenuAberto) document.querySelector("#content")?.focus({ preventScroll: true });
+            window.scrollTo(0, 0);
+          };
+        });
+        wireResponsiveNav();
         if (state.page === "dashboard") await renderDashboard();
         if (state.page === "credsystem") await renderCredsystemBI();
         if (state.page === "email") await renderEmailBI();
@@ -2128,7 +2371,7 @@
 
       function entradasSaidasKpisHtml(seriesPorMarca) {
         const { entradas, saidas } = totalEntradasSaidas(seriesPorMarca);
-        return `<div class="grid kpis" style="grid-template-columns:repeat(2,minmax(0,1fr));margin:10px 0">
+        return `<div class="grid kpis kpis-2" style="margin:10px 0">
           <article class="card kpi" style="border-left:3px solid #16a34a"><div class="kpi-top"><span>Entradas no período</span><span class="material-symbols-outlined" style="color:#16a34a">person_add</span></div><strong style="color:#16a34a">+${fmt.format(entradas)}</strong></article>
           <article class="card kpi" style="border-left:3px solid #dc2626"><div class="kpi-top"><span>Saídas no período</span><span class="material-symbols-outlined" style="color:#dc2626">person_remove</span></div><strong style="color:#dc2626">-${fmt.format(saidas)}</strong></article>
         </div>`;
@@ -2294,10 +2537,10 @@
             <text x="${(x + barW / 2).toFixed(1)}" y="${(h - padB + 20).toFixed(1)}" font-size="11" fill="#64748b" text-anchor="middle">${escapeHtml(v.marca)}</text>`;
         }).join("");
 
-        return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:280px" role="img" aria-label="Comparativo de ${escapeHtml(metric)} por marca">
+        return `<div class="chart-scroll"><svg class="chart-svg${w >= 560 ? " chart-svg-wide" : ""}" viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:280px" role="img" aria-label="Comparativo de ${escapeHtml(metric)} por marca">
           <line x1="${padL}" y1="${h - padB}" x2="${w - padR}" y2="${h - padB}" stroke="#e2e8f0" stroke-width="1"/>
           ${bars}
-        </svg>`;
+        </svg></div>`;
       }
 
       const DASHBOARD_CONSOLIDADO_METRICS = [
@@ -2721,11 +2964,11 @@
             <text x="${cx.toFixed(1)}" y="${(h - padB + 20).toFixed(1)}" font-size="11" fill="#64748b" text-anchor="middle">${escapeHtml(d.marca)}</text>`;
         }).join("");
 
-        return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:320px" role="img" aria-label="Frequência diária por marca, mês atual vs. mês anterior">
+        return `<div class="chart-scroll"><svg class="chart-svg${w >= 560 ? " chart-svg-wide" : ""}" viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:320px" role="img" aria-label="Frequência diária por marca, mês atual vs. mês anterior">
           <line x1="${padL}" y1="${h - padB}" x2="${w - padR}" y2="${h - padB}" stroke="#e2e8f0" stroke-width="1"/>
           ${conteudo}
-        </svg>
-        <div style="display:flex;gap:16px;justify-content:center;margin-top:2px;font-size:11px;color:#64748b">
+        </svg></div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:center;margin-top:2px;font-size:11px;color:#64748b">
           <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:3px;background:#334155;display:inline-block"></span>Mês atual</span>
           <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:3px;background:#334155;opacity:.3;display:inline-block"></span>Mês anterior</span>
         </div>`;
@@ -2778,11 +3021,11 @@
             <text x="${cx.toFixed(1)}" y="${(h - padB + 20).toFixed(1)}" font-size="11" fill="#64748b" text-anchor="middle">${escapeHtml(item.label)}</text>`;
         }).join("");
 
-        return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:320px" role="img" aria-label="Evolução histórica da marca, mês atual vs. mês anterior">
+        return `<div class="chart-scroll"><svg class="chart-svg${w >= 560 ? " chart-svg-wide" : ""}" viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:320px" role="img" aria-label="Evolução histórica da marca, mês atual vs. mês anterior">
           <line x1="${padL}" y1="${h - padB}" x2="${w - padR}" y2="${h - padB}" stroke="#e2e8f0" stroke-width="1"/>
           ${conteudo}
-        </svg>
-        <div style="display:flex;gap:16px;justify-content:center;margin-top:2px;font-size:11px;color:#64748b">
+        </svg></div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:center;margin-top:2px;font-size:11px;color:#64748b">
           <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:3px;background:#334155;display:inline-block"></span>Mês atual</span>
           <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:3px;background:#334155;opacity:.3;display:inline-block"></span>Mês anterior</span>
         </div>`;
@@ -3051,14 +3294,14 @@
         });
 
         return `
-          <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:260px" role="img" aria-label="Evolução de seguidores por marca">
+          <div class="chart-scroll"><svg class="chart-svg${w >= 560 ? " chart-svg-wide" : ""}" viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:260px" role="img" aria-label="Evolução de seguidores por marca">
             <line x1="${padL}" y1="${(h - padB).toFixed(1)}" x2="${w - padR}" y2="${(h - padB).toFixed(1)}" stroke="#e2e8f0" stroke-width="1"/>
             <text x="${padL}" y="${padT - 4}" font-size="11" fill="#64748b">${fmt.format(maxV)}</text>
             <text x="${padL}" y="${(h - padB + 12).toFixed(1)}" font-size="11" fill="#64748b">${fmt.format(minV)}</text>
             ${linhas.map((l) => l.svg).join("")}
             <text x="${padL}" y="${h - 6}" font-size="11" fill="#64748b">${escapeHtml(formatDateOnly(datas[0]))}</text>
             <text x="${w - padR}" y="${h - 6}" font-size="11" fill="#64748b" text-anchor="end">${escapeHtml(formatDateOnly(datas[datas.length - 1]))}</text>
-          </svg>
+          </svg></div>
           <div style="display:flex;gap:16px;margin-top:6px;font-size:12px;color:#64748b;flex-wrap:wrap">
             ${linhas.map((l) => `<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:2px;background:${l.cor};display:inline-block"></span>${escapeHtml(l.marca)}</span>`).join("")}
           </div>`;
@@ -3076,7 +3319,7 @@
           : null;
 
         return `
-          <div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+          <div class="grid cols cols-2">
             <section class="card">
               <h3>Evolução de seguidores</h3>
               <p class="muted" style="margin-top:-6px">${escapeHtml(redeLabel)}${marcaAtiva === "Todas" ? " das 3 marcas" : ` — ${escapeHtml(marcaAtiva)}`}, no período selecionado.</p>
@@ -3290,7 +3533,7 @@
           <div style="display:flex;height:10px;border-radius:999px;overflow:hidden;margin:14px 0">
             ${partes.map(([, valor, cor]) => valor > 0 ? `<div style="width:${((valor / soma) * 100).toFixed(2)}%;background:${cor}"></div>` : "").join("")}
           </div>
-          <div class="grid kpis" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+          <div class="grid kpis">
             ${partes.map(([label, valor, cor, icon]) => `<article class="card kpi" style="border-left:3px solid ${cor}"><div class="kpi-top"><span>${label}</span><span class="material-symbols-outlined" style="color:${cor}">${icon}</span></div><strong>${fmt.format(valor)}</strong><small class="muted">${((valor / soma) * 100).toFixed(1).replace(".", ",")}% do total</small></article>`).join("")}
           </div>
         </section>`;
@@ -3359,7 +3602,7 @@
             ${kpi("Principal país", `${pDestaque.label} · ${pDestaque.pct.toFixed(1).replace(".", ",")}%`, "public")}
             ${kpi("Principal cidade", `${cDestaque.label} · ${cDestaque.pct.toFixed(1).replace(".", ",")}%`, "location_city")}
           </div>
-          <div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+          <div class="grid cols cols-2">
             <section class="card"><h3>Gênero</h3>${barListHtml(genero, LABELS_GENERO)}</section>
             <section class="card"><h3>Faixa etária</h3>${barListHtml(idade, LABELS_IDADE)}</section>
             <section class="card"><h3>País</h3>${barListHtml(pais.slice(0, 8))}</section>
@@ -3750,10 +3993,10 @@
             <text x="${(x + barW / 2).toFixed(1)}" y="${(h - padB + 18).toFixed(1)}" font-size="11" fill="#64748b" text-anchor="middle">${escapeHtml(rotuloEixo)}</text>`;
         }).join("");
 
-        return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:280px" role="img" aria-label="Comparativo">
+        return `<div class="chart-scroll"><svg class="chart-svg${w >= 560 ? " chart-svg-wide" : ""}" viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:280px" role="img" aria-label="Comparativo">
           <line x1="${padL}" y1="${h - padB}" x2="${w - padR}" y2="${h - padB}" stroke="#e2e8f0" stroke-width="1"/>
           ${bars}
-        </svg>`;
+        </svg></div>`;
       }
 
       // Cor do grafico segue a marca da campanha (mesmo padrao de cor-por-marca usado em Redes
@@ -3766,7 +4009,7 @@
       // Bloco 2: Comparativo entre Disparos (Entrega x Abertura)
       function emailPreviewComparativoHtml(disparos) {
         const cor = disparoBarChartCor(disparos);
-        return `<div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+        return `<div class="grid cols cols-2">
           <div><h4>Taxa de Entrega por disparo</h4>${disparoBarChartHtml(disparosMetricBarEntradas(disparos, "taxa_entrega"), cor)}</div>
           <div><h4>Taxa de Abertura por disparo</h4>${disparoBarChartHtml(disparosMetricBarEntradas(disparos, "taxa_abertura"), cor)}</div>
         </div>`;
@@ -3782,7 +4025,7 @@
 
       function emailPreviewQualidadeBaseHtml(disparos) {
         const cor = disparoBarChartCor(disparos);
-        return `<div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+        return `<div class="grid cols cols-2">
           <div><h4>Engajados (% da base)</h4>${disparoBarChartHtml(disparosQualidadeBarEntradas(disparos, "engajados"), cor)}</div>
           <div><h4>Desengajados (% da base)</h4>${disparoBarChartHtml(disparosQualidadeBarEntradas(disparos, "desengajados"), cor)}</div>
           <div><h4>Inválidos (% da base)</h4>${disparoBarChartHtml(disparosQualidadeBarEntradas(disparos, "invalidos"), cor)}</div>
@@ -3793,7 +4036,7 @@
       // Bloco 4: Eficiencia do Clique (CTR x CTOR)
       function emailPreviewCtrCtorHtml(disparos) {
         const cor = disparoBarChartCor(disparos);
-        return `<div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+        return `<div class="grid cols cols-2">
           <div><h4>CTR por disparo</h4>${disparoBarChartHtml(disparosMetricBarEntradas(disparos, "ctr"), cor)}</div>
           <div><h4>CTOR por disparo</h4>${disparoBarChartHtml(disparosMetricBarEntradas(disparos, "ctor"), cor)}</div>
         </div>`;
@@ -4049,7 +4292,7 @@
       // Bloco 2: Comparativo entre Disparos, por marca (Entrega x Abertura) - cada barra usa a cor
       // oficial da marca (corPorMarca), pra bater com Redes Sociais/Anuncios.
       function emailMarcaComparativoHtml(disparos) {
-        return `<div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+        return `<div class="grid cols cols-2">
           <div><h4>Taxa de Entrega por marca</h4>${disparoBarChartHtml(marcaBarEntradas(disparos, (a) => a.taxaEntrega), corPorMarca)}</div>
           <div><h4>Taxa de Abertura por marca</h4>${disparoBarChartHtml(marcaBarEntradas(disparos, (a) => a.taxaAbertura), corPorMarca)}</div>
         </div>`;
@@ -4057,7 +4300,7 @@
 
       // Bloco 3: Qualidade da Base, por marca (% do volume enviado de cada marca)
       function emailMarcaQualidadeBaseHtml(disparos) {
-        return `<div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+        return `<div class="grid cols cols-2">
           <div><h4>Engajados (% da base) por marca</h4>${disparoBarChartHtml(marcaQualidadeBarEntradas(disparos, "engajados"), corPorMarca)}</div>
           <div><h4>Desengajados (% da base) por marca</h4>${disparoBarChartHtml(marcaQualidadeBarEntradas(disparos, "desengajados"), corPorMarca)}</div>
           <div><h4>Inválidos (% da base) por marca</h4>${disparoBarChartHtml(marcaQualidadeBarEntradas(disparos, "invalidos"), corPorMarca)}</div>
@@ -4067,7 +4310,7 @@
 
       // Bloco 4: Eficiencia do Clique, por marca (CTR x CTOR)
       function emailMarcaCtrCtorHtml(disparos) {
-        return `<div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+        return `<div class="grid cols cols-2">
           <div><h4>CTR por marca</h4>${disparoBarChartHtml(marcaBarEntradas(disparos, (a) => a.ctr), corPorMarca)}</div>
           <div><h4>CTOR por marca</h4>${disparoBarChartHtml(marcaBarEntradas(disparos, (a) => a.ctor), corPorMarca)}</div>
         </div>`;
@@ -4160,7 +4403,7 @@
       // cor e o que diferencia marca de marca).
       function emailCampanhaComparativoHtml(campanhas, disparos) {
         const cor = corPorMarca(campanhas[0]?.marca);
-        return `<div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+        return `<div class="grid cols cols-2">
           <div><h4>Taxa de Entrega por campanha</h4>${disparoBarChartHtml(campanhaBarEntradas(campanhas, disparos, (a) => a.taxaEntrega), cor)}</div>
           <div><h4>Taxa de Abertura por campanha</h4>${disparoBarChartHtml(campanhaBarEntradas(campanhas, disparos, (a) => a.taxaAbertura), cor)}</div>
         </div>`;
@@ -4168,7 +4411,7 @@
 
       function emailCampanhaQualidadeBaseHtml(campanhas, disparos) {
         const cor = corPorMarca(campanhas[0]?.marca);
-        return `<div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+        return `<div class="grid cols cols-2">
           <div><h4>Engajados (% da base) por campanha</h4>${disparoBarChartHtml(campanhaQualidadeBarEntradas(campanhas, disparos, "engajados"), cor)}</div>
           <div><h4>Desengajados (% da base) por campanha</h4>${disparoBarChartHtml(campanhaQualidadeBarEntradas(campanhas, disparos, "desengajados"), cor)}</div>
           <div><h4>Inválidos (% da base) por campanha</h4>${disparoBarChartHtml(campanhaQualidadeBarEntradas(campanhas, disparos, "invalidos"), cor)}</div>
@@ -4178,7 +4421,7 @@
 
       function emailCampanhaCtrCtorHtml(campanhas, disparos) {
         const cor = corPorMarca(campanhas[0]?.marca);
-        return `<div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+        return `<div class="grid cols cols-2">
           <div><h4>CTR por campanha</h4>${disparoBarChartHtml(campanhaBarEntradas(campanhas, disparos, (a) => a.ctr), cor)}</div>
           <div><h4>CTOR por campanha</h4>${disparoBarChartHtml(campanhaBarEntradas(campanhas, disparos, (a) => a.ctor), cor)}</div>
         </div>`;
@@ -4776,7 +5019,7 @@
               <h3 style="margin:0 0 6px;font-size:17px">${titulo}</h3>
               <p style="margin:0;font-size:13px;color:#64748b">${escapeHtml(marca)} · ${escapeHtml(rede)} · ${escapeHtml(data)}</p>
             </div>
-            <button type="button" class="modal-close" id="diagnosticoModalClose"><span class="material-symbols-outlined">close</span></button>
+            <button type="button" class="modal-close" aria-label="Fechar" id="diagnosticoModalClose"><span class="material-symbols-outlined">close</span></button>
           </div>
           <div class="modal-body">
             <div class="modal-block ${positivo ? "positive" : "negative"}">
@@ -4887,7 +5130,7 @@
               <p style="margin:0 0 4px;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Perfil do usuário</p>
               <h3 style="margin:0;font-size:17px">Editar perfil</h3>
             </div>
-            <button type="button" class="modal-close" id="profileModalClose"><span class="material-symbols-outlined">close</span></button>
+            <button type="button" class="modal-close" aria-label="Fechar" id="profileModalClose"><span class="material-symbols-outlined">close</span></button>
           </div>
           <form id="profileForm" class="modal-body profile-modal-form">
             <div class="profile-avatar-row" id="profileAvatarRow">
@@ -5193,7 +5436,7 @@
               <p style="margin:0 0 4px;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Conta</p>
               <h3 style="margin:0;font-size:17px">Segurança</h3>
             </div>
-            <button type="button" class="modal-close" id="securityModalClose"><span class="material-symbols-outlined">close</span></button>
+            <button type="button" class="modal-close" aria-label="Fechar" id="securityModalClose"><span class="material-symbols-outlined">close</span></button>
           </div>
           <div class="modal-body">${body}</div>
         </div>`;
@@ -5425,7 +5668,7 @@
           ${socialTabsHtml("geral")}
 
           <div class="eyebrow" style="margin:18px 0 8px">Mês atual vs. mês anterior</div>
-          <div class="grid kpis" style="grid-template-columns:repeat(5,minmax(0,1fr))">
+          <div class="grid kpis kpis-5">
             ${kpiWithDelta("Alcance", fmt.format(alcanceBrutoCombinado), "public", kpiFooterAnteriorHtml(alcanceBrutoCombinado, prevTotaisMarca?.alcance))}
             ${kpiWithDelta("Engajamento", `${engajamentoMedio.toFixed(2).replace(".", ",")}%`, "favorite", kpiFooterAnteriorHtml(engajamentoMedio, prevTotaisMarca?.taxa, { formatar: (v) => `${v.toFixed(2).replace(".", ",")}%` }))}
             ${kpiWithDelta("Seguidores", fmt.format(comunidadeTotal), "diversity_3", kpiFooterAnteriorHtml(comunidadeTotal, seguidoresAnteriorAbs))}
@@ -5433,7 +5676,7 @@
             ${kpiWithDelta("Score Geral", score === null ? "-" : `${score}/100`, "military_tech", kpiFooterAnteriorHtml(score, scoreDelta === null ? null : score - scoreDelta, { formatar: (v) => `${v}/100` }))}
           </div>
 
-          <div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-top:18px">
+          <div class="grid cols cols-2" style="margin-top:18px">
             ${state.marca === "Todas"
               ? socialCompareSectionHtml(rows)
               : evolucaoHistoricaSectionHtml(state.marca, totals, prevTotaisMarca)}
@@ -5446,7 +5689,7 @@
             </section>
           </div>
 
-          <div class="grid cols" style="grid-template-columns:repeat(${state.marca === "Todas" ? 2 : 1},minmax(0,1fr));margin-top:18px">
+          <div class="grid cols ${state.marca === "Todas" ? "cols-2" : "cols-1"}" style="margin-top:18px">
             <section class="card">
               <h3>${state.marca === "Todas" ? "🏆 Ranking das Marcas" : "🏆 Top 3 Posts da Marca"}</h3>
               <p class="muted" style="margin:6px 0 14px">${state.marca === "Todas"
@@ -5859,7 +6102,7 @@
               <h3 style="margin:0 0 6px;font-size:17px" title="${escapeHtml(nomeOriginal)}">${escapeHtml(campaignFriendlyLabel(row))}</h3>
               <p style="margin:0;font-size:13px;color:#64748b;display:flex;align-items:center;gap:6px">${escapeHtml(row.marca)} · ${escapeHtml(formato)} · ${campaignStatusPill(row.status)}</p>
             </div>
-            <button type="button" class="modal-close" id="creativoModalClose"><span class="material-symbols-outlined">close</span></button>
+            <button type="button" class="modal-close" aria-label="Fechar" id="creativoModalClose"><span class="material-symbols-outlined">close</span></button>
           </div>
           <div class="modal-body">
             ${media}
@@ -6098,11 +6341,11 @@
             <text x="${(groupX + barW + gap / 2).toFixed(1)}" y="${(h - padB + 20).toFixed(1)}" font-size="11" fill="#64748b" text-anchor="middle">${escapeHtml(d.marca)}</text>`;
         }).join("");
 
-        return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:300px" role="img" aria-label="Investimento vs. ${escapeHtml(metricLabel)} por marca">
+        return `<div class="chart-scroll"><svg class="chart-svg${w >= 560 ? " chart-svg-wide" : ""}" viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:300px" role="img" aria-label="Investimento vs. ${escapeHtml(metricLabel)} por marca">
           <line x1="${padL}" y1="${h - padB}" x2="${w - padR}" y2="${h - padB}" stroke="#e2e8f0" stroke-width="1"/>
           ${bars}
-        </svg>
-        <div style="display:flex;gap:16px;justify-content:center;margin-top:8px;font-size:12px;color:#64748b">
+        </svg></div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:center;margin-top:8px;font-size:12px;color:#64748b">
           <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#64748b;margin-right:4px"></span>Investimento (R$)</span>
           <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#64748b;opacity:.4;margin-right:4px"></span>${escapeHtml(metricLabel)}</span>
         </div>`;
@@ -6180,11 +6423,11 @@
             <text x="${(groupX + groupTotalW / 2).toFixed(1)}" y="${(h - padB + 20).toFixed(1)}" font-size="11" fill="#64748b" text-anchor="middle">${escapeHtml(d.marca)}</text>`;
         }).join("");
 
-        return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:300px" role="img" aria-label="CPC, CPM e CPR por marca">
+        return `<div class="chart-scroll"><svg class="chart-svg${w >= 560 ? " chart-svg-wide" : ""}" viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:300px" role="img" aria-label="CPC, CPM e CPR por marca">
           <line x1="${padL}" y1="${h - padB}" x2="${w - padR}" y2="${h - padB}" stroke="#e2e8f0" stroke-width="1"/>
           ${barsHtml}
-        </svg>
-        <div style="display:flex;gap:16px;justify-content:center;margin-top:8px;font-size:12px;color:#64748b">
+        </svg></div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:center;margin-top:8px;font-size:12px;color:#64748b">
           <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#64748b;margin-right:4px"></span>CPC</span>
           <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#64748b;opacity:.65;margin-right:4px"></span>CPM</span>
           <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#64748b;opacity:.3;margin-right:4px"></span>CPR (por mil alcançados)</span>
@@ -6306,7 +6549,7 @@
         const tooltipInvest = `<strong>${escapeHtml(d.marca)}</strong><br>Share de Verba: ${d.shareInvestimento.toFixed(1).replace(".", ",")}%`.replaceAll("\"", "&quot;");
         const tooltipCliques = `<strong>${escapeHtml(d.marca)}</strong><br>Share de Cliques: ${d.shareCliques.toFixed(1).replace(".", ",")}%`.replaceAll("\"", "&quot;");
 
-        return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:170px" role="img" aria-label="Share de verba vs. share de cliques - ${escapeHtml(d.marca)}">
+        return `<div class="chart-scroll"><svg class="chart-svg${w >= 560 ? " chart-svg-wide" : ""}" viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:170px" role="img" aria-label="Share de verba vs. share de cliques - ${escapeHtml(d.marca)}">
           <line x1="${padL}" y1="${h - padB}" x2="${w - padR}" y2="${h - padB}" stroke="#e2e8f0" stroke-width="1"/>
           <rect class="chart-point" x="${investX.toFixed(1)}" y="${(h - padB - investH).toFixed(1)}" width="${barW}" height="${Math.max(0.5, investH).toFixed(1)}" rx="5" fill="${cor}" data-tooltip="${tooltipInvest}"></rect>
           <rect class="chart-point" x="${cliquesX.toFixed(1)}" y="${(h - padB - cliquesH).toFixed(1)}" width="${barW}" height="${Math.max(0.5, cliquesH).toFixed(1)}" rx="5" fill="${cor}" fill-opacity="0.4" data-tooltip="${tooltipCliques}"></rect>
@@ -6314,7 +6557,7 @@
           <text x="${(cliquesX + barW / 2).toFixed(1)}" y="${(h - padB - cliquesH - 6).toFixed(1)}" font-size="11" font-weight="700" fill="${cor}" text-anchor="middle">${d.shareCliques.toFixed(0)}%</text>
           <text x="${(investX + barW / 2).toFixed(1)}" y="${(h - padB + 16).toFixed(1)}" font-size="10" fill="#64748b" text-anchor="middle">Verba</text>
           <text x="${(cliquesX + barW / 2).toFixed(1)}" y="${(h - padB + 16).toFixed(1)}" font-size="10" fill="#64748b" text-anchor="middle">Cliques</text>
-        </svg>`;
+        </svg></div>`;
       }
 
       // Texto de diagnostico dedicado a UMA marca (nao um comparativo entre elas) - segue o formato
@@ -6351,7 +6594,7 @@
         return `<section class="card">
           <h3 style="margin:0">Distribuição de Mídia e Retorno</h3>
           <p class="muted" style="margin:6px 0 14px;font-size:12px">Share de verba consumida x share de cliques entregues, por marca (% do total do grupo).</p>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;align-items:stretch">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(210px,100%),1fr));gap:14px;align-items:stretch">
             ${dados.map(adsShareMarcaCardHtml).join("")}
           </div>
         </section>`;
@@ -6362,7 +6605,7 @@
         const diagnosticoPorMarca = adsDiagnosticoPorMarca(porMarca);
         return `
           <div class="eyebrow" style="margin:24px 0 8px">Análise Cruzada e Eficiência de Mídia</div>
-          <div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+          <div class="grid cols cols-2">
             ${adsCrossSectionHtml(porMarca, diagnosticoPorMarca)}
             <section class="card">
               <h3 style="margin:0">Custo por Resultado Cruzado</h3>
@@ -6465,7 +6708,7 @@
           return `<text x="${x(i).toFixed(1)}" y="${(h - padB + 18).toFixed(1)}" font-size="10" fill="#64748b" text-anchor="middle">${escapeHtml(formatDateOnly(d.data).slice(0, 5))}</text>`;
         }).join("");
 
-        return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:320px" role="img" aria-label="Investimento vs. cliques e alcance diários - ${escapeHtml(marca)}">
+        return `<div class="chart-scroll"><svg class="chart-svg${w >= 560 ? " chart-svg-wide" : ""}" viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;max-height:320px" role="img" aria-label="Investimento vs. cliques e alcance diários - ${escapeHtml(marca)}">
           <line x1="${padL}" y1="${(padT + areaH).toFixed(1)}" x2="${(w - padR).toFixed(1)}" y2="${(padT + areaH).toFixed(1)}" stroke="#e2e8f0" stroke-width="1"/>
           <text x="${(padL - 8).toFixed(1)}" y="${(padT + 4).toFixed(1)}" font-size="10" fill="${cor}" text-anchor="end">R$ ${fmt.format(Math.round(maxInvest))}</text>
           <text x="${(padL - 8).toFixed(1)}" y="${(padT + areaH).toFixed(1)}" font-size="10" fill="${cor}" text-anchor="end">R$ 0</text>
@@ -6475,7 +6718,7 @@
           ${linhaSerie("alcance", corAlcance, "Alcance")}
           ${linhaSerie("cliques", corCliques, "Cliques")}
           ${eixoXLabels}
-        </svg>
+        </svg></div>
         <div style="display:flex;gap:20px;justify-content:center;margin-top:12px;font-size:12.5px;color:#334155;flex-wrap:wrap">
           <span style="display:inline-flex;align-items:center;gap:6px;font-weight:600"><span style="width:12px;height:12px;border-radius:3px;background:${cor};opacity:.55;display:inline-block"></span>Investimento diário <span class="muted" style="font-weight:400">(eixo esq., R$)</span></span>
           <span style="display:inline-flex;align-items:center;gap:6px;font-weight:600"><span style="width:16px;height:3px;border-radius:2px;background:${corCliques};display:inline-block"></span>Cliques <span class="muted" style="font-weight:400">(eixo dir.)</span></span>
@@ -6558,7 +6801,7 @@
       function adsBrandInsightsSectionHtml(dailyRows, rows, marca) {
         return `
           <div class="eyebrow" style="margin:24px 0 8px">Inteligência de Mídia — ${escapeHtml(marca)}</div>
-          <div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+          <div class="grid cols cols-2">
             ${adsBrandDailySectionHtml(dailyRows, marca)}
             ${adsFormatoPerformanceCardHtml(rows, marca)}
           </div>`;
@@ -6889,7 +7132,7 @@
             <div class="filters">${marcaPillsHtml()}</div>
           </div>
           ${socialTabsHtml("comparativo")}
-          <div class="grid cols" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+          <div class="grid cols cols-2">
             ${comparativoDateInputsHtml("compareA", state.compareA, "Período A")}
             ${comparativoDateInputsHtml("compareB", state.compareB, "Período B")}
           </div>
@@ -8959,7 +9202,7 @@
         return `<div class="modal-panel">
           <div class="modal-header">
             <div><p style="margin:0 0 4px;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Ação irreversível</p><h3 style="margin:0;font-size:17px">Excluir campanha</h3></div>
-            <button type="button" class="modal-close" id="deleteCampanhaModalClose"><span class="material-symbols-outlined">close</span></button>
+            <button type="button" class="modal-close" aria-label="Fechar" id="deleteCampanhaModalClose"><span class="material-symbols-outlined">close</span></button>
           </div>
           <div class="modal-body">
             <p>Tem certeza que deseja apagar a campanha <strong>${escapeHtml(s.nomeCampanha)}</strong>? Esta ação removerá todos os disparos associados a este upload.</p>
@@ -9645,7 +9888,7 @@
         return `<div class="modal-panel">
           <div class="modal-header">
             <div><p style="margin:0 0 4px;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Redefinir senha</p><h3 style="margin:0;font-size:17px">${escapeHtml(s.usuario.nome || s.usuario.email)}</h3></div>
-            <button type="button" class="modal-close" id="resetPasswordModalClose"><span class="material-symbols-outlined">close</span></button>
+            <button type="button" class="modal-close" aria-label="Fechar" id="resetPasswordModalClose"><span class="material-symbols-outlined">close</span></button>
           </div>
           <div class="modal-body">
             ${s.modo === "opcoes" ? `
@@ -9817,7 +10060,7 @@
         return `<div class="modal-panel wide">
           <div class="modal-header">
             <div><p style="margin:0 0 4px;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.04em">${escapeHtml(eyebrow)}</p><h3 style="margin:0;font-size:17px">${escapeHtml(titulo)}</h3></div>
-            <button type="button" class="modal-close" id="inviteModalClose"><span class="material-symbols-outlined">close</span></button>
+            <button type="button" class="modal-close" aria-label="Fechar" id="inviteModalClose"><span class="material-symbols-outlined">close</span></button>
           </div>
           <div class="wizard-steps">
             <span class="${s.step === 1 ? "active" : ""}">1. Dados do usuário</span>
@@ -10137,7 +10380,7 @@
         return `<div class="modal-panel">
           <div class="modal-header">
             <div><p style="margin:0 0 4px;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Editar acesso</p><h3 style="margin:0;font-size:17px">${escapeHtml(s.usuario.nome || s.usuario.email)}</h3></div>
-            <button type="button" class="modal-close" id="editAccessModalClose"><span class="material-symbols-outlined">close</span></button>
+            <button type="button" class="modal-close" aria-label="Fechar" id="editAccessModalClose"><span class="material-symbols-outlined">close</span></button>
           </div>
           <form id="editAccessForm" class="modal-body">
             <label>Cargo
@@ -10246,7 +10489,7 @@
         return `<div class="modal-panel">
           <div class="modal-header">
             <div><p style="margin:0 0 4px;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Ação irreversível</p><h3 style="margin:0;font-size:17px">Excluir usuário</h3></div>
-            <button type="button" class="modal-close" id="deleteUserModalClose"><span class="material-symbols-outlined">close</span></button>
+            <button type="button" class="modal-close" aria-label="Fechar" id="deleteUserModalClose"><span class="material-symbols-outlined">close</span></button>
           </div>
           <div class="modal-body">
             <p>Tem certeza que deseja excluir o usuário <strong>${escapeHtml(nomeUsuario)}</strong>? O acesso e o cadastro dele são removidos por completo e essa ação não pode ser desfeita.</p>
@@ -10519,7 +10762,7 @@
         if (s.error) return `<div class="alert error">${escapeHtml(s.error)}<div class="actions" style="margin-top:10px"><button type="button" class="secondary" id="retrySugestoesMural">Tentar novamente</button></div></div>`;
         if (s.rows === null) return `<div class="alert">Carregando sugestões...</div>`;
         if (!s.rows.length) return `<div class="alert">Nenhuma sugestão enviada ainda. Seja o primeiro a colaborar!</div>`;
-        return `<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(340px,1fr))">${s.rows.map(sugestaoCardHtml).join("")}</div>`;
+        return `<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(min(340px,100%),1fr))">${s.rows.map(sugestaoCardHtml).join("")}</div>`;
       }
 
       function sugestaoCardHtml(sugestao) {
@@ -10599,7 +10842,7 @@
         return `<div class="modal-panel">
           <div class="modal-header">
             <div><p style="margin:0 0 4px;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Gerenciar sugestão</p><h3 style="margin:0;font-size:17px">${escapeHtml(s.sugestao.titulo)}</h3></div>
-            <button type="button" class="modal-close" id="gerenciarSugestaoClose"><span class="material-symbols-outlined">close</span></button>
+            <button type="button" class="modal-close" aria-label="Fechar" id="gerenciarSugestaoClose"><span class="material-symbols-outlined">close</span></button>
           </div>
           <div class="modal-body" style="display:grid;gap:14px">
             <label>Status<select id="gerenciarSugestaoStatus">${SUGESTAO_STATUS_OPCOES.map((op) => `<option ${s.status === op ? "selected" : ""}>${escapeHtml(op)}</option>`).join("")}</select></label>
