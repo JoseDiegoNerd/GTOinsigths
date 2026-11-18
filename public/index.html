@@ -8234,6 +8234,10 @@
         midia_paga: "Mídia Pago / Meta Ads",
         outras_origens: "Outras Origens"
       };
+      // Cartoes Proprios saiu deste assistente: o caminho manual gravava a marca escolhida para o
+      // arquivo inteiro e ja levou propostas para a tabela de cartoes. O rotulo continua acima so
+      // para exibir uploads antigos no historico.
+      const destinosSoNoImportadorInteligente = new Set(["cartoes_proprios"]);
       const canalDisparoOptions = ["E-mail", "SMS", "WhatsApp"];
       const tipoDisparoOptions = ["Campanha Pontual", "Fluxo/Automação", "Newsletter Recorrente", "Transacional"];
       const cartoesTipoLabels = {
@@ -8325,7 +8329,8 @@
         const s = importWizardState;
         return `<div class="grid" style="gap:16px;max-width:480px">
           <label>Marca<select id="wizardMarca">${marcas.filter((m) => m !== "Todas").map((m) => `<option ${s.marca === m ? "selected" : ""}>${m}</option>`).join("")}</select></label>
-          <label>Destino dos Dados<select id="wizardDestino">${Object.keys(destinoLabels).map((k) => `<option value="${k}" ${s.destino === k ? "selected" : ""}>${escapeHtml(destinoLabels[k])}</option>`).join("")}</select></label>
+          <label>Destino dos Dados<select id="wizardDestino">${Object.keys(destinoLabels).filter((k) => !destinosSoNoImportadorInteligente.has(k)).map((k) => `<option value="${k}" ${s.destino === k ? "selected" : ""}>${escapeHtml(destinoLabels[k])}</option>`).join("")}</select></label>
+          <p class="muted" style="margin:-8px 0 0">Dados do Cartão Próprio CredSystem (campanhas, propostas, emissões e compras) são importados pelo <b>Importador inteligente</b> acima, que identifica a marca pelo BIN em cada linha e evita duplicidades.</p>
           ${s.destino === "email_marketing" ? `<label>Canal do Disparo<select id="wizardCanalDisparo">${canalDisparoOptions.map((c) => `<option ${s.canalDisparo === c ? "selected" : ""}>${c}</option>`).join("")}</select></label>` : ""}
           ${s.destino === "cartoes_proprios" ? `<label>Tipo de Dado<select id="wizardCartoesTipo">${Object.keys(cartoesTipoLabels).map((k) => `<option value="${k}" ${s.cartoesTipo === k ? "selected" : ""}>${escapeHtml(cartoesTipoLabels[k])}</option>`).join("")}</select></label>` : ""}
           ${s.destino === "outras_origens" ? `<label>Origem<select id="wizardOutrasOrigem">${Object.keys(outrasOrigemLabels).map((k) => `<option value="${k}" ${s.outrasOrigem === k ? "selected" : ""}>${escapeHtml(outrasOrigemLabels[k])}</option>`).join("")}</select></label>` : ""}
@@ -9024,6 +9029,11 @@
       // em vez de s.source direto.
       async function confirmLegacyImport() {
         const s = importWizardState;
+        if (destinosSoNoImportadorInteligente.has(s.destino)) {
+          s.error = "Dados do Cartão Próprio CredSystem são importados pelo Importador inteligente, no topo desta página.";
+          refreshImportWizard();
+          return;
+        }
         const source = resolveSource(s);
         const table = sourceTables[source];
         const mapped = s.previewRows;
