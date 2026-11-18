@@ -800,6 +800,13 @@
       const fmt = new Intl.NumberFormat("pt-BR");
       const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
       const avg = (arr) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+      // Ticket de cartoes: so considera valores informados (> 0). Os arquivos de emissao atuais nao
+      // trazem valor de compra (o import antigo gravava 0 no lugar de "nao informado"), entao sem
+      // nenhum valor positivo o ticket e null ("N/D"), nunca um R$ 0,00 artificial.
+      const ticketCartoes = (rows) => {
+        const valores = rows.map((r) => Number(r.valor_compra_inicial)).filter((v) => Number.isFinite(v) && v > 0);
+        return valores.length ? valores.reduce((a, b) => a + b, 0) / valores.length : null;
+      };
       const num = (v) => Number.isFinite(Number(v)) ? Number(v) : 0;
       // Diferente de num(): devolve null quando o valor bruto nao veio (undefined/null/string
       // vazia), em vez de 0 - usado nos campos novos de e-mail marketing (aberturas_unicas etc.)
@@ -1076,7 +1083,9 @@
       }
 
       async function loadDashboard() {
-        let q = supabase.from("dados_cartoes_credsystem").select("*").order("data_emissao", { ascending: false }).limit(500);
+        // excluido_bi: linhas mantidas so para auditoria (ex.: arquivo de propostas gravado como
+        // emissao, reimportacao duplicada) - ver migration 20261113_045.
+        let q = supabase.from("dados_cartoes_credsystem").select("*").eq("excluido_bi", false).order("data_emissao", { ascending: false }).limit(500);
         if (state.marca !== "Todas") q = q.eq("marca", state.marca);
         const date = fromDate();
         if (date) q = q.gte("data_emissao", date);
@@ -2036,7 +2045,7 @@
         const summary = {
           total: rows.length,
           ativos: rows.filter((r) => r.data_ativacao).length,
-          ticket: avg(rows.map((r) => num(r.valor_compra_inicial))),
+          ticket: ticketCartoes(rows),
           disparosEmail: state.emailDisparos.length,
           entreguesEmail: emailAgg.entregues,
           abertura: emailAgg.taxaAbertura,
@@ -2174,7 +2183,7 @@
                 ${kpiWithDelta("Propostas", fmt.format(summary.propostas), "assignment", kpiFooterAnteriorHtml(summary.propostas, summaryAnterior?.propostas))}
                 ${kpiWithDelta("Aprovadas", fmt.format(summary.aprovadas), "check_circle", kpiFooterAnteriorHtml(summary.aprovadas, summaryAnterior?.aprovadas))}
                 ${kpiWithDelta("Taxa de aprovação", `${summary.taxaAprovacao.toFixed(1).replace(".", ",")}%`, "percent", kpiFooterAnteriorHtml(summary.taxaAprovacao, summaryAnterior?.taxaAprovacao, { formatar: (v) => `${v.toFixed(1).replace(".", ",")}%` }))}
-                ${kpiWithDelta("Ticket médio", money.format(summary.ticket), "payments", kpiFooterAnteriorHtml(summary.ticket, summaryAnterior?.ticket, { formatar: (v) => money.format(v) }))}
+                ${kpiWithDelta("Ticket médio", summary.ticket === null ? "N/D" : money.format(summary.ticket), "payments", kpiFooterAnteriorHtml(summary.ticket, summary.ticket === null ? null : summaryAnterior?.ticket, { formatar: (v) => money.format(v) }))}
               </div>
               <p class="module-last-sync">🕒 Atualizado via planilha: ${escapeHtml(formatDateTime(cartaoLastImport))}</p>
             </section>
@@ -2668,7 +2677,7 @@
         const emailAgg = weightedDisparosAggregate(disparosEmail);
         return {
           ativos: cards.filter((r) => r.data_ativacao).length,
-          ticket: avg(cards.map((r) => num(r.valor_compra_inicial))),
+          ticket: ticketCartoes(cards),
           propostas: totalPropostas,
           aprovadas,
           taxaAprovacao: totalPropostas ? (aprovadas / totalPropostas) * 100 : 0,
@@ -3693,6 +3702,7 @@
         let recentQuery = supabase
           .from("dados_cartoes_credsystem")
           .select("marca,data_emissao,data_ativacao,loja_operacao,nome_cliente,valor_compra_inicial")
+          .eq("excluido_bi", false)
           .order("data_emissao", { ascending: false })
           .limit(12);
         if (state.marca !== "Todas") recentQuery = recentQuery.eq("marca", state.marca);
@@ -3752,9 +3762,29 @@
         if (refreshBtn) refreshBtn.onclick = () => renderCredsystemBI({ force: true });
       }
 
-      // keepPreviousData: troca de marca/periodo pinta o cache anterior na hora (staleTime 5min);
-      // so mostra skeleton na primeira vez que essa combinacao marca+periodo e vista.
+      // Modulo Cartao Proprio CredSystem (public/modules/credsystem/): 6 abas, importacao inteligente
+      // e indicadores agregados no servidor (migration 20261113_045). Carregado sob demanda, mesmo
+      // padrao do modulo Influenciadores. renderCredsystemBILegado (abaixo) fica como referencia da
+      // tela antiga e nao e mais chamado pela navegacao.
+      let credsystemModulo = null;
+      async function carregarCredsystemModulo() {
+        if (!credsystemModulo) {
+          credsystemModulo = await import("./modules/credsystem/index.js");
+          credsystemModulo.initCredsystem({
+            supabase, state, safeErrorMessage, marcaPillsHtml, wireMarcaPills, periodoDropdownHtml, wirePeriodoDropdown,
+            fromDate, toDate, lastImportTimestamp,
+            navegar: (pagina) => { state.page = pagina; render(); },
+            invalidarCachesApp: () => { pageCaches.delete("credsystem"); dashboardCache.clear(); }
+          });
+        }
+        return credsystemModulo;
+      }
       async function renderCredsystemBI({ force = false } = {}) {
+        const modulo = await carregarCredsystemModulo();
+        await modulo.renderCredsystem({ force });
+      }
+
+      async function renderCredsystemBILegado({ force = false } = {}) {
         const key = marcaPeriodoCacheKey();
         await renderCachedPage({
           pageName: "credsystem",
@@ -8250,8 +8280,10 @@
         if (!importWizardState) resetImportWizard();
         const s = importWizardState;
         content.innerHTML = `
-          <div class="page-head"><div><div class="eyebrow">Importação controlada</div><h2>Importar planilhas</h2><p class="muted">Destino & Marca → Campanha & Upload → Preview & Confirmação, com validação antes de gravar no Supabase.</p></div></div>
+          <div class="page-head"><div><div class="eyebrow">Importação controlada</div><h2>Importar planilhas</h2><p class="muted">Planilhas CredSystem são reconhecidas automaticamente no importador inteligente. Os demais destinos usam o assistente manual abaixo.</p></div></div>
+          <div id="csImportador"><section class="card"><span class="skel skel-text" style="width:260px;height:15px"></span><div class="skel skel-block" style="height:120px;margin-top:14px"></div></section></div>
           <section class="card">
+            <div class="eyebrow" style="margin-bottom:10px">Importação manual · e-mail marketing, mídia paga e outras origens</div>
             <div class="wizard-steps">
               <span class="${s.step === 1 ? "active" : ""}">1. Destino & Marca</span>
               <span class="sep">›</span>
@@ -8269,6 +8301,20 @@
         wireImportWizard();
         wireImportHistorico();
         if (importHistoricoState.rows === null && !importHistoricoState.loading) loadImportHistorico();
+        montarImportadorCredsystem();
+      }
+
+      // Importador inteligente do Cartao Proprio CredSystem (deteccao automatica de tipo/marca/
+      // periodo, validacao, lotes idempotentes) - montado no topo da tela, acima do wizard manual.
+      async function montarImportadorCredsystem() {
+        const alvo = document.querySelector("#csImportador");
+        if (!alvo) return;
+        try {
+          const modulo = await carregarCredsystemModulo();
+          if (state.page === "import" && alvo.isConnected) modulo.montarImportador(alvo);
+        } catch (error) {
+          alvo.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error, "Não foi possível carregar o importador CredSystem."))}</div>`;
+        }
       }
 
       function refreshImportWizard() {
@@ -8881,6 +8927,8 @@
             .range(from, from + pageSize - 1);
 
           if (marca !== "Todas") query = query.eq("marca", marca);
+          // Cartoes marcados excluido_bi (migration 20261113_045) nunca entram em indicador.
+          if (table === "dados_cartoes_credsystem") query = query.eq("excluido_bi", false);
           if (de) query = query.gte(dateColumn, de);
           if (ate) query = query.lte(dateColumn, ate);
           return query;

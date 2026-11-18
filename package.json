@@ -10,7 +10,8 @@
     "check:env": "node scripts/check-env.mjs",
     "check:contracts": "node scripts/check-contracts.mjs",
     "test:influenciadores": "node --test \"tests/influenciadores/*.test.js\"",
-    "sync:netlify": "node scripts/sync-netlify-deploy.mjs"
+    "sync:netlify": "node scripts/sync-netlify-deploy.mjs",
+    "test:credsystem": "node --test \"tests/credsystem/*.test.js\""
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
@@ -23,8 +24,10 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.16",
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.0",
+    "happy-dom": "^15.11.7",
     "netlify-cli": "^27.1.0",
     "supabase": "^2.114.0"
   }
