@@ -7,3 +7,6 @@ supabase/.temp
 *.log
 .claude/settings.local.json
 backups/
+
+# Planilhas reais de negocio (nunca versionar)
+planilhas/

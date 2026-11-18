@@ -39,6 +39,32 @@ O front-end envia e filtra a coluna `marca`, mas a autorizacao real acontece no 
 
 MFA (TOTP) e opcional por usuario, com UI de ativacao/desafio em `public/index.html` (menu do usuario → **Seguranca**). A obrigatoriedade tambem e reforcada no banco: `public.gto_aal2_ok()` (migration `20260813_027_enforce_mfa_aal2_rls.sql`) bloqueia `gto_meu_cargo`/`gto_minha_marca`/`gto_tem_acesso_marca` (logo, toda policy RLS do projeto) para sessoes aal1 de usuarios com fator TOTP verificado — sem isso, a tela de desafio no login seria so uma checagem client-side, contornavel com uma requisicao direta a API.
 
+## Cartao Proprio CredSystem (modulo + importacao inteligente)
+
+Codigo em `public/modules/credsystem/` (carregado sob demanda por `public/index.html`, mesmo padrao do modulo Influenciadores). Banco: migration `supabase/migrations/20261113_045_credsystem_importacao_inteligente.sql`.
+
+**Tela Cartao Proprio** (6 abas): Visao Geral (operacional e CRM em secoes separadas, com fonte identificada), Funil de Cartoes, Ranking por Loja (busca, ordenacao, CSV/Excel), Motivos, Campanhas CRM e Retencao e Comportamento. Filtros: marca, periodo global, ano, mes e "Todo o periodo". Cada indicador mostra o proprio estado: *sem dados importados*, *sem registros no periodo*, *N/D* (denominador zero), *erro* ou *sem permissao* - nunca um zero artificial.
+
+**Regras de calculo** (`metricas.js` e `rpc_credsystem_operacional_resumo`):
+- taxas e tickets consolidados = soma dos numeradores / soma dos denominadores (so linhas com os dois valores informados); nunca media de taxas.
+- funil em **coorte** quando ha vinculo proposta -> cartao (`id_cod_cartao`): propostas do periodo acompanhadas ate emissao e ativacao. Sem vinculo, cai para **taxas de periodo** e a tela avisa.
+- "Todas" = marcas autorizadas para o usuario (RLS); os valores sao recalculados pelos totais.
+- valores das campanhas sao "associados" (sem causalidade); abordagens nao sao clientes unicos; adesoes nao sao ativacoes de cartao.
+
+**Importar Planilhas -> Importacao inteligente** (6 etapas: selecionar, identificacao, mapeamento, validacao, confirmacao, resultado):
+- reconhece Tipo A (campanhas CRM, 22 colunas), Tipo B (propostas; emissoes/ativacoes) e Tipo C (compras) pelo conjunto de colunas; com confianca baixa pede ao usuario o modelo (nao classifica por suposicao). Mapeamento manual pode ser salvo como modelo e e reaplicado pela assinatura do cabecalho.
+- marca por linha: BIN validado (`credsystem_bin_marca`) > codigo de loja cadastrado (`credsystem_loja_marca`) > aba/coluna de marca > selecao; divergencia bloqueia a linha. O servidor revalida tudo.
+- cada arquivo vira um lote em `importacao_lotes` (hash SHA-256, responsavel, marcas, periodo, contadores, status) com erros por linha em `importacao_erros_linha`. Reimportar o mesmo arquivo nao duplica: linhas iguais sao "ignoradas", alteradas sao "atualizadas" (chave natural por tipo).
+- gravacao somente pelas RPCs `SECURITY DEFINER` `rpc_credsystem_*_importar` (authenticated nao tem INSERT/UPDATE direto nas tabelas novas); permissao por marca checada linha a linha.
+- CPF nunca e armazenado em texto: o servidor gera `cliente_pseudo_id` com HMAC-SHA256 e pepper secreto (`gto_private.segredos`). Colunas de telefone/nome/cartao nao sao enviadas em `dados_originais`.
+- SheetJS 0.20.3 servido de `public/vendor/` (o 0.18.5 do npm tem falhas conhecidas); formulas nao sao avaliadas e textos com cara de formula sao neutralizados na exportacao.
+
+**Saneamento (nao destrutivo)**: a migration marca `excluido_bi = true` (com `motivo_exclusao_bi`) em linhas de `dados_cartoes_credsystem` que nao sao emissoes reais - arquivo de propostas gravado como emissao, reimportacao duplicada sem `id_cod_cartao` e seed de teste. Nada e apagado; todas as telas e views ignoram essas linhas. Para reverter: `update dados_cartoes_credsystem set excluido_bi = false, motivo_exclusao_bi = null where excluido_bi;`.
+
+**Testes**: `npm run test:credsystem` - leitura/deteccao/transformacao, banco real em PGlite (RLS, RPCs, idempotencia, saneamento, coorte) e UI com happy-dom contra o mesmo banco.
+
+**Ordem de deploy**: aplicar a migration 045 **antes** de publicar o front (o front passa a filtrar `excluido_bi`).
+
 ## Integracao Meta Business (organico: Facebook + Instagram)
 
 As Edge Functions `meta-oauth-start`, `meta-oauth-callback` e `meta-sync-insights` (`supabase/functions/`) implementam a conexao com a Graph API. O app tem uma tela dedicada para isso. Escopos pedidos hoje: `pages_show_list`, `pages_read_engagement`, `business_management`, `read_insights`, `instagram_basic`, `instagram_manage_insights`, `ads_read` (este ultimo cobre a integracao de anuncios, ver secao propria abaixo), `instagram_manage_comments` e `pages_read_user_content` (leitura de comentarios para o Hub de Reputacao, `meta-sync-comments` — em Standard Access, so funcionam para contas com papel no app ate a Meta liberar Acesso Avancado).
