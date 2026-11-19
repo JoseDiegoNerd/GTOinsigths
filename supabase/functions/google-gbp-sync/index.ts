@@ -10,8 +10,10 @@ import {
   GOOGLE_PERFORMANCE_API,
   googleFetch,
   jsonResponse,
+  listarTodosLocais,
   logGoogleEvent,
   safeErrorMessage,
+  salvarLocais,
   sleepMs,
   withCors,
 } from "../_shared/google.ts";
@@ -77,14 +79,34 @@ async function tryFetch<T>(label: string, fn: () => Promise<T>, warnings: string
   }
 }
 
-async function syncLocais(integracao: Integracao, accessToken: string, warnings: string[]) {
+// Rebusca no Google TODAS as lojas da conta/grupo (locations.list com pageSize=100 e loop de
+// nextPageToken) antes de sincronizar avaliacoes/metricas/fotos. Sem isso a rede ficava limitada
+// as 10 primeiras lojas (pagina padrao do Google) gravadas na conexao. Se a listagem falhar (ex.:
+// cota), segue com as lojas ja gravadas no banco.
+async function syncLocais(integracao: Integracao, accessToken: string, warnings: string[], estadoCota: EstadoCota) {
+  const listagem = await tryFetch(
+    `Locais ${integracao.google_account_id}`,
+    () => listarTodosLocais(integracao.google_account_id, accessToken),
+    warnings,
+    estadoCota,
+  );
+
+  let locaisImportados = 0;
+  if (listagem) {
+    locaisImportados = await salvarLocais(integracao, listagem.locations);
+    if (!listagem.completo) {
+      warnings.push(`Locais ${integracao.google_account_id}: limite de paginas atingido; parte das lojas pode nao ter sido importada.`);
+    }
+  }
+
   const supabase = getAdminClient();
-  const { data: locais } = await supabase
+  const { data: locais, error } = await supabase
     .from("integracao_google_locais")
     .select("id,location_id,nome_loja")
     .eq("integracao_id", integracao.id);
+  if (error) throw error;
 
-  return (locais || []) as Local[];
+  return { locais: (locais || []) as Local[], locaisImportados };
 }
 
 async function syncReviews(integracao: Integracao, local: Local, accessToken: string, warnings: string[], estadoCota: EstadoCota) {
@@ -368,6 +390,8 @@ Deno.serve(withCors(async (req) => {
       const result = {
         id: integracao.id,
         marca: integracao.marca,
+        locaisImportados: 0,
+        totalLocais: 0,
         reviewsImported: 0,
         metricasImportadas: 0,
         fotosImportadas: 0,
@@ -377,10 +401,12 @@ Deno.serve(withCors(async (req) => {
 
       try {
         const accessToken = await getValidAccessToken(integracao);
-        const locais = await syncLocais(integracao, accessToken, warnings);
+        const { locais, locaisImportados } = await syncLocais(integracao, accessToken, warnings, estadoCota);
+        result.locaisImportados = locaisImportados;
+        result.totalLocais = locais.length;
 
         if (!locais.length) {
-          warnings.push("Nenhum local sincronizado ainda para esta conta — rode a conexao novamente se lojas foram adicionadas.");
+          warnings.push("Nenhuma loja encontrada para esta conta no Google.");
         }
 
         for (const [indice, local] of locais.entries()) {
@@ -409,6 +435,8 @@ Deno.serve(withCors(async (req) => {
           status: "sucesso",
           mensagem: "Sincronizacao Google Business Profile concluida.",
           payload_resumo: {
+            locaisImportados: result.locaisImportados,
+            totalLocais: result.totalLocais,
             reviewsImported: result.reviewsImported,
             metricasImportadas: result.metricasImportadas,
             fotosImportadas: result.fotosImportadas,

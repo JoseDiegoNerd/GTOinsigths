@@ -858,9 +858,13 @@
       async function finishLogin() {
         if (state.session) await loadPerfil();
         if (state.session) ensurePresenceHeartbeat();
-        const queryPage = new URLSearchParams(location.search).get("page");
+        const queryParams = new URLSearchParams(location.search);
+        const queryPage = queryParams.get("page");
         if (queryPage === "connections") state.page = "connections";
         if (queryPage === "google_business") state.page = "google_business";
+        // O retorno do OAuth do Google chega na raiz do app (a Edge Function so preserva a origem);
+        // a gestao das contas Google fica em Conexoes, entao e la que o usuario deve cair.
+        if (["google_connected", "google_error", "google_warning"].some((key) => queryParams.has(key))) state.page = "connections";
         render();
       }
 
@@ -7215,9 +7219,15 @@
         const metaConnected = urlParams.get("meta_connected");
         const metaError = urlParams.get("meta_error");
 
-        content.innerHTML = `<div class="alert">Carregando conexões Meta...</div>`;
+        const googleFlashHtml = consumeGoogleOAuthFlash();
+
+        content.innerHTML = `<div class="alert">Carregando conexões...</div>`;
+        let googleLoadError = null;
         try {
-          await loadConnections();
+          await Promise.all([
+            loadConnections(),
+            loadGoogleConnections().catch((error) => { googleLoadError = error; })
+          ]);
         } catch (error) {
           content.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}<br><br>Aplique a migration <code>supabase/migrations/20260714_010_meta_account_mapping.sql</code> e depois rode <code>notify pgrst, 'reload schema';</code>.</div>`;
           return;
@@ -7231,11 +7241,13 @@
         const lastSync = confirmedRows.map((row) => row.ultima_sincronizacao_em).filter(Boolean).sort().pop();
         const statusHtml = statusMessage
           ? `<div class="alert success">${escapeHtml(statusMessage)}</div>`
-          : metaError
-            ? `<div class="alert error">Meta retornou erro: ${escapeHtml(metaError)}</div>`
-            : metaConnected
-              ? `<div class="alert success">${escapeHtml(metaConnected)} conta(s) Meta recebida(s). Revise abaixo quais pertencem à marca antes de sincronizar.</div>`
-              : "";
+          : googleFlashHtml
+            ? googleFlashHtml
+            : metaError
+              ? `<div class="alert error">Meta retornou erro: ${escapeHtml(metaError)}</div>`
+              : metaConnected
+                ? `<div class="alert success">${escapeHtml(metaConnected)} conta(s) Meta recebida(s). Revise abaixo quais pertencem à marca antes de sincronizar.</div>`
+                : "";
 
         content.innerHTML = `
           <div class="page-head">
@@ -7315,8 +7327,10 @@
                 }).join("") || `<tr><td colspan="6">Nenhuma conta de anúncios encontrada ainda. Reconecte o Meta Business para descobrir contas de anúncios (precisa da permissão "ads_read").</td></tr>`}</tbody>
               </table>
             </div>
-          </section>`;
+          </section>
+          ${googleConnectionsSectionHtml(googleLoadError)}`;
 
+        wireGoogleConnections();
         wireMarcaPills(renderConnections);
         document.querySelector("#refreshConnections").onclick = () => renderConnections();
         document.querySelector("#connectMeta").onclick = connectMetaBusiness;
@@ -7489,8 +7503,8 @@
       }
 
       function googleReturnUrl() {
-        if (location.protocol === "file:") return "http://127.0.0.1:5173/?page=google_business";
-        return `${location.origin}${location.pathname}?page=google_business`;
+        if (location.protocol === "file:") return "http://127.0.0.1:5173/?page=connections";
+        return `${location.origin}${location.pathname}?page=connections`;
       }
 
       function googleConnectionStateLabel(row) {
@@ -7498,6 +7512,191 @@
         if (row.conta_confirmada && row.ativo) return { label: "Confirmada", className: "active" };
         if (!row.ativo) return { label: "Inativa", className: "inactive" };
         return { label: "Revisar", className: "inactive" };
+      }
+
+      // Busca todas as linhas de uma consulta em blocos (o PostgREST corta em 1.000 por resposta).
+      // buildQuery precisa devolver uma consulta nova e com ordenacao estavel a cada chamada.
+      async function fetchAllPages(buildQuery, pageSize = 1000) {
+        const rows = [];
+        for (let from = 0; ; from += pageSize) {
+          const { data, error } = await buildQuery().range(from, from + pageSize - 1);
+          if (error) throw error;
+          rows.push(...(data || []));
+          if (!data || data.length < pageSize) return rows;
+        }
+      }
+
+      // ---- Google Meu Negocio dentro de Conexoes: conectar, vincular conta -> marca, confirmar e sincronizar.
+
+      const MARCAS_GOOGLE = marcas.filter((m) => m !== "Todas");
+
+      // O retorno do OAuth chega em query params; captura uma vez e limpa a URL pra o aviso nao
+      // reaparecer a cada refresh da pagina.
+      function consumeGoogleOAuthFlash() {
+        const urlParams = new URLSearchParams(location.search);
+        const keys = ["google_connected", "google_error", "google_warning"];
+        if (!keys.some((key) => urlParams.has(key))) return "";
+        const connected = urlParams.get("google_connected");
+        const error = urlParams.get("google_error");
+        const warning = urlParams.get("google_warning");
+        keys.forEach((key) => urlParams.delete(key));
+        const cleanQuery = urlParams.toString();
+        history.replaceState({}, document.title, location.pathname + (cleanQuery ? `?${cleanQuery}` : "") + location.hash);
+
+        if (error) {
+          return pareceErroDeCota(error)
+            ? `<div class="alert">${escapeHtml(GOOGLE_COTA_PENDENTE_MSG)}</div>`
+            : `<div class="alert error">Google retornou erro: ${escapeHtml(error)}</div>`;
+        }
+        if (warning) return `<div class="alert">${escapeHtml(pareceErroDeCota(warning) ? GOOGLE_COTA_PENDENTE_MSG : warning)}</div>`;
+        if (connected) return `<div class="alert success">${escapeHtml(connected)} conta(s) Google recebida(s). Na seção Google Meu Negócio abaixo, escolha a marca de cada conta e confirme só as que pertencem a ela.</div>`;
+        return "";
+      }
+
+      async function loadGoogleConnections() {
+        let query = supabase
+          .from("vw_integracao_google_contas_publica")
+          .select("id,marca,google_account_id,email_conta,ativo,conta_confirmada,ignorada,observacao,ultima_sincronizacao_em,criado_em")
+          .order("email_conta", { ascending: true });
+        if (state.marca !== "Todas") query = query.eq("marca", state.marca);
+        const { data, error } = await query;
+        if (error) throw error;
+
+        const contas = data || [];
+        const locaisPorConta = {};
+        const ids = contas.map((c) => c.id);
+        if (ids.length) {
+          const locais = await fetchAllPages(() => supabase
+            .from("integracao_google_locais")
+            .select("id,integracao_id")
+            .in("integracao_id", ids)
+            .order("id"));
+          locais.forEach((l) => { locaisPorConta[l.integracao_id] = (locaisPorConta[l.integracao_id] || 0) + 1; });
+        }
+
+        state.googleConnections = contas;
+        state.googleLocaisPorConta = locaisPorConta;
+      }
+
+      function googleConnectionsSectionHtml(loadError) {
+        const contas = state.googleConnections || [];
+        const locaisPorConta = state.googleLocaisPorConta || {};
+        const tabela = loadError
+          ? `<div class="alert error">Não foi possível carregar as contas Google: ${escapeHtml(safeErrorMessage(loadError))}</div>`
+          : `
+            <div class="table-wrap" style="margin-top:16px">
+              <table>
+                <thead><tr><th>Conta Google</th><th>Marca vinculada</th><th>Unidades</th><th>Status</th><th>Última sincronização</th><th>Ação</th></tr></thead>
+                <tbody>${contas.map((row) => {
+                  const stateLabel = googleConnectionStateLabel(row);
+                  const nome = row.email_conta || row.google_account_id || "-";
+                  const unidades = locaisPorConta[row.id] || 0;
+                  return `
+                  <tr>
+                    <td>${escapeHtml(nome)}</td>
+                    <td>
+                      <select class="google-marca-select" data-id="${escapeHtml(row.id)}" aria-label="Marca da conta ${escapeHtml(nome)}">
+                        ${MARCAS_GOOGLE.map((m) => `<option value="${escapeHtml(m)}" ${m === row.marca ? "selected" : ""}>${escapeHtml(m)}</option>`).join("")}
+                      </select>
+                    </td>
+                    <td>${unidades ? fmt.format(unidades) : "-"}</td>
+                    <td><span class="status-pill ${stateLabel.className}">${stateLabel.label}</span></td>
+                    <td>${escapeHtml(formatDateTime(row.ultima_sincronizacao_em))}</td>
+                    <td><div class="actions">
+                      ${row.conta_confirmada && !row.ignorada ? `<button class="secondary google-sync-one" data-id="${escapeHtml(row.id)}">Sincronizar</button>` : `<button class="google-confirm-one" data-id="${escapeHtml(row.id)}">Confirmar</button>`}
+                      ${row.ignorada ? `<button class="secondary google-reactivate-one" data-id="${escapeHtml(row.id)}">Reativar</button>` : `<button class="secondary google-ignore-one" data-id="${escapeHtml(row.id)}">Ignorar</button>`}
+                    </div></td>
+                  </tr>`;
+                }).join("") || `<tr><td colspan="6">Nenhuma conta Google conectada${state.marca !== "Todas" ? " nesta marca" : ""} ainda.</td></tr>`}</tbody>
+              </table>
+            </div>`;
+
+        return `
+          <section class="card">
+            <div class="page-head" style="align-items:center">
+              <div><h3>Google Meu Negócio</h3><p class="muted">O Google devolve todas as contas e grupos que o login enxerga. Escolha a marca de cada conta na coluna Marca vinculada (isso já confirma a conta) e ignore as que não devem alimentar o dashboard.</p></div>
+              <div class="actions">
+                <button id="connectGoogle"><span class="material-symbols-outlined" style="vertical-align:middle">add_link</span> Conectar Google Meu Negócio</button>
+                <button id="syncAllGoogle" class="secondary"><span class="material-symbols-outlined" style="vertical-align:middle">sync</span> Sincronizar confirmadas</button>
+              </div>
+            </div>
+            <div id="googleConnectionStatus" style="margin-top:14px"></div>
+            ${tabela}
+          </section>`;
+      }
+
+      function wireGoogleConnections() {
+        const connectButton = document.querySelector("#connectGoogle");
+        if (!connectButton) return;
+        connectButton.onclick = () => runGoogleAction(connectGoogleBusiness);
+        document.querySelector("#syncAllGoogle").onclick = () => runGoogleAction(() => syncGoogleBusiness());
+        document.querySelectorAll(".google-sync-one").forEach((button) => { button.onclick = () => runGoogleAction(() => syncGoogleBusiness(button.dataset.id)); });
+        document.querySelectorAll(".google-confirm-one").forEach((button) => { button.onclick = () => runGoogleAction(() => saveGoogleConnectionMapping(button.dataset.id, "confirm")); });
+        document.querySelectorAll(".google-ignore-one").forEach((button) => { button.onclick = () => runGoogleAction(() => saveGoogleConnectionMapping(button.dataset.id, "ignore")); });
+        document.querySelectorAll(".google-reactivate-one").forEach((button) => { button.onclick = () => runGoogleAction(() => saveGoogleConnectionMapping(button.dataset.id, "reactivate")); });
+        document.querySelectorAll(".google-marca-select").forEach((select) => {
+          select.onchange = () => runGoogleAction(() => vincularGoogleContaMarca(select.dataset.id, select.value));
+        });
+      }
+
+      // Move uma conta Google para outra marca e ja a confirma. As unidades importadas sob a marca
+      // antiga sao apagadas (avaliacoes, metricas e fotos caem em cascata) porque a chave delas e
+      // marca+location_id; a proxima sincronizacao reimporta tudo ja na marca nova.
+      async function vincularGoogleContaMarca(id, novaMarca) {
+        const status = document.querySelector("#googleConnectionStatus") || document.querySelector("#content");
+        const conta = (state.googleConnections || []).find((c) => c.id === id);
+        if (!conta || conta.marca === novaMarca) return;
+        const nome = conta.email_conta || conta.google_account_id;
+        const unidades = (state.googleLocaisPorConta || {})[id] || 0;
+
+        if (unidades && !window.confirm(`Mover "${nome}" de ${conta.marca} para ${novaMarca}?\n\nAs ${unidades} unidade(s) já importadas em ${conta.marca}, com avaliações, métricas e fotos, serão removidas e reimportadas em ${novaMarca} na próxima sincronização.`)) {
+          await renderConnections();
+          return;
+        }
+
+        status.innerHTML = `<div class="alert">Vinculando a conta à marca ${escapeHtml(novaMarca)}...</div>`;
+
+        const { data: duplicada, error: duplicadaError } = await supabase
+          .from("vw_integracao_google_contas_publica")
+          .select("id")
+          .eq("marca", novaMarca)
+          .eq("google_account_id", conta.google_account_id)
+          .maybeSingle();
+        if (duplicadaError) {
+          status.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(duplicadaError))}</div>`;
+          return;
+        }
+        if (duplicada) {
+          status.innerHTML = `<div class="alert error">A conta "${escapeHtml(nome)}" já está cadastrada em ${escapeHtml(novaMarca)}. Confirme a linha que está em ${escapeHtml(novaMarca)} e ignore esta.</div>`;
+          return;
+        }
+
+        const { error: locaisError } = await supabase
+          .from("integracao_google_locais")
+          .delete()
+          .eq("integracao_id", id);
+        if (locaisError) {
+          status.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(locaisError))}</div>`;
+          return;
+        }
+
+        const { error } = await supabase
+          .from("integracao_google_contas")
+          .update({
+            marca: novaMarca,
+            conta_confirmada: true,
+            ignorada: false,
+            ativo: true,
+            observacao: `Conta vinculada à marca ${novaMarca} em Conexões.`
+          })
+          .eq("id", id);
+        if (error) {
+          status.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
+          return;
+        }
+
+        googleBusinessCache.clear();
+        await renderConnections(`Conta "${nome}" vinculada e confirmada em ${novaMarca}. Clique em Sincronizar na linha dela para importar todas as unidades.`);
       }
 
       function renderStars(rating) {
@@ -7514,15 +7713,14 @@
         return ["Admin", "Gestor", "Coordenador"].includes(state.perfil?.cargo);
       }
 
-      function podeResponderGoogleAvaliacoes() {
-        return ["Admin", "Gestor", "Coordenador", "Analista"].includes(state.perfil?.cargo);
-      }
-
+      // Carrega os dados da pagina Google Meu Negocio (e os KPIs Google do Dashboard Geral). Com a
+      // marca "Todas" nao ha filtro de marca: os KPIs somam todas as marcas visiveis ao usuario. Tudo
+      // e lido em blocos (fetchAllPages) porque 30 dias x dezenas de lojas passa do limite de 1.000
+      // linhas por resposta do PostgREST e cortaria os totais.
       async function loadGoogleBI() {
         let contasQuery = supabase
           .from("vw_integracao_google_contas_publica")
-          .select("id,marca,google_account_id,email_conta,ativo,conta_confirmada,ignorada,observacao,ultima_sincronizacao_em,criado_em")
-          .order("criado_em", { ascending: false });
+          .select("id,marca,ativo,conta_confirmada,ignorada");
         if (state.marca !== "Todas") contasQuery = contasQuery.eq("marca", state.marca);
         const { data: contas, error: contasError } = await contasQuery;
         if (contasError) throw contasError;
@@ -7533,40 +7731,31 @@
 
         let locais = [];
         let avaliacoes = [];
-        let fotos = [];
         let metricas = [];
 
         if (confirmedIds.length) {
-          const { data: locaisData, error: locaisError } = await supabase
+          locais = await fetchAllPages(() => supabase
             .from("integracao_google_locais")
             .select("id,integracao_id,marca,location_id,nome_loja,endereco_completo,telefone,descricao,status")
-            .in("integracao_id", confirmedIds);
-          if (locaisError) throw locaisError;
-          locais = locaisData || [];
+            .in("integracao_id", confirmedIds)
+            .order("marca")
+            .order("nome_loja")
+            .order("id"));
 
           const localIds = locais.map((l) => l.id);
-
           if (localIds.length) {
-            const [avaliacoesResult, fotosResult, metricasResult] = await Promise.all([
-              supabase.from("integracao_google_avaliacoes")
-                .select("id,local_id,marca,review_id,autor_nome,rating,comentario,avaliado_em,status_resposta,resposta_texto")
+            [avaliacoes, metricas] = await Promise.all([
+              fetchAllPages(() => supabase
+                .from("integracao_google_avaliacoes")
+                .select("id,local_id,rating")
                 .in("local_id", localIds)
-                .order("avaliado_em", { ascending: false })
-                .limit(20),
-              supabase.from("integracao_google_fotos")
-                .select("id,local_id,marca,url,origem")
+                .order("id")),
+              fetchAllPages(() => supabase
+                .from("integracao_google_metricas_diarias")
+                .select("id,local_id,solicitacoes_rota,chamadas_telefone,impressoes_busca,impressoes_descoberta")
                 .in("local_id", localIds)
-                .limit(8),
-              supabase.from("integracao_google_metricas_diarias")
-                .select("local_id,marca,solicitacoes_rota,chamadas_telefone,impressoes_busca,impressoes_descoberta")
-                .in("local_id", localIds)
+                .order("id"))
             ]);
-            if (avaliacoesResult.error) throw avaliacoesResult.error;
-            if (fotosResult.error) throw fotosResult.error;
-            if (metricasResult.error) throw metricasResult.error;
-            avaliacoes = avaliacoesResult.data || [];
-            fotos = fotosResult.data || [];
-            metricas = metricasResult.data || [];
           }
         }
 
@@ -7586,10 +7775,7 @@
 
         state.google = {
           ...(state.google || {}),
-          contas: contas || [],
           locais,
-          avaliacoes,
-          fotos,
           ratingPorLocal,
           kpis: { totalUnidades: locais.length, avaliacaoMedia, visualizacoes, solicitacoesRota, chamadasTelefone }
         };
@@ -7598,8 +7784,6 @@
       // paintGoogleBusiness monta HTML e liga os eventos dos botoes no mesmo passo (nao separa
       // fetch/paint como o Dashboard e o Cartao Proprio) - por isso o cache aqui guarda os DADOS ja
       // carregados (state.google) por marca em vez do HTML pronto, e sempre repinta a partir deles.
-      // Isso evita reescrever as ~200 linhas de paintGoogleBusiness so pra encaixar no formato
-      // generico de renderCachedPage, sem abrir mao de staleTime + keepPreviousData + skeleton.
       const GOOGLE_BUSINESS_STALE_TIME = 1000 * 60 * 5;
       const googleBusinessCache = new Map();
       async function renderGoogleBusiness(statusMessage = "", { force = false } = {}) {
@@ -7609,9 +7793,8 @@
         const serveFromCache = cached && !force;
 
         if (serveFromCache) {
-          // So restaura o snapshot cacheado quando NAO e um force: apos uma mutacao (responder
-          // avaliacao, sincronizar, etc.) state.google pode ter mudancas locais recentes (ex.:
-          // fechar a caixa de resposta) que um cache antigo sobrescreveria incorretamente.
+          // So restaura o snapshot cacheado quando NAO e um force: apos uma mutacao (editar loja)
+          // state.google pode ter mudancas locais recentes que um cache antigo sobrescreveria.
           state.google = cached.google;
           paintGoogleBusiness(statusMessage);
         } else if (!cached) {
@@ -7637,81 +7820,54 @@
       }
 
       // Detecta mensagens de cota da API do Google (nossas, ou o texto bruto do Google) pra mostrar
-      // um aviso mais amigavel do que um erro generico, enquanto a aprovacao da Business Profile
-      // API nao chega — ver docs/google-business-api-setup.md.
+      // um aviso mais amigavel do que um erro generico — ver docs/google-business-api-setup.md.
       function pareceErroDeCota(texto) {
         return /cota|quota|resource_exhausted|requests per minute/i.test(String(texto || ""));
       }
-      const GOOGLE_COTA_PENDENTE_MSG = "O Google ainda está processando a liberação de cota da API do Business Profile para este projeto. Isso é esperado enquanto a aprovação está em andamento e pode levar alguns dias — tente sincronizar novamente mais tarde.";
+      const GOOGLE_COTA_PENDENTE_MSG = "O Google limitou as requisições da API do Business Profile neste momento (cota por minuto). Aguarde alguns minutos e sincronize novamente.";
 
-      let googleFlash = null;
-
-      // Bloqueia os botoes enquanto uma acao roda: cada clique repetido vira mais chamadas a API do
-      // Google, que tem cota por minuto. Os botoes voltam sozinhos quando a tela e repintada.
+      // Bloqueia botoes e seletores enquanto uma acao roda: cada clique repetido vira mais chamadas a
+      // API do Google, que tem cota por minuto. Eles voltam sozinhos quando a tela e repintada.
       let googleBusy = false;
       async function runGoogleAction(action) {
         if (googleBusy) return;
         googleBusy = true;
-        const buttons = [...document.querySelectorAll("#content button")].filter((button) => !button.disabled);
-        buttons.forEach((button) => { button.disabled = true; });
+        const controls = [...document.querySelectorAll("#content button, #content select")].filter((el) => !el.disabled);
+        controls.forEach((el) => { el.disabled = true; });
         try {
           await action();
         } finally {
           googleBusy = false;
-          buttons.forEach((button) => { if (button.isConnected) button.disabled = false; });
+          controls.forEach((el) => { if (el.isConnected) el.disabled = false; });
         }
       }
 
+      // Pagina Google Meu Negocio: so KPIs consolidados, filtro de marcas e Gerenciamento de Unidades.
+      // Conexao, vinculo conta->marca e sincronizacao ficam em Conexoes.
       function paintGoogleBusiness(statusMessage = "") {
         const content = document.querySelector("#content");
         const g = state.google || {};
-        const contas = g.contas || [];
         const locais = g.locais || [];
-        const avaliacoes = g.avaliacoes || [];
-        const fotos = g.fotos || [];
         const ratingPorLocal = g.ratingPorLocal || {};
         const kpis = g.kpis || { totalUnidades: 0, avaliacaoMedia: 0, visualizacoes: 0, solicitacoesRota: 0 };
-
-        // O retorno do OAuth chega em query params; captura uma vez e limpa a URL pra o aviso
-        // nao reaparecer a cada refresh da pagina.
-        const urlParams = new URLSearchParams(location.search);
-        if (["google_connected", "google_error", "google_warning"].some((key) => urlParams.has(key))) {
-          googleFlash = {
-            connected: urlParams.get("google_connected"),
-            error: urlParams.get("google_error"),
-            warning: urlParams.get("google_warning"),
-          };
-          ["google_connected", "google_error", "google_warning"].forEach((key) => urlParams.delete(key));
-          const cleanQuery = urlParams.toString();
-          history.replaceState({}, document.title, location.pathname + (cleanQuery ? `?${cleanQuery}` : "") + location.hash);
-        }
-        const googleConnected = googleFlash?.connected;
-        const googleError = googleFlash?.error;
-        const googleWarning = googleFlash?.warning;
-        const statusHtml = statusMessage
-          ? `<div class="alert success">${escapeHtml(statusMessage)}</div>`
-          : googleError
-            ? pareceErroDeCota(googleError)
-              ? `<div class="alert">${escapeHtml(GOOGLE_COTA_PENDENTE_MSG)}</div>`
-              : `<div class="alert error">Google retornou erro: ${escapeHtml(googleError)}</div>`
-            : googleWarning
-              ? `<div class="alert">${escapeHtml(pareceErroDeCota(googleWarning) ? GOOGLE_COTA_PENDENTE_MSG : googleWarning)}</div>`
-              : googleConnected
-                ? `<div class="alert success">${escapeHtml(googleConnected)} conta(s) Google recebida(s). Revise abaixo quais pertencem à marca antes de sincronizar.</div>`
-                : "";
-
+        const statusHtml = statusMessage ? `<div class="alert success">${escapeHtml(statusMessage)}</div>` : "";
         const podeEditarLocal = podeGerenciarGoogleLocais();
-        const podeResponder = podeResponderGoogleAvaliacoes();
+        const mostrarMarca = state.marca === "Todas";
+        const colunas = mostrarMarca ? 7 : 6;
+        const linkConexoes = state.perfil?.cargo === "Admin"
+          ? ` Vincule e sincronize as contas em <a href="#" id="goConnectionsGoogle">Conexões</a>.`
+          : " Peça a um administrador para vincular e sincronizar as contas em Conexões.";
 
         content.innerHTML = `
           <div class="page-head">
-            <div><div class="eyebrow">Google Business Profile API</div><h2>Google Meu Negócio</h2><p class="muted">Unidades, avaliações e desempenho de busca local por marca.</p></div>
+            <div><div class="eyebrow">Google Business Profile API</div><h2>Google Meu Negócio</h2><p class="muted">Unidades, avaliações e desempenho de busca local${mostrarMarca ? " somando todas as marcas" : ` da marca ${escapeHtml(state.marca)}`}.</p></div>
             <div class="filters">
               ${marcaPillsHtml(true)}
               <button id="refreshGoogle" class="secondary">Atualizar</button>
             </div>
           </div>
           ${statusHtml}
+          <div id="googleActionStatus"></div>
           <div class="grid kpis">
             ${kpi("Total de Unidades", locais.length ? fmt.format(kpis.totalUnidades) : "—", "storefront")}
             ${kpi("Avaliação Média", kpis.avaliacaoMedia ? `${kpis.avaliacaoMedia.toFixed(1)} / 5.0` : "—", "grade")}
@@ -7719,40 +7875,11 @@
             ${kpi("Solicitações de Rota", locais.length ? fmt.format(kpis.solicitacoesRota) : "—", "directions_car")}
           </div>
           <section class="card">
-            <div class="page-head" style="align-items:center">
-              <div><h3>Contas conectadas</h3><p class="muted">Conecte por marca. O Google pode devolver várias contas; confirme apenas as que pertencem à marca selecionada.</p></div>
-              <div class="actions">
-                <button id="connectGoogle"><span class="material-symbols-outlined" style="vertical-align:middle">add_link</span> Conectar Google Meu Negócio</button>
-                <button id="syncAllGoogle" class="secondary"><span class="material-symbols-outlined" style="vertical-align:middle">sync</span> Sincronizar confirmadas</button>
-              </div>
-            </div>
-            <div id="googleActionStatus" style="margin-top:14px"></div>
-            <div class="table-wrap" style="margin-top:16px">
-              <table>
-                <thead><tr><th>Marca</th><th>Conta</th><th>Status</th><th>Última sincronização</th><th>Ação</th></tr></thead>
-                <tbody>${contas.map((row) => {
-                  const stateLabel = googleConnectionStateLabel(row);
-                  return `
-                  <tr>
-                    <td>${escapeHtml(row.marca)}</td>
-                    <td>${escapeHtml(row.email_conta || row.google_account_id || "-")}</td>
-                    <td><span class="status-pill ${stateLabel.className}">${stateLabel.label}</span></td>
-                    <td>${escapeHtml(formatDateTime(row.ultima_sincronizacao_em))}</td>
-                    <td><div class="actions">
-                      ${row.conta_confirmada && !row.ignorada ? `<button class="secondary google-sync-one" data-id="${escapeHtml(row.id)}">Sincronizar</button>` : `<button class="google-confirm-one" data-id="${escapeHtml(row.id)}">Confirmar</button>`}
-                      ${row.ignorada ? `<button class="secondary google-reactivate-one" data-id="${escapeHtml(row.id)}">Reativar</button>` : `<button class="secondary google-ignore-one" data-id="${escapeHtml(row.id)}">Ignorar</button>`}
-                    </div></td>
-                  </tr>`;
-                }).join("") || `<tr><td colspan="5">Nenhuma conta conectada ainda.</td></tr>`}</tbody>
-              </table>
-            </div>
-          </section>
-          <section class="card">
             <h3>Gerenciamento de Unidades</h3>
-            <p class="muted">Lojas sincronizadas das contas confirmadas.</p>
+            <p class="muted">${locais.length ? `${fmt.format(locais.length)} loja(s) sincronizada(s) das contas confirmadas.` : "Lojas sincronizadas das contas confirmadas."}</p>
             <div class="table-wrap" style="margin-top:16px">
               <table>
-                <thead><tr><th>Unidade</th><th>Endereço</th><th>Telefone</th><th>Status</th><th>Avaliação</th><th>Ação</th></tr></thead>
+                <thead><tr><th>Unidade</th>${mostrarMarca ? "<th>Marca</th>" : ""}<th>Endereço</th><th>Telefone</th><th>Status</th><th>Avaliação</th><th>Ação</th></tr></thead>
                 <tbody>${locais.map((local) => {
                   const notas = ratingPorLocal[local.id] || [];
                   const media = notas.length ? (notas.reduce((s, n) => s + n, 0) / notas.length).toFixed(1) : "-";
@@ -7762,6 +7889,7 @@
                   return `
                   <tr>
                     <td>${escapeHtml(local.nome_loja || "-")}</td>
+                    ${mostrarMarca ? `<td>${escapeHtml(local.marca || "-")}</td>` : ""}
                     <td>${escapeHtml(local.endereco_completo || "-")}</td>
                     <td>${escapeHtml(local.telefone || "-")}</td>
                     <td><span class="status-pill ${aberto ? "active" : "inactive"}">${statusLabel}</span></td>
@@ -7770,7 +7898,7 @@
                   </tr>
                   ${editando ? `
                   <tr class="edit-row">
-                    <td colspan="6">
+                    <td colspan="${colunas}">
                       <div class="edit-form">
                         <label>Telefone<input id="editTelefone-${escapeHtml(local.id)}" value="${escapeHtml(local.telefone || "")}" /></label>
                         <label>Descrição<input id="editDescricao-${escapeHtml(local.id)}" value="${escapeHtml(local.descricao || "")}" /></label>
@@ -7781,67 +7909,21 @@
                       </div>
                     </td>
                   </tr>` : ""}`;
-                }).join("") || `<tr><td colspan="6">Nenhuma unidade sincronizada ainda. Confirme uma conta e clique em Sincronizar.</td></tr>`}</tbody>
+                }).join("") || `<tr><td colspan="${colunas}">Nenhuma unidade sincronizada ainda.${linkConexoes}</td></tr>`}</tbody>
               </table>
             </div>
-          </section>
-          <div class="grid cols">
-            <section class="card">
-              <h3>Avaliações Recentes</h3>
-              <p class="muted">Responda aos clientes para melhorar seu SEO local.</p>
-              <div class="grid" style="gap:12px;margin-top:16px">
-                ${avaliacoes.map((review) => {
-                  const local = locais.find((l) => l.id === review.local_id);
-                  const respondendo = g.openReplyReviewId === review.id;
-                  return `
-                  <div class="review-card">
-                    <div class="review-head">
-                      <div>
-                        <strong>${escapeHtml(review.autor_nome || "Cliente")}</strong>
-                        <div class="muted" style="font-size:12px">${escapeHtml(local?.nome_loja || "-")}</div>
-                        ${renderStars(review.rating)}
-                      </div>
-                      <span class="muted" style="font-size:12px">${escapeHtml(formatDateTime(review.avaliado_em))}</span>
-                    </div>
-                    <p style="margin:0">${escapeHtml(review.comentario || "(sem comentário)")}</p>
-                    ${review.status_resposta === "respondida" ? `
-                    <div class="review-reply">
-                      <div class="muted" style="font-size:11px;text-transform:uppercase;font-weight:800">Sua resposta</div>
-                      <p style="margin:4px 0 0">${escapeHtml(review.resposta_texto || "")}</p>
-                    </div>` : ""}
-                    ${podeResponder ? `
-                    <div class="actions">
-                      <button class="secondary google-reply-toggle" data-id="${escapeHtml(review.id)}">${respondendo ? "Cancelar" : review.status_resposta === "respondida" ? "Editar resposta" : "Responder"}</button>
-                      ${review.status_resposta === "respondida" ? `<button class="secondary google-reply-delete" data-id="${escapeHtml(review.id)}">Apagar resposta</button>` : ""}
-                    </div>
-                    ${respondendo ? `
-                    <div class="reply-box">
-                      <textarea id="replyText-${escapeHtml(review.id)}" placeholder="Escreva sua resposta...">${escapeHtml(review.resposta_texto || "")}</textarea>
-                      <div class="actions">
-                        <button class="google-reply-send" data-id="${escapeHtml(review.id)}">Enviar</button>
-                      </div>
-                    </div>` : ""}` : ""}
-                  </div>`;
-                }).join("") || `<p class="muted">Nenhuma avaliação sincronizada ainda.</p>`}
-              </div>
-            </section>
-            <section class="card">
-              <h3>Galeria de Fotos</h3>
-              <p class="muted">Fotos já sincronizadas do Google.</p>
-              <div class="photo-grid" style="margin-top:16px">
-                ${fotos.map((foto) => `<div class="photo-thumb">${foto.url ? `<img src="${escapeHtml(foto.url)}" alt="Foto da unidade" loading="lazy" />` : ""}</div>`).join("") || `<p class="muted">Nenhuma foto sincronizada ainda.</p>`}
-              </div>
-            </section>
-          </div>`;
+          </section>`;
 
         wireMarcaPills(renderGoogleBusiness);
         document.querySelector("#refreshGoogle").onclick = () => runGoogleAction(() => renderGoogleBusiness("", { force: true }));
-        document.querySelector("#connectGoogle").onclick = () => runGoogleAction(connectGoogleBusiness);
-        document.querySelector("#syncAllGoogle").onclick = () => runGoogleAction(() => syncGoogleBusiness());
-        document.querySelectorAll(".google-sync-one").forEach((button) => { button.onclick = () => runGoogleAction(() => syncGoogleBusiness(button.dataset.id)); });
-        document.querySelectorAll(".google-confirm-one").forEach((button) => { button.onclick = () => runGoogleAction(() => saveGoogleConnectionMapping(button.dataset.id, "confirm")); });
-        document.querySelectorAll(".google-ignore-one").forEach((button) => { button.onclick = () => runGoogleAction(() => saveGoogleConnectionMapping(button.dataset.id, "ignore")); });
-        document.querySelectorAll(".google-reactivate-one").forEach((button) => { button.onclick = () => runGoogleAction(() => saveGoogleConnectionMapping(button.dataset.id, "reactivate")); });
+        const goConnections = document.querySelector("#goConnectionsGoogle");
+        if (goConnections) {
+          goConnections.onclick = (event) => {
+            event.preventDefault();
+            state.page = "connections";
+            render();
+          };
+        }
         document.querySelectorAll(".google-edit-toggle").forEach((button) => {
           button.onclick = () => {
             state.google.openEditLocalId = state.google.openEditLocalId === button.dataset.id ? null : button.dataset.id;
@@ -7856,27 +7938,10 @@
             runGoogleAction(() => updateGoogleLocation(id, { telefone, descricao }));
           };
         });
-        document.querySelectorAll(".google-reply-toggle").forEach((button) => {
-          button.onclick = () => {
-            state.google.openReplyReviewId = state.google.openReplyReviewId === button.dataset.id ? null : button.dataset.id;
-            paintGoogleBusiness();
-          };
-        });
-        document.querySelectorAll(".google-reply-send").forEach((button) => {
-          button.onclick = () => {
-            const id = button.dataset.id;
-            const texto = document.querySelector(`#replyText-${id}`).value.trim();
-            if (!texto) return;
-            runGoogleAction(() => replyGoogleReview(id, texto));
-          };
-        });
-        document.querySelectorAll(".google-reply-delete").forEach((button) => {
-          button.onclick = () => runGoogleAction(() => deleteGoogleReviewReply(button.dataset.id));
-        });
       }
 
       async function saveGoogleConnectionMapping(id, action) {
-        const status = document.querySelector("#googleActionStatus") || document.querySelector("#content");
+        const status = document.querySelector("#googleConnectionStatus") || document.querySelector("#content");
         const payloads = {
           confirm: { conta_confirmada: true, ignorada: false, ativo: true, observacao: "Conta confirmada para sincronização." },
           ignore: { conta_confirmada: false, ignorada: true, ativo: false, observacao: "Conta ignorada na revisão de mapeamento." },
@@ -7894,18 +7959,19 @@
           return;
         }
 
+        googleBusinessCache.clear();
         const messages = {
-          confirm: "Conta confirmada. Ela já pode alimentar o dashboard.",
-          ignore: "Conta ignorada. Ela não será sincronizada nem enviada aos dashboards.",
-          reactivate: "Conta reativada para revisão. Confirme se ela pertencer à marca."
+          confirm: "Conta Google confirmada. Clique em Sincronizar na linha dela para importar todas as unidades.",
+          ignore: "Conta Google ignorada. Ela não será sincronizada nem enviada aos dashboards.",
+          reactivate: "Conta Google reativada para revisão. Escolha a marca e confirme se ela pertencer à rede."
         };
-        await renderGoogleBusiness(messages[action], { force: true });
+        await renderConnections(messages[action]);
       }
 
       async function connectGoogleBusiness() {
-        const status = document.querySelector("#googleActionStatus");
+        const status = document.querySelector("#googleConnectionStatus");
         if (state.marca === "Todas") {
-          status.innerHTML = `<div class="alert error">Selecione uma marca específica antes de conectar o Google Meu Negócio.</div>`;
+          status.innerHTML = `<div class="alert error">Selecione uma marca antes de conectar. Ela só vale para contas novas; depois você ajusta a marca de cada conta na tabela.</div>`;
           return;
         }
 
@@ -7931,8 +7997,8 @@
       }
 
       async function syncGoogleBusiness(integracaoId = null) {
-        const status = document.querySelector("#googleActionStatus") || document.querySelector("#content");
-        status.innerHTML = `<div class="alert">Sincronizando dados do Google Meu Negócio das contas confirmadas... Pode levar alguns minutos se o Google limitar as requisições. Não feche esta página.</div>`;
+        const status = document.querySelector("#googleConnectionStatus") || document.querySelector("#content");
+        status.innerHTML = `<div class="alert">Sincronizando unidades, avaliações e métricas do Google Meu Negócio das contas confirmadas... Pode levar alguns minutos em redes grandes ou se o Google limitar as requisições. Não feche esta página.</div>`;
 
         const body = integracaoId ? { integracao_id: integracaoId } : { marca: state.marca };
         const { data, error } = await supabase.functions.invoke("google-gbp-sync", { body });
@@ -7942,53 +8008,30 @@
           return;
         }
 
+        googleBusinessCache.clear();
         const results = data?.results || [];
         if (!results.length) {
-          await renderGoogleBusiness(data?.message || "Nenhuma conta Google confirmada para sincronizar.", { force: true });
+          await renderConnections(data?.message || "Nenhuma conta Google confirmada para sincronizar.");
           return;
         }
+        const totalUnidades = results.reduce((sum, row) => sum + num(row.totalLocais), 0);
         const totalReviews = results.reduce((sum, row) => sum + num(row.reviewsImported), 0);
         const totalMetricas = results.reduce((sum, row) => sum + num(row.metricasImportadas), 0);
+        const resumo = `${fmt.format(totalUnidades)} unidade(s), ${fmt.format(totalReviews)} avaliações e ${fmt.format(totalMetricas)} dias de métricas processados`;
         const todosAvisos = results.flatMap((row) => row.warnings || []);
         const errors = results.filter((row) => row.error).map((row) => `${row.marca}: ${row.error}`);
         const teveCota = todosAvisos.some(pareceErroDeCota) || errors.some(pareceErroDeCota);
 
         if (teveCota) {
-          const detailsCota = errors.length ? ` Erros: ${errors.filter((e) => !pareceErroDeCota(e)).slice(0, 2).join(" | ")}` : "";
-          await renderGoogleBusiness(`${GOOGLE_COTA_PENDENTE_MSG} (${fmt.format(totalReviews)} avaliações e ${fmt.format(totalMetricas)} dias de métricas processados antes de parar.)${detailsCota}`, { force: true });
+          const outrosErros = errors.filter((e) => !pareceErroDeCota(e));
+          const detailsCota = outrosErros.length ? ` Erros: ${outrosErros.slice(0, 2).join(" | ")}` : "";
+          await renderConnections(`${GOOGLE_COTA_PENDENTE_MSG} (${resumo} antes de parar.)${detailsCota}`);
           return;
         }
 
         const details = errors.length ? ` Erros: ${errors.slice(0, 2).join(" | ")}` : "";
         const avisos = todosAvisos.length ? ` ${todosAvisos.length} aviso(s) da API do Google; veja os logs de integração.` : "";
-        await renderGoogleBusiness(`Sincronização concluída: ${fmt.format(totalReviews)} avaliações e ${fmt.format(totalMetricas)} dias de métricas processados.${avisos}${details}`, { force: true });
-      }
-
-      async function replyGoogleReview(reviewId, texto) {
-        const status = document.querySelector("#googleActionStatus") || document.querySelector("#content");
-        status.innerHTML = `<div class="alert">Enviando resposta...</div>`;
-        const { error } = await supabase.functions.invoke("google-gbp-review-reply", {
-          body: { review_id: reviewId, action: "reply", texto }
-        });
-        if (error) {
-          status.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
-          return;
-        }
-        state.google.openReplyReviewId = null;
-        await renderGoogleBusiness("Resposta enviada.", { force: true });
-      }
-
-      async function deleteGoogleReviewReply(reviewId) {
-        const status = document.querySelector("#googleActionStatus") || document.querySelector("#content");
-        status.innerHTML = `<div class="alert">Apagando resposta...</div>`;
-        const { error } = await supabase.functions.invoke("google-gbp-review-reply", {
-          body: { review_id: reviewId, action: "delete" }
-        });
-        if (error) {
-          status.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
-          return;
-        }
-        await renderGoogleBusiness("Resposta removida.", { force: true });
+        await renderConnections(`Sincronização concluída: ${resumo}.${avisos}${details}`);
       }
 
       async function updateGoogleLocation(localId, campos) {
