@@ -209,6 +209,89 @@ export async function googleFetch(
   }
 }
 
+// Campos pedidos via readMask na Business Information API (locations.list).
+export const LOCATION_READ_MASK = [
+  "name",
+  "title",
+  "phoneNumbers",
+  "storefrontAddress",
+  "websiteUri",
+  "regularHours",
+  "specialHours",
+  "latlng",
+  "profile",
+  "openInfo",
+].join(",");
+
+// O Google pagina locations.list em 10 itens por padrao; 100 e o maximo aceito por pagina.
+const LOCATIONS_PAGE_SIZE = 100;
+// Trava de seguranca contra loop infinito caso o Google devolva sempre o mesmo nextPageToken
+// (100 paginas x 100 = 10.000 lojas por conta, muito acima da rede atual).
+const LOCATIONS_MAX_PAGES = 100;
+
+// Percorre todas as paginas de locations.list (pageSize=100 + nextPageToken) de uma conta ou
+// grupo de locais. `completo` fica false so se a trava de paginas for atingida.
+export async function listarTodosLocais(googleAccountId: string, accessToken: string) {
+  const locations: JsonRecord[] = [];
+  let pageToken = "";
+
+  for (let pagina = 0; pagina < LOCATIONS_MAX_PAGES; pagina++) {
+    const params = new URLSearchParams({ readMask: LOCATION_READ_MASK, pageSize: String(LOCATIONS_PAGE_SIZE) });
+    if (pageToken) params.set("pageToken", pageToken);
+
+    const response = await googleFetch(`${GOOGLE_BUSINESS_INFO_API}/${googleAccountId}/locations?${params}`, accessToken);
+    locations.push(...(response.locations || []));
+
+    const proximo = String(response.nextPageToken || "");
+    if (!proximo || proximo === pageToken) return { locations, completo: true };
+    pageToken = proximo;
+  }
+
+  return { locations, completo: false };
+}
+
+function formatEndereco(address: JsonRecord | undefined) {
+  if (!address) return null;
+  const linhas = Array.isArray(address.addressLines) ? address.addressLines.join(", ") : "";
+  const partes = [linhas, address.locality, address.administrativeArea, address.postalCode].filter(Boolean);
+  return partes.length ? partes.join(", ") : null;
+}
+
+// Grava (upsert por marca+location_id) os locais devolvidos pelo Google para uma conta.
+export async function salvarLocais(conta: { id: string; marca: string }, locations: JsonRecord[]) {
+  const agora = new Date().toISOString();
+  // deno-lint-ignore no-explicit-any
+  const rows = locations.filter((location: any) => location.name).map((location: any) => ({
+    integracao_id: conta.id,
+    marca: conta.marca,
+    location_id: String(location.name),
+    nome_loja: location.title || null,
+    endereco_completo: formatEndereco(location.storefrontAddress),
+    latitude: location.latlng?.latitude ?? null,
+    longitude: location.latlng?.longitude ?? null,
+    telefone: location.phoneNumbers?.primaryPhone || null,
+    descricao: location.profile?.description || null,
+    website: location.websiteUri || null,
+    horario_funcionamento: location.regularHours || {},
+    horario_especial: location.specialHours || {},
+    status: location.openInfo?.status || null,
+    payload_bruto: location,
+    atualizado_em: agora,
+  }));
+
+  if (!rows.length) return 0;
+
+  const supabase = getAdminClient();
+  const LOTE = 200;
+  for (let i = 0; i < rows.length; i += LOTE) {
+    const { error } = await supabase
+      .from("integracao_google_locais")
+      .upsert(rows.slice(i, i + LOTE), { onConflict: "marca,location_id" });
+    if (error) throw error;
+  }
+  return rows.length;
+}
+
 type IntegracaoGoogleConta = {
   id: string;
   access_token: string;
