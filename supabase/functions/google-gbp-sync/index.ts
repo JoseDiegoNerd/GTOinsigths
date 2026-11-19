@@ -5,7 +5,6 @@ import {
   getAuthenticatedUser,
   getValidAccessToken,
   GoogleApiError,
-  GOOGLE_BUSINESS_INFO_API,
   GOOGLE_MYBUSINESS_LEGACY_API,
   GOOGLE_PERFORMANCE_API,
   googleFetch,
@@ -252,46 +251,62 @@ async function syncMetricas(integracao: Integracao, local: Local, accessToken: s
   return imported;
 }
 
+// Fotos nao existem na Business Information API (v1): o endpoint de midia e o da API v4
+// (accounts/{a}/locations/{l}/media), a mesma "Google My Business API" das avaliacoes.
+const FOTOS_PAGE_SIZE = 100;
+// Teto por loja para nao gastar cota por minuto com acervos enormes (5 x 100 = 500 fotos).
+const FOTOS_MAX_PAGES = 5;
+
+// deno-lint-ignore no-explicit-any
+async function listarFotos(parent: string, accessToken: string): Promise<any[]> {
+  // deno-lint-ignore no-explicit-any
+  const itens: any[] = [];
+  let pageToken = "";
+  for (let pagina = 0; pagina < FOTOS_MAX_PAGES; pagina++) {
+    const params = new URLSearchParams({ pageSize: String(FOTOS_PAGE_SIZE) });
+    if (pageToken) params.set("pageToken", pageToken);
+    const response = await googleFetch(`${GOOGLE_MYBUSINESS_LEGACY_API}/${parent}/media?${params}`, accessToken);
+    itens.push(...(response.mediaItems || []));
+    const proximo = String(response.nextPageToken || "");
+    if (!proximo || proximo === pageToken) break;
+    pageToken = proximo;
+  }
+  return itens;
+}
+
 async function syncFotos(integracao: Integracao, local: Local, accessToken: string, warnings: string[], estadoCota: EstadoCota) {
-  const response = await tryFetch(
+  const parent = `${integracao.google_account_id}/${local.location_id}`;
+  const mediaItems = await tryFetch(
     `Fotos ${local.location_id}`,
-    () => googleFetch(`${GOOGLE_BUSINESS_INFO_API}/${local.location_id}/media`, accessToken),
+    () => listarFotos(parent, accessToken),
     warnings,
     estadoCota,
   );
 
-  if (!response?.mediaItems?.length) return 0;
+  if (!mediaItems?.length) return 0;
 
-  const supabase = getAdminClient();
-  let imported = 0;
+  const rows = mediaItems
+    .filter((item) => item.name)
+    .map((item) => ({
+      local_id: local.id,
+      marca: integracao.marca,
+      media_id: String(item.name),
+      url: item.googleUrl || item.thumbnailUrl || item.sourceUrl || null,
+      // O Google so preenche `attribution` em midia enviada por clientes.
+      origem: item.attribution ? "cliente" : "proprietario",
+      categoria: item.locationAssociation?.category || null,
+      criado_em_google: item.createTime || null,
+      payload_bruto: item,
+    }));
 
-  for (const item of response.mediaItems) {
-    const mediaId = String(item.name || "");
-    if (!mediaId) continue;
+  if (!rows.length) return 0;
 
-    // Distincao proprietario/cliente nao e exposta de forma direta e confiavel por
-    // este endpoint para todo tipo de item — assume "proprietario" como padrao e
-    // marca "cliente" apenas quando o atributo vier explicito. Conferir depois.
-    const origem = item.attribution ? "cliente" : "proprietario";
+  const { error } = await getAdminClient()
+    .from("integracao_google_fotos")
+    .upsert(rows, { onConflict: "local_id,media_id" });
+  if (error) throw error;
 
-    const { error } = await supabase
-      .from("integracao_google_fotos")
-      .upsert({
-        local_id: local.id,
-        marca: integracao.marca,
-        media_id: mediaId,
-        url: item.googleUrl || item.sourceUrl || null,
-        origem,
-        categoria: item.locationAssociation?.category || item.category || null,
-        criado_em_google: item.createTime || null,
-        payload_bruto: item,
-      }, { onConflict: "local_id,media_id" });
-
-    if (error) throw error;
-    imported += 1;
-  }
-
-  return imported;
+  return rows.length;
 }
 
 async function refreshStageResumo(marcas: string[]) {
