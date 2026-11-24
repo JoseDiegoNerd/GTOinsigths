@@ -300,6 +300,39 @@
       .modal-block.negative { background: #fef2f2; border: 1px solid #fecaca; }
       .modal-block.neutral { background: #eff6ff; border: 1px solid #bfdbfe; }
       .modal-panel.wide { max-width: 620px; }
+      /* Google Meu Negocio: drawer lateral de detalhes/edicao da unidade (reusa .modal-*). */
+      .modal-overlay.drawer { justify-content: flex-end; align-items: stretch; padding: 0; }
+      .modal-overlay.drawer .modal-panel { max-width: 560px; height: 100%; max-height: 100vh; max-height: 100dvh; border-radius: 16px 0 0 16px; }
+      .modal-overlay.drawer .modal-header { position: sticky; top: 0; background: #fff; z-index: 1; }
+      .gmn-row { cursor: pointer; }
+      .gmn-row:hover td { background: #f8fafc; }
+      .gmn-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+      .gmn-nota { white-space: nowrap; }
+      .gmn-kpi-nota { margin: -4px 0 0; font-size: 12px; }
+      .gmn-resumo { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+      .gmn-resumo > div { border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; align-content: start; justify-items: start; }
+      .gmn-resumo span.muted { font-size: 11px; text-transform: uppercase; font-weight: 800; letter-spacing: .03em; }
+      .gmn-resumo strong { font-size: 18px; }
+      .gmn-detalhes, .gmn-horario { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0; }
+      .gmn-detalhes dt, .gmn-horario dt { color: #64748b; font-weight: 700; font-size: 13px; }
+      .gmn-detalhes dd, .gmn-horario dd { margin: 0; overflow-wrap: anywhere; }
+      .gmn-horario { margin-top: 8px; }
+      .gmn-form { display: grid; gap: 12px; }
+      .gmn-form label { display: grid; gap: 6px; font-weight: 700; font-size: 13px; }
+      .gmn-form textarea { resize: vertical; font: inherit; }
+      .gmn-fieldset { border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px 12px; margin: 0; }
+      .gmn-fieldset legend { font-weight: 800; font-size: 13px; padding: 0 4px; }
+      .gmn-horario-editor { display: grid; gap: 8px; }
+      .gmn-dia { display: grid; grid-template-columns: 120px 72px auto 72px; align-items: center; gap: 8px; }
+      .gmn-dia input:not([type=checkbox]) { width: 72px; text-align: center; }
+      .gmn-dia .gmn-dia-toggle { display: flex; align-items: center; gap: 6px; font-weight: 700; }
+      .gmn-dia-aviso { grid-column: 1 / -1; }
+      @media (max-width: 640px) {
+        .modal-overlay.drawer .modal-panel { max-width: none; border-radius: 0; }
+        .gmn-resumo { grid-template-columns: 1fr; }
+        .gmn-dia { grid-template-columns: 1fr 64px auto 64px; }
+        .gmn-dia input:not([type=checkbox]) { width: 64px; }
+      }
       .wizard-steps { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: #94a3b8; padding: 0 22px; margin-top: -6px; }
       .wizard-steps span.active { color: #1d4ed8; }
       .wizard-steps .sep { color: #cbd5e1; }
@@ -7714,9 +7747,12 @@
       }
 
       // Carrega os dados da pagina Google Meu Negocio (e os KPIs Google do Dashboard Geral). Com a
-      // marca "Todas" nao ha filtro de marca: os KPIs somam todas as marcas visiveis ao usuario. Tudo
-      // e lido em blocos (fetchAllPages) porque 30 dias x dezenas de lojas passa do limite de 1.000
-      // linhas por resposta do PostgREST e cortaria os totais.
+      // marca "Todas" nao ha filtro de marca: os KPIs somam todas as marcas visiveis ao usuario.
+      // - Avaliacao Media: media ponderada pelo total de avaliacoes de cada loja (averageRating e
+      //   totalReviewCount vindos do Google e gravados na unidade pela sincronizacao).
+      // - Visualizacoes Locais / Solicitacoes de Rota: soma dos ultimos 30 dias.
+      // Tudo e lido em blocos (fetchAllPages) para nao bater no corte de 1.000 linhas do PostgREST.
+      const GOOGLE_METRICAS_DIAS = 30;
       async function loadGoogleBI() {
         let contasQuery = supabase
           .from("vw_integracao_google_contas_publica")
@@ -7730,13 +7766,12 @@
           .map((c) => c.id);
 
         let locais = [];
-        let avaliacoes = [];
         let metricas = [];
 
         if (confirmedIds.length) {
           locais = await fetchAllPages(() => supabase
             .from("integracao_google_locais")
-            .select("id,integracao_id,marca,location_id,nome_loja,endereco_completo,telefone,descricao,status")
+            .select("id,integracao_id,marca,location_id,nome_loja,endereco_completo,telefone,website,status,nota_media,total_avaliacoes")
             .in("integracao_id", confirmedIds)
             .order("marca")
             .order("nome_loja")
@@ -7744,31 +7779,22 @@
 
           const localIds = locais.map((l) => l.id);
           if (localIds.length) {
-            [avaliacoes, metricas] = await Promise.all([
-              fetchAllPages(() => supabase
-                .from("integracao_google_avaliacoes")
-                .select("id,local_id,rating")
-                .in("local_id", localIds)
-                .order("id")),
-              fetchAllPages(() => supabase
-                .from("integracao_google_metricas_diarias")
-                .select("id,local_id,solicitacoes_rota,chamadas_telefone,impressoes_busca,impressoes_descoberta")
-                .in("local_id", localIds)
-                .order("id"))
-            ]);
+            const desde = new Date();
+            desde.setDate(desde.getDate() - GOOGLE_METRICAS_DIAS);
+            metricas = await fetchAllPages(() => supabase
+              .from("integracao_google_metricas_diarias")
+              .select("id,local_id,solicitacoes_rota,chamadas_telefone,impressoes_busca,impressoes_descoberta")
+              .in("local_id", localIds)
+              .gte("data_referencia", desde.toISOString().slice(0, 10))
+              .order("id"));
           }
         }
 
-        const ratingPorLocal = {};
-        avaliacoes.forEach((r) => {
-          if (num(r.rating) > 0) {
-            ratingPorLocal[r.local_id] ||= [];
-            ratingPorLocal[r.local_id].push(num(r.rating));
-          }
-        });
-
-        const todasNotas = avaliacoes.map((r) => num(r.rating)).filter((n) => n > 0);
-        const avaliacaoMedia = todasNotas.length ? todasNotas.reduce((s, n) => s + n, 0) / todasNotas.length : 0;
+        const comNota = locais.filter((l) => num(l.total_avaliacoes) > 0 && num(l.nota_media) > 0);
+        const totalAvaliacoes = comNota.reduce((s, l) => s + num(l.total_avaliacoes), 0);
+        const avaliacaoMedia = totalAvaliacoes
+          ? comNota.reduce((s, l) => s + num(l.nota_media) * num(l.total_avaliacoes), 0) / totalAvaliacoes
+          : 0;
         const visualizacoes = metricas.reduce((s, m) => s + num(m.impressoes_busca) + num(m.impressoes_descoberta), 0);
         const solicitacoesRota = metricas.reduce((s, m) => s + num(m.solicitacoes_rota), 0);
         const chamadasTelefone = metricas.reduce((s, m) => s + num(m.chamadas_telefone), 0);
@@ -7776,8 +7802,8 @@
         state.google = {
           ...(state.google || {}),
           locais,
-          ratingPorLocal,
-          kpis: { totalUnidades: locais.length, avaliacaoMedia, visualizacoes, solicitacoesRota, chamadasTelefone }
+          temMetricas: metricas.length > 0,
+          kpis: { totalUnidades: locais.length, avaliacaoMedia, totalAvaliacoes, lojasComNota: comNota.length, visualizacoes, solicitacoesRota, chamadasTelefone }
         };
       }
 
@@ -7842,13 +7868,13 @@
         }
       }
 
-      // Pagina Google Meu Negocio: so KPIs consolidados, filtro de marcas e Gerenciamento de Unidades.
+      // Pagina Google Meu Negocio: KPIs consolidados, filtro de marcas e Gerenciamento de Unidades.
+      // Clicar numa linha abre o drawer de detalhes; "Editar" abre o mesmo drawer ja no formulario.
       // Conexao, vinculo conta->marca e sincronizacao ficam em Conexoes.
       function paintGoogleBusiness(statusMessage = "") {
         const content = document.querySelector("#content");
         const g = state.google || {};
         const locais = g.locais || [];
-        const ratingPorLocal = g.ratingPorLocal || {};
         const kpis = g.kpis || { totalUnidades: 0, avaliacaoMedia: 0, visualizacoes: 0, solicitacoesRota: 0 };
         const statusHtml = statusMessage ? `<div class="alert success">${escapeHtml(statusMessage)}</div>` : "";
         const podeEditarLocal = podeGerenciarGoogleLocais();
@@ -7857,6 +7883,12 @@
         const linkConexoes = state.perfil?.cargo === "Admin"
           ? ` Vincule e sincronize as contas em <a href="#" id="goConnectionsGoogle">Conexões</a>.`
           : " Peça a um administrador para vincular e sincronizar as contas em Conexões.";
+        const semMetricas = locais.length && !g.temMetricas;
+        const notaRodape = locais.length
+          ? `<p class="muted gmn-kpi-nota">${kpis.totalAvaliacoes
+              ? `Avaliação média ponderada por ${fmt.format(kpis.totalAvaliacoes)} avaliações em ${fmt.format(kpis.lojasComNota)} loja(s).`
+              : "Nenhuma avaliação sincronizada ainda."} Visualizações (buscas e Maps) e rotas somam os últimos ${GOOGLE_METRICAS_DIAS} dias${semMetricas ? "; ainda sem métricas sincronizadas" : ""}.</p>`
+          : "";
 
         content.innerHTML = `
           <div class="page-head">
@@ -7871,48 +7903,35 @@
           <div class="grid kpis">
             ${kpi("Total de Unidades", locais.length ? fmt.format(kpis.totalUnidades) : "—", "storefront")}
             ${kpi("Avaliação Média", kpis.avaliacaoMedia ? `${kpis.avaliacaoMedia.toFixed(1)} / 5.0` : "—", "grade")}
-            ${kpi("Visualizações Locais", locais.length ? fmt.format(kpis.visualizacoes) : "—", "visibility")}
-            ${kpi("Solicitações de Rota", locais.length ? fmt.format(kpis.solicitacoesRota) : "—", "directions_car")}
+            ${kpi("Visualizações Locais", g.temMetricas ? fmt.format(kpis.visualizacoes) : "—", "visibility")}
+            ${kpi("Solicitações de Rota", g.temMetricas ? fmt.format(kpis.solicitacoesRota) : "—", "directions_car")}
           </div>
+          ${notaRodape}
           <section class="card">
             <h3>Gerenciamento de Unidades</h3>
-            <p class="muted">${locais.length ? `${fmt.format(locais.length)} loja(s) sincronizada(s) das contas confirmadas.` : "Lojas sincronizadas das contas confirmadas."}</p>
+            <p class="muted">${locais.length ? `${fmt.format(locais.length)} loja(s) das contas confirmadas. Clique numa unidade para ver os detalhes.` : "Lojas sincronizadas das contas confirmadas."}</p>
             <div class="table-wrap" style="margin-top:16px">
               <table>
-                <thead><tr><th>Unidade</th>${mostrarMarca ? "<th>Marca</th>" : ""}<th>Endereço</th><th>Telefone</th><th>Status</th><th>Avaliação</th><th>Ação</th></tr></thead>
+                <thead><tr><th>Unidade</th>${mostrarMarca ? "<th>Marca</th>" : ""}<th>Endereço</th><th>Telefone</th><th>Status</th><th>Avaliação</th><th><span class="sr-only">Ações</span></th></tr></thead>
                 <tbody>${locais.map((local) => {
-                  const notas = ratingPorLocal[local.id] || [];
-                  const media = notas.length ? (notas.reduce((s, n) => s + n, 0) / notas.length).toFixed(1) : "-";
-                  const aberto = local.status === "OPEN";
-                  const statusLabel = local.status ? (aberto ? "Aberto" : "Fechado") : "Não informado";
-                  const editando = g.openEditLocalId === local.id;
+                  const status = googleLocalStatus(local.status);
+                  const total = num(local.total_avaliacoes);
+                  const nota = num(local.nota_media);
                   return `
-                  <tr>
-                    <td>${escapeHtml(local.nome_loja || "-")}</td>
+                  <tr class="gmn-row" tabindex="0" data-id="${escapeHtml(local.id)}" aria-label="Ver detalhes de ${escapeHtml(local.nome_loja || "unidade")}">
+                    <td><strong class="gmn-nome">${escapeHtml(local.nome_loja || "-")}</strong></td>
                     ${mostrarMarca ? `<td>${escapeHtml(local.marca || "-")}</td>` : ""}
                     <td>${escapeHtml(local.endereco_completo || "-")}</td>
                     <td>${escapeHtml(local.telefone || "-")}</td>
-                    <td><span class="status-pill ${aberto ? "active" : "inactive"}">${statusLabel}</span></td>
-                    <td>${media}${notas.length ? ` (${notas.length})` : ""}</td>
-                    <td>${podeEditarLocal ? `<button class="secondary google-edit-toggle" data-id="${escapeHtml(local.id)}">${editando ? "Fechar" : "Editar"}</button>` : ""}</td>
-                  </tr>
-                  ${editando ? `
-                  <tr class="edit-row">
-                    <td colspan="${colunas}">
-                      <div class="edit-form">
-                        <label>Telefone<input id="editTelefone-${escapeHtml(local.id)}" value="${escapeHtml(local.telefone || "")}" /></label>
-                        <label>Descrição<input id="editDescricao-${escapeHtml(local.id)}" value="${escapeHtml(local.descricao || "")}" /></label>
-                        <div class="actions">
-                          <button class="google-edit-save" data-id="${escapeHtml(local.id)}">Salvar</button>
-                          <button class="secondary google-edit-toggle" data-id="${escapeHtml(local.id)}">Cancelar</button>
-                        </div>
-                      </div>
-                    </td>
-                  </tr>` : ""}`;
+                    <td><span class="status-pill ${status.className}">${status.label}</span></td>
+                    <td class="gmn-nota">${nota ? `<span class="stars"><span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">grade</span></span> ${nota.toFixed(1)} <span class="muted">(${fmt.format(total)})</span>` : `<span class="muted">${total ? fmt.format(total) : "-"}</span>`}</td>
+                    <td>${podeEditarLocal ? `<button type="button" class="secondary gmn-edit" data-id="${escapeHtml(local.id)}">Editar</button>` : ""}</td>
+                  </tr>`;
                 }).join("") || `<tr><td colspan="${colunas}">Nenhuma unidade sincronizada ainda.${linkConexoes}</td></tr>`}</tbody>
               </table>
             </div>
-          </section>`;
+          </section>
+          <div id="gmnDrawer" class="modal-overlay drawer" hidden></div>`;
 
         wireMarcaPills(renderGoogleBusiness);
         document.querySelector("#refreshGoogle").onclick = () => runGoogleAction(() => renderGoogleBusiness("", { force: true }));
@@ -7924,20 +7943,333 @@
             render();
           };
         }
-        document.querySelectorAll(".google-edit-toggle").forEach((button) => {
-          button.onclick = () => {
-            state.google.openEditLocalId = state.google.openEditLocalId === button.dataset.id ? null : button.dataset.id;
-            paintGoogleBusiness();
+        document.querySelectorAll(".gmn-row").forEach((row) => {
+          row.onclick = (event) => {
+            if (event.target.closest("button, a")) return;
+            openGoogleLocalDrawer(row.dataset.id, { editar: false, origem: row });
+          };
+          row.onkeydown = (event) => {
+            if (event.target !== row || (event.key !== "Enter" && event.key !== " ")) return;
+            event.preventDefault();
+            openGoogleLocalDrawer(row.dataset.id, { editar: false, origem: row });
           };
         });
-        document.querySelectorAll(".google-edit-save").forEach((button) => {
-          button.onclick = () => {
-            const id = button.dataset.id;
-            const telefone = document.querySelector(`#editTelefone-${id}`).value.trim();
-            const descricao = document.querySelector(`#editDescricao-${id}`).value.trim();
-            runGoogleAction(() => updateGoogleLocation(id, { telefone, descricao }));
-          };
+        document.querySelectorAll(".gmn-edit").forEach((button) => {
+          button.onclick = () => openGoogleLocalDrawer(button.dataset.id, { editar: true, origem: button });
         });
+      }
+
+      function googleLocalStatus(status) {
+        if (status === "OPEN") return { label: "Aberto", className: "active" };
+        if (status === "CLOSED_PERMANENTLY") return { label: "Fechado definitivamente", className: "inactive" };
+        if (status === "CLOSED_TEMPORARILY") return { label: "Fechado temporariamente", className: "inactive" };
+        return { label: status ? "Fechado" : "Não informado", className: "inactive" };
+      }
+
+      // ---- Drawer de detalhes/edicao da unidade ------------------------------------------------
+
+      const GMN_DIAS = [
+        ["MONDAY", "Segunda"], ["TUESDAY", "Terça"], ["WEDNESDAY", "Quarta"], ["THURSDAY", "Quinta"],
+        ["FRIDAY", "Sexta"], ["SATURDAY", "Sábado"], ["SUNDAY", "Domingo"]
+      ];
+
+      function gmnHora(t) {
+        const h = num(t?.hours);
+        const m = num(t?.minutes);
+        return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+      }
+
+      // Agrupa regularHours.periods do Google por dia de abertura: { MONDAY: [["09:00","18:00"]], ... }
+      function gmnPeriodosPorDia(regularHours) {
+        const porDia = {};
+        (regularHours?.periods || []).forEach((p) => {
+          (porDia[p.openDay] ||= []).push([gmnHora(p.openTime), gmnHora(p.closeTime)]);
+        });
+        return porDia;
+      }
+
+      function gmnHorarioHtml(regularHours) {
+        const porDia = gmnPeriodosPorDia(regularHours);
+        if (!Object.keys(porDia).length) return `<p class="muted" style="margin:0">Horário não informado no Google.</p>`;
+        return `<dl class="gmn-horario">${GMN_DIAS.map(([dia, nome]) => {
+          const faixas = porDia[dia] || [];
+          const texto = !faixas.length ? "Fechado"
+            : faixas.some(([a, f]) => a === "00:00" && f === "24:00") ? "Aberto 24 horas"
+            : faixas.map(([a, f]) => `${a}–${f}`).join(", ");
+          return `<dt>${nome}</dt><dd>${escapeHtml(texto)}</dd>`;
+        }).join("")}</dl>`;
+      }
+
+      function gmnHorarioEditorHtml(regularHours) {
+        const porDia = gmnPeriodosPorDia(regularHours);
+        return `<div class="gmn-horario-editor" role="group" aria-label="Horário de funcionamento">
+          ${GMN_DIAS.map(([dia, nome]) => {
+            const faixas = porDia[dia] || [];
+            const [abre, fecha] = faixas[0] || ["09:00", "18:00"];
+            const aberto = faixas.length > 0;
+            return `<div class="gmn-dia" data-dia="${dia}">
+              <label class="gmn-dia-toggle"><input type="checkbox" class="gmn-aberto" ${aberto ? "checked" : ""}> ${nome}</label>
+              <input class="gmn-abre" inputmode="numeric" pattern="([01]\\d|2[0-3]):[0-5]\\d" maxlength="5" value="${abre}" aria-label="${nome}: abre às" ${aberto ? "" : "disabled"}>
+              <span aria-hidden="true">até</span>
+              <input class="gmn-fecha" inputmode="numeric" pattern="([01]\\d|2[0-3]):[0-5]\\d|24:00" maxlength="5" value="${fecha}" aria-label="${nome}: fecha às" ${aberto ? "" : "disabled"}>
+              ${faixas.length > 1 ? `<small class="muted gmn-dia-aviso">Hoje tem ${faixas.length} intervalos; salvar deixa só este.</small>` : ""}
+            </div>`;
+          }).join("")}
+          <small class="muted">Use HH:MM. Para fechar à meia-noite, use 24:00; 00:00 até 24:00 é aberto 24 horas.</small>
+        </div>`;
+      }
+
+      // Le o editor de horario e monta regularHours no formato do Google. Se o fechamento for antes
+      // da abertura (ex.: 18:00 ate 02:00) o periodo termina no dia seguinte.
+      function gmnLerHorarioEditor(root) {
+        const valido = (v, permite24) => (permite24 && v === "24:00") || /^([01]\d|2[0-3]):[0-5]\d$/.test(v);
+        // Mesmo formato que o Google devolve (proto3 JSON): campos zerados sao omitidos, 00:00 = {}.
+        const paraHora = (v) => {
+          const [h, m] = v.split(":").map(Number);
+          return { ...(h ? { hours: h } : {}), ...(m ? { minutes: m } : {}) };
+        };
+        const periods = [];
+        for (const linha of root.querySelectorAll(".gmn-dia")) {
+          if (!linha.querySelector(".gmn-aberto").checked) continue;
+          const dia = linha.dataset.dia;
+          const nome = GMN_DIAS.find(([d]) => d === dia)[1];
+          const abre = linha.querySelector(".gmn-abre").value.trim();
+          const fecha = linha.querySelector(".gmn-fecha").value.trim();
+          if (!valido(abre, false) || !valido(fecha, true)) throw new Error(`${nome}: horário inválido. Use HH:MM (ex.: 09:00 e 18:00).`);
+          if (abre === fecha) throw new Error(`${nome}: abertura e fechamento iguais.`);
+          const viraDia = fecha !== "24:00" && fecha < abre;
+          const indice = GMN_DIAS.findIndex(([d]) => d === dia);
+          periods.push({
+            openDay: dia,
+            openTime: paraHora(abre),
+            closeDay: viraDia ? GMN_DIAS[(indice + 1) % 7][0] : dia,
+            closeTime: paraHora(fecha)
+          });
+        }
+        return { periods };
+      }
+
+      // Supabase devolve so "Edge Function returned a non-2xx status code"; a mensagem util da nossa
+      // funcao vem no corpo da resposta ({ error }).
+      async function edgeFunctionErrorMessage(error) {
+        try {
+          const body = await error?.context?.json?.();
+          if (body?.error) return String(body.error);
+        } catch (_) { /* corpo nao e JSON: cai no generico */ }
+        return safeErrorMessage(error);
+      }
+
+      let gmnDrawerOrigem = null;
+      function closeGoogleLocalDrawer() {
+        const drawer = document.querySelector("#gmnDrawer");
+        if (drawer) {
+          drawer.hidden = true;
+          drawer.innerHTML = "";
+        }
+        document.removeEventListener("keydown", gmnDrawerKeydown);
+        if (gmnDrawerOrigem?.isConnected) gmnDrawerOrigem.focus();
+        gmnDrawerOrigem = null;
+      }
+
+      function gmnDrawerKeydown(event) {
+        if (event.key === "Escape") closeGoogleLocalDrawer();
+      }
+
+      async function openGoogleLocalDrawer(localId, { editar = false, origem = null } = {}) {
+        const drawer = document.querySelector("#gmnDrawer");
+        if (!drawer) return;
+        gmnDrawerOrigem = origem || gmnDrawerOrigem;
+        drawer.hidden = false;
+        drawer.innerHTML = `<div class="modal-panel" role="dialog" aria-modal="true" aria-label="Detalhes da unidade"><div class="modal-body"><div class="alert">Carregando unidade...</div></div></div>`;
+        drawer.onclick = (event) => { if (event.target === drawer) closeGoogleLocalDrawer(); };
+        document.removeEventListener("keydown", gmnDrawerKeydown);
+        document.addEventListener("keydown", gmnDrawerKeydown);
+
+        const [localResult, avaliacoesResult] = await Promise.all([
+          supabase.from("integracao_google_locais")
+            .select("id,marca,location_id,nome_loja,endereco_completo,telefone,website,descricao,horario_funcionamento,status,nota_media,total_avaliacoes,avaliacoes_sincronizadas_em,atualizado_em")
+            .eq("id", localId)
+            .maybeSingle(),
+          supabase.from("integracao_google_avaliacoes")
+            .select("id,autor_nome,rating,comentario,avaliado_em,status_resposta,resposta_texto")
+            .eq("local_id", localId)
+            .order("avaliado_em", { ascending: false })
+            .limit(5)
+        ]);
+        if (drawer.hidden) return;
+
+        const erro = localResult.error || avaliacoesResult.error;
+        const local = localResult.data;
+        if (erro || !local) {
+          drawer.innerHTML = `<div class="modal-panel" role="dialog" aria-modal="true" aria-label="Detalhes da unidade"><div class="modal-header"><h3 style="margin:0">Unidade</h3><button type="button" class="modal-close" aria-label="Fechar"><span class="material-symbols-outlined">close</span></button></div><div class="modal-body"><div class="alert error">${escapeHtml(erro ? safeErrorMessage(erro) : "Unidade não encontrada.")}</div></div></div>`;
+          drawer.querySelector(".modal-close").onclick = closeGoogleLocalDrawer;
+          return;
+        }
+
+        paintGoogleLocalDrawer(local, avaliacoesResult.data || [], { editar: editar && podeGerenciarGoogleLocais() });
+      }
+
+      function paintGoogleLocalDrawer(local, avaliacoes, { editar = false, mensagem = "", erro = "" } = {}) {
+        const drawer = document.querySelector("#gmnDrawer");
+        if (!drawer) return;
+        const status = googleLocalStatus(local.status);
+        const nota = num(local.nota_media);
+        const total = num(local.total_avaliacoes);
+        const podeEditar = podeGerenciarGoogleLocais();
+        const website = local.website ? escapeHtml(local.website) : "";
+        const avisoHtml = erro ? `<div class="alert error" role="alert">${escapeHtml(erro)}</div>` : mensagem ? `<div class="alert success" role="status">${escapeHtml(mensagem)}</div>` : "";
+
+        const detalhesHtml = `
+          <div class="gmn-resumo">
+            <div><span class="muted">Nota média</span><strong>${nota ? `${nota.toFixed(1)} / 5` : "—"}</strong>${nota ? renderStars(nota) : ""}</div>
+            <div><span class="muted">Avaliações no Google</span><strong>${total ? fmt.format(total) : "—"}</strong></div>
+            <div><span class="muted">Status</span><span class="status-pill ${status.className}">${status.label}</span></div>
+          </div>
+          <dl class="gmn-detalhes">
+            <dt>Endereço</dt><dd>${escapeHtml(local.endereco_completo || "-")}</dd>
+            <dt>Telefone</dt><dd>${escapeHtml(local.telefone || "-")}</dd>
+            <dt>Website</dt><dd>${website ? `<a href="${website}" target="_blank" rel="noopener noreferrer">${website}</a>` : "-"}</dd>
+            <dt>Descrição</dt><dd style="white-space:pre-wrap">${escapeHtml(local.descricao || "-")}</dd>
+          </dl>
+          <div>
+            <h4 class="modal-section-title">Horário de funcionamento</h4>
+            ${gmnHorarioHtml(local.horario_funcionamento)}
+          </div>
+          <div>
+            <h4 class="modal-section-title">Últimas avaliações</h4>
+            ${avaliacoes.length ? avaliacoes.map((r) => `
+              <article class="review-card">
+                <div class="review-head">
+                  <div><strong>${escapeHtml(r.autor_nome || "Cliente")}</strong>${renderStars(r.rating)}</div>
+                  <span class="muted" style="font-size:12px">${escapeHtml(formatDateTime(r.avaliado_em))}</span>
+                </div>
+                <p style="margin:0">${escapeHtml(r.comentario || "(sem comentário)")}</p>
+                ${r.status_resposta === "respondida" && r.resposta_texto ? `<div class="review-reply"><div class="muted" style="font-size:11px;text-transform:uppercase;font-weight:800">Resposta da loja</div><p style="margin:4px 0 0">${escapeHtml(r.resposta_texto)}</p></div>` : ""}
+              </article>`).join("") : `<p class="muted" style="margin:0">${local.avaliacoes_sincronizadas_em ? "Nenhuma avaliação com texto sincronizada." : "Avaliações ainda não sincronizadas. Sincronize a conta em Conexões."}</p>`}
+          </div>
+          <p class="muted" style="margin:0;font-size:12px">Dados do Google atualizados em ${escapeHtml(formatDateTime(local.atualizado_em))}.</p>`;
+
+        const formHtml = `
+          <form id="gmnForm" class="gmn-form" novalidate>
+            <label>Telefone<input name="telefone" type="tel" value="${escapeHtml(local.telefone || "")}" autocomplete="off"></label>
+            <label>Website<input name="website" type="url" value="${website}" placeholder="https://"></label>
+            <label>Descrição<textarea name="descricao" rows="4" maxlength="750">${escapeHtml(local.descricao || "")}</textarea></label>
+            <fieldset class="gmn-fieldset">
+              <legend>Horário de funcionamento</legend>
+              ${gmnHorarioEditorHtml(local.horario_funcionamento)}
+            </fieldset>
+            <p class="muted" style="margin:0;font-size:12px">As alterações são enviadas ao Google Meu Negócio e podem passar por revisão do Google antes de aparecer na ficha.</p>
+            <div class="actions">
+              <button type="submit" id="gmnSalvar">Salvar no Google</button>
+              <button type="button" class="secondary" id="gmnCancelar">Cancelar</button>
+            </div>
+          </form>`;
+
+        drawer.innerHTML = `
+          <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="gmnDrawerTitulo">
+            <div class="modal-header">
+              <div>
+                <div class="eyebrow">${escapeHtml(local.marca || "")}</div>
+                <h3 id="gmnDrawerTitulo" style="margin:0">${escapeHtml(local.nome_loja || "Unidade")}</h3>
+              </div>
+              <div class="actions" style="flex-wrap:nowrap">
+                ${podeEditar && !editar ? `<button type="button" class="secondary" id="gmnEditar">Editar</button>` : ""}
+                <button type="button" class="modal-close" aria-label="Fechar"><span class="material-symbols-outlined">close</span></button>
+              </div>
+            </div>
+            <div class="modal-body">
+              ${avisoHtml}
+              ${editar ? formHtml : detalhesHtml}
+            </div>
+          </div>`;
+
+        drawer.querySelector(".modal-close").onclick = closeGoogleLocalDrawer;
+        const editarBtn = drawer.querySelector("#gmnEditar");
+        if (editarBtn) editarBtn.onclick = () => paintGoogleLocalDrawer(local, avaliacoes, { editar: true });
+
+        if (!editar) {
+          (editarBtn || drawer.querySelector(".modal-close")).focus();
+          return;
+        }
+
+        const form = drawer.querySelector("#gmnForm");
+        let horarioAlterado = false;
+        form.querySelectorAll(".gmn-dia").forEach((linha) => {
+          const toggle = linha.querySelector(".gmn-aberto");
+          toggle.onchange = () => {
+            linha.querySelectorAll(".gmn-abre, .gmn-fecha").forEach((input) => { input.disabled = !toggle.checked; });
+            horarioAlterado = true;
+          };
+          linha.querySelectorAll(".gmn-abre, .gmn-fecha").forEach((input) => { input.oninput = () => { horarioAlterado = true; }; });
+        });
+        drawer.querySelector("#gmnCancelar").onclick = () => paintGoogleLocalDrawer(local, avaliacoes, { editar: false });
+        form.querySelector("input[name=telefone]").focus();
+
+        form.onsubmit = async (event) => {
+          event.preventDefault();
+          const dados = new FormData(form);
+          const campos = {};
+          const telefone = String(dados.get("telefone") || "").trim();
+          const site = String(dados.get("website") || "").trim();
+          const descricao = String(dados.get("descricao") || "").trim();
+          if (telefone !== (local.telefone || "")) campos.telefone = telefone;
+          if (site !== (local.website || "")) campos.website = site;
+          if (descricao !== (local.descricao || "")) campos.descricao = descricao;
+          try {
+            if (site && !/^https?:\/\/\S+\.\S+/i.test(site)) throw new Error("Website inválido: use um endereço iniciando com http:// ou https://.");
+            if (horarioAlterado) campos.horario_funcionamento = gmnLerHorarioEditor(form);
+          } catch (validacao) {
+            paintGoogleLocalDrawerErro(form, validacao.message);
+            return;
+          }
+          if (!Object.keys(campos).length) {
+            paintGoogleLocalDrawer(local, avaliacoes, { editar: false, mensagem: "Nada foi alterado." });
+            return;
+          }
+
+          const salvar = form.querySelector("#gmnSalvar");
+          salvar.disabled = true;
+          salvar.textContent = "Salvando...";
+          const { error } = await supabase.functions.invoke("google-gbp-location-update", {
+            body: { local_id: local.id, campos }
+          });
+          if (error) {
+            salvar.disabled = false;
+            salvar.textContent = "Salvar no Google";
+            paintGoogleLocalDrawerErro(form, await edgeFunctionErrorMessage(error));
+            return;
+          }
+
+          googleBusinessCache.clear();
+          const { data: atualizado } = await supabase.from("integracao_google_locais")
+            .select("id,marca,location_id,nome_loja,endereco_completo,telefone,website,descricao,horario_funcionamento,status,nota_media,total_avaliacoes,avaliacoes_sincronizadas_em,atualizado_em")
+            .eq("id", local.id)
+            .maybeSingle();
+          const novo = atualizado || { ...local, ...campos };
+          paintGoogleLocalDrawer(novo, avaliacoes, { editar: false, mensagem: "Cadastro enviado ao Google e salvo no GTO Insights." });
+
+          // Atualiza a linha da tabela sem recarregar a pagina inteira (o drawer continua aberto).
+          const g = state.google || {};
+          g.locais = (g.locais || []).map((l) => (l.id === novo.id ? { ...l, ...novo } : l));
+          const row = document.querySelector(`.gmn-row[data-id="${CSS.escape(novo.id)}"]`);
+          if (row) {
+            const celulas = row.querySelectorAll("td");
+            const indiceTelefone = state.marca === "Todas" ? 3 : 2;
+            if (celulas[indiceTelefone]) celulas[indiceTelefone].textContent = novo.telefone || "-";
+          }
+        };
+      }
+
+      function paintGoogleLocalDrawerErro(form, mensagem) {
+        let alerta = form.querySelector(".gmn-form-erro");
+        if (!alerta) {
+          alerta = document.createElement("div");
+          alerta.className = "alert error gmn-form-erro";
+          alerta.setAttribute("role", "alert");
+          form.prepend(alerta);
+        }
+        alerta.textContent = mensagem;
+        alerta.scrollIntoView({ block: "nearest" });
       }
 
       async function saveGoogleConnectionMapping(id, action) {
@@ -8032,20 +8364,6 @@
         const details = errors.length ? ` Erros: ${errors.slice(0, 2).join(" | ")}` : "";
         const avisos = todosAvisos.length ? ` ${todosAvisos.length} aviso(s) da API do Google; veja os logs de integração.` : "";
         await renderConnections(`Sincronização concluída: ${resumo}.${avisos}${details}`);
-      }
-
-      async function updateGoogleLocation(localId, campos) {
-        const status = document.querySelector("#googleActionStatus") || document.querySelector("#content");
-        status.innerHTML = `<div class="alert">Atualizando cadastro da loja...</div>`;
-        const { error } = await supabase.functions.invoke("google-gbp-location-update", {
-          body: { local_id: localId, campos }
-        });
-        if (error) {
-          status.innerHTML = `<div class="alert error">${escapeHtml(safeErrorMessage(error))}</div>`;
-          return;
-        }
-        state.google.openEditLocalId = null;
-        await renderGoogleBusiness("Cadastro da loja atualizado.", { force: true });
       }
 
       // Hub de Reputacao e Sentimento: le a tabela comments_reputation (a IA roda na sincronizacao,

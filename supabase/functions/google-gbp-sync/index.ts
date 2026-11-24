@@ -31,6 +31,7 @@ type Local = {
   id: string;
   location_id: string;
   nome_loja: string | null;
+  avaliacoes_sincronizadas_em: string | null;
 };
 
 const STAR_RATING: Record<string, number> = { ONE: 1, TWO: 2, THREE: 3, FOUR: 4, FIVE: 5 };
@@ -101,59 +102,98 @@ async function syncLocais(integracao: Integracao, accessToken: string, warnings:
   const supabase = getAdminClient();
   const { data: locais, error } = await supabase
     .from("integracao_google_locais")
-    .select("id,location_id,nome_loja")
+    .select("id,location_id,nome_loja,avaliacoes_sincronizadas_em")
     .eq("integracao_id", integracao.id);
   if (error) throw error;
 
   return { locais: (locais || []) as Local[], locaisImportados };
 }
 
+// reviews.list (v4) aceita no maximo 50 por pagina e ordena por updateTime desc por padrao.
+const REVIEWS_PAGE_SIZE = 50;
+// Teto por loja e por execucao (20 x 50 = 1.000 avaliacoes). Na primeira sincronizacao de uma
+// loja muito avaliada o restante entra nas execucoes seguintes so se for editado depois; o
+// averageRating/totalReviewCount gravado na unidade vem do Google e e sempre o da ficha inteira.
+const REVIEWS_MAX_PAGES = 20;
+
+// Busca as avaliacoes de uma loja, grava nota media/total na unidade e espelha cada avaliacao em
+// integracao_google_avaliacoes e comments_reputation (Hub de Reputacao). Incremental: como a lista
+// vem da mais recentemente alterada para a mais antiga, para de paginar quando chega numa
+// avaliacao que nao mudou desde a ultima sincronizacao bem-sucedida desta loja.
 async function syncReviews(integracao: Integracao, local: Local, accessToken: string, warnings: string[], estadoCota: EstadoCota) {
   const parent = `${integracao.google_account_id}/${local.location_id}`;
-  const response = await tryFetch(
-    `Reviews ${local.location_id}`,
-    () => googleFetch(`${GOOGLE_MYBUSINESS_LEGACY_API}/${parent}/reviews`, accessToken),
-    warnings,
-    estadoCota,
-  );
-
-  if (!response?.reviews?.length) return 0;
-
+  const corte = local.avaliacoes_sincronizadas_em ? new Date(local.avaliacoes_sincronizadas_em).getTime() : 0;
+  const inicioSync = new Date().toISOString();
   const supabase = getAdminClient();
+
   let imported = 0;
+  let pageToken = "";
+  let resumoGravado = false;
 
-  for (const review of response.reviews) {
-    const reviewId = String(review.reviewId || "");
-    if (!reviewId) continue;
+  for (let pagina = 0; pagina < REVIEWS_MAX_PAGES; pagina++) {
+    const params = new URLSearchParams({ pageSize: String(REVIEWS_PAGE_SIZE), orderBy: "updateTime desc" });
+    if (pageToken) params.set("pageToken", pageToken);
 
-    const temResposta = Boolean(review.reviewReply?.comment);
+    const response = await tryFetch(
+      `Reviews ${local.location_id}`,
+      () => googleFetch(`${GOOGLE_MYBUSINESS_LEGACY_API}/${parent}/reviews?${params}`, accessToken),
+      warnings,
+      estadoCota,
+    );
+    // Falha (API desativada, permissao, cota): nao marca a loja como sincronizada, para a proxima
+    // execucao tentar de novo desde o mesmo ponto.
+    if (!response) return imported;
 
-    const { error } = await supabase
-      .from("integracao_google_avaliacoes")
-      .upsert({
+    if (!resumoGravado) {
+      const averageRating = Number(response.averageRating);
+      const { error: resumoError } = await supabase
+        .from("integracao_google_locais")
+        .update({
+          nota_media: Number.isFinite(averageRating) && averageRating > 0 ? Math.round(averageRating * 100) / 100 : null,
+          total_avaliacoes: Number(response.totalReviewCount || 0),
+        })
+        .eq("id", local.id);
+      if (resumoError) throw resumoError;
+      resumoGravado = true;
+    }
+
+    // deno-lint-ignore no-explicit-any
+    const reviews = ((response.reviews || []) as any[]).filter((review) => review.reviewId);
+    // deno-lint-ignore no-explicit-any
+    const novas = reviews.filter((review: any) => {
+      const alterada = Date.parse(review.updateTime || review.createTime || "");
+      return !corte || !Number.isFinite(alterada) || alterada > corte;
+    });
+
+    if (novas.length) {
+      const agora = new Date().toISOString();
+      // deno-lint-ignore no-explicit-any
+      const avaliacoes = novas.map((review: any) => ({
         integracao_id: integracao.id,
         local_id: local.id,
         marca: integracao.marca,
-        review_id: reviewId,
+        review_id: String(review.reviewId),
         autor_nome: review.reviewer?.displayName || null,
         autor_foto_url: review.reviewer?.profilePhotoUrl || null,
         rating: STAR_RATING[String(review.starRating)] || null,
         comentario: review.comment || null,
         avaliado_em: review.createTime || null,
-        status_resposta: temResposta ? "respondida" : "pendente",
+        status_resposta: review.reviewReply?.comment ? "respondida" : "pendente",
         resposta_texto: review.reviewReply?.comment || null,
         resposta_em: review.reviewReply?.updateTime || null,
         payload_bruto: review,
-      }, { onConflict: "marca,review_id" });
+      }));
+      const { error } = await supabase
+        .from("integracao_google_avaliacoes")
+        .upsert(avaliacoes, { onConflict: "marca,review_id" });
+      if (error) throw error;
 
-    if (error) throw error;
-
-    // Espelha a avaliacao na tabela unificada do Hub de Reputacao (mesma chave marca+review_id).
-    const { error: espelhoError } = await supabase
-      .from("comments_reputation")
-      .upsert({
+      // Espelha na tabela unificada do Hub de Reputacao (mesma chave marca+review_id). So as
+      // colunas de origem sao enviadas, entao a classificacao de IA ja feita nao e apagada.
+      // deno-lint-ignore no-explicit-any
+      const espelho = novas.map((review: any) => ({
         source: "google_business",
-        external_id: reviewId,
+        external_id: String(review.reviewId),
         marca: integracao.marca,
         local_id: local.id,
         store_id: local.location_id,
@@ -161,13 +201,28 @@ async function syncReviews(integracao: Integracao, local: Local, accessToken: st
         author_name: review.reviewer?.displayName || null,
         content: review.comment || null,
         rating: STAR_RATING[String(review.starRating)] || null,
-        created_at: review.createTime || new Date().toISOString(),
-        atualizado_em: new Date().toISOString(),
-      }, { onConflict: "marca,source,external_id" });
+        created_at: review.createTime || agora,
+        atualizado_em: agora,
+      }));
+      const { error: espelhoError } = await supabase
+        .from("comments_reputation")
+        .upsert(espelho, { onConflict: "marca,source,external_id" });
+      if (espelhoError) throw espelhoError;
 
-    if (espelhoError) throw espelhoError;
-    imported += 1;
+      imported += novas.length;
+    }
+
+    const chegouNasJaImportadas = novas.length < reviews.length;
+    const proximo = String(response.nextPageToken || "");
+    if (chegouNasJaImportadas || !proximo || proximo === pageToken) break;
+    pageToken = proximo;
   }
+
+  const { error: marcaError } = await supabase
+    .from("integracao_google_locais")
+    .update({ avaliacoes_sincronizadas_em: inicioSync })
+    .eq("id", local.id);
+  if (marcaError) throw marcaError;
 
   return imported;
 }
@@ -194,6 +249,14 @@ async function syncMetricas(integracao: Integracao, local: Local, accessToken: s
 
   if (!response?.multiDailyMetricTimeSeries?.length) return 0;
 
+  // Formato da resposta: multiDailyMetricTimeSeries[].dailyMetricTimeSeries[].{dailyMetric,
+  // timeSeries.datedValues[]}. A versao anterior lia dailyMetric direto no primeiro nivel e por isso
+  // nunca gravava nada. `value` vem como string (int64) e e omitido quando o dia teve zero.
+  // deno-lint-ignore no-explicit-any
+  const series = (response.multiDailyMetricTimeSeries as any[]).flatMap((grupo) =>
+    Array.isArray(grupo?.dailyMetricTimeSeries) ? grupo.dailyMetricTimeSeries : [grupo]
+  );
+
   const porData = new Map<string, Record<string, number>>();
   const campoPorMetrica: Record<string, string> = {
     WEBSITE_CLICKS: "cliques_website",
@@ -205,8 +268,8 @@ async function syncMetricas(integracao: Integracao, local: Local, accessToken: s
     BUSINESS_IMPRESSIONS_MOBILE_MAPS: "impressoes_descoberta",
   };
 
-  for (const serie of response.multiDailyMetricTimeSeries || []) {
-    const metricName = String(serie.dailyMetric || "");
+  for (const serie of series) {
+    const metricName = String(serie?.dailyMetric || "");
     const campo = campoPorMetrica[metricName];
     if (!campo) continue;
 
@@ -230,25 +293,20 @@ async function syncMetricas(integracao: Integracao, local: Local, accessToken: s
 
   if (!porData.size) return 0;
 
-  const supabase = getAdminClient();
-  let imported = 0;
+  const rows = [...porData.entries()].map(([dataReferencia, valores]) => ({
+    local_id: local.id,
+    marca: integracao.marca,
+    data_referencia: dataReferencia,
+    ...valores,
+    payload_bruto: { origem: "businessprofileperformance", metrics: DAILY_METRICS },
+  }));
 
-  for (const [dataReferencia, valores] of porData.entries()) {
-    const { error } = await supabase
-      .from("integracao_google_metricas_diarias")
-      .upsert({
-        local_id: local.id,
-        marca: integracao.marca,
-        data_referencia: dataReferencia,
-        ...valores,
-        payload_bruto: { origem: "businessprofileperformance", metrics: DAILY_METRICS },
-      }, { onConflict: "local_id,data_referencia" });
+  const { error } = await getAdminClient()
+    .from("integracao_google_metricas_diarias")
+    .upsert(rows, { onConflict: "local_id,data_referencia" });
+  if (error) throw error;
 
-    if (error) throw error;
-    imported += 1;
-  }
-
-  return imported;
+  return rows.length;
 }
 
 // Fotos nao existem na Business Information API (v1): o endpoint de midia e o da API v4
@@ -315,34 +373,57 @@ async function refreshStageResumo(marcas: string[]) {
   const today = new Date().toISOString().slice(0, 10);
 
   for (const marca of uniqueMarcas) {
+    // So unidades de contas confirmadas entram no resumo do Dashboard (contas em revisao ou
+    // ignoradas tambem tem lojas gravadas, mas nao pertencem necessariamente a marca).
+    const { data: contas, error: contasError } = await supabase
+      .from("integracao_google_contas")
+      .select("id")
+      .eq("marca", marca)
+      .eq("conta_confirmada", true)
+      .eq("ignorada", false)
+      .eq("ativo", true);
+    if (contasError) throw contasError;
+    const contaIds = (contas || []).map((c: { id: string }) => c.id);
+    if (!contaIds.length) continue;
+
     const { data: locais, error } = await supabase
       .from("integracao_google_locais")
-      .select("id,location_id,nome_loja")
-      .eq("marca", marca);
-
+      .select("id,location_id,nome_loja,nota_media")
+      .eq("marca", marca)
+      .in("integracao_id", contaIds);
     if (error) throw error;
     if (!locais?.length) continue;
 
-    for (const local of locais) {
-      const { data: avaliacoes } = await supabase
+    // Lojas com avaliacao sem resposta, numa unica consulta paginada (em vez de uma por loja).
+    const comPendencia = new Set<string>();
+    for (let from = 0; ; from += 1000) {
+      const { data: pendentes, error: pendentesError } = await supabase
         .from("integracao_google_avaliacoes")
-        .select("rating,status_resposta")
-        .eq("local_id", local.id);
-
-      const notas = (avaliacoes || []).map((row: any) => Number(row.rating)).filter((n: number) => Number.isFinite(n));
-      const ratingMedio = notas.length ? notas.reduce((sum: number, n: number) => sum + n, 0) / notas.length : null;
-      const pendentes = (avaliacoes || []).some((row: any) => row.status_resposta === "pendente");
-
-      await supabase.from("stage_google_business_profile").upsert({
-        marca,
-        id_loja_gmb: local.location_id,
-        nome_loja: local.nome_loja,
-        rating_medio: ratingMedio,
-        status_resposta: pendentes ? "Pendente" : "Respondida",
-        data_referencia: today,
-        origem_api: "google_business_profile_api",
-      }, { onConflict: "marca,id_loja_gmb,data_referencia" });
+        .select("local_id")
+        .eq("marca", marca)
+        .eq("status_resposta", "pendente")
+        .order("id")
+        .range(from, from + 999);
+      if (pendentesError) throw pendentesError;
+      (pendentes || []).forEach((row: { local_id: string }) => comPendencia.add(row.local_id));
+      if (!pendentes || pendentes.length < 1000) break;
     }
+
+    // deno-lint-ignore no-explicit-any
+    const rows = locais.map((local: any) => ({
+      marca,
+      id_loja_gmb: local.location_id,
+      nome_loja: local.nome_loja,
+      rating_medio: local.nota_media ?? null,
+      status_resposta: comPendencia.has(local.id) ? "Pendente" : "Respondida",
+      data_referencia: today,
+      origem_api: "google_business_profile_api",
+    }));
+
+    const { error: stageError } = await supabase
+      .from("stage_google_business_profile")
+      .upsert(rows, { onConflict: "marca,id_loja_gmb,data_referencia" });
+    if (stageError) throw stageError;
   }
 }
 

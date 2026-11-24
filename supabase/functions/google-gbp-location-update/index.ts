@@ -15,28 +15,83 @@ import {
 
 const CARGOS_PERMITIDOS = ["Admin", "Gestor", "Coordenador"];
 
-// Mapa campo-do-nosso-schema -> { caminho no payload da Business Information API, nome do updateMask }.
-// Conferir nomes exatos contra a documentacao viva do Google antes do primeiro teste real.
-const CAMPOS_SUPORTADOS: Record<string, { updateMaskField: string; build: (valor: unknown) => JsonRecordLike }> = {
+type JsonRecordLike = Record<string, unknown>;
+
+const DIAS_SEMANA = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
+
+// Valida regularHours no formato do Google: { periods: [{ openDay, openTime {hours, minutes},
+// closeDay, closeTime }] }. 24:00 no closeTime representa meia-noite ao fim do closeDay.
+function validarHorario(valor: unknown) {
+  const periods = (valor as { periods?: unknown })?.periods;
+  if (!Array.isArray(periods)) throw new Error("Horario invalido: informe { periods: [...] }.");
+  for (const p of periods as JsonRecordLike[]) {
+    if (!DIAS_SEMANA.includes(String(p.openDay)) || !DIAS_SEMANA.includes(String(p.closeDay))) {
+      throw new Error("Horario invalido: dia da semana desconhecido.");
+    }
+    for (const chave of ["openTime", "closeTime"]) {
+      const t = (p[chave] || {}) as { hours?: number; minutes?: number };
+      const h = Number(t.hours || 0);
+      const m = Number(t.minutes || 0);
+      if (!Number.isInteger(h) || !Number.isInteger(m) || h < 0 || h > 24 || m < 0 || m > 59 || (h === 24 && m !== 0)) {
+        throw new Error("Horario invalido: use HH:MM entre 00:00 e 24:00.");
+      }
+    }
+  }
+  return { periods };
+}
+
+// Mapa campo-do-nosso-schema -> { mascara do updateMask, montagem do payload, coluna local }.
+// `atual` e o Location gravado em payload_bruto na ultima sincronizacao.
+const CAMPOS_SUPORTADOS: Record<string, {
+  updateMaskField: string;
+  build: (valor: unknown, atual: JsonRecordLike) => JsonRecordLike;
+  coluna: string;
+  normalizar?: (valor: unknown) => unknown;
+}> = {
   telefone: {
+    // O Google exige primaryPhone e additionalPhones juntos no update; preserva os adicionais.
     updateMaskField: "phoneNumbers",
-    build: (valor) => ({ phoneNumbers: { primaryPhone: valor } }),
+    build: (valor, atual) => ({
+      phoneNumbers: {
+        primaryPhone: valor,
+        additionalPhones: ((atual.phoneNumbers || {}) as JsonRecordLike).additionalPhones || [],
+      },
+    }),
+    coluna: "telefone",
+    normalizar: (valor) => String(valor ?? "").trim(),
+  },
+  website: {
+    updateMaskField: "websiteUri",
+    build: (valor) => ({ websiteUri: valor }),
+    coluna: "website",
+    normalizar: (valor) => {
+      const texto = String(valor ?? "").trim();
+      if (texto && !/^https?:\/\/[^\s]+\.[^\s]+/i.test(texto)) throw new Error("Website invalido: use um endereco iniciando com http:// ou https://.");
+      return texto;
+    },
   },
   descricao: {
     updateMaskField: "profile",
     build: (valor) => ({ profile: { description: valor } }),
+    coluna: "descricao",
+    normalizar: (valor) => {
+      const texto = String(valor ?? "").trim();
+      if (texto.length > 750) throw new Error("Descricao muito longa: o Google aceita ate 750 caracteres.");
+      return texto;
+    },
   },
   horario_funcionamento: {
     updateMaskField: "regularHours",
     build: (valor) => ({ regularHours: valor }),
+    coluna: "horario_funcionamento",
+    normalizar: validarHorario,
   },
   horario_especial: {
     updateMaskField: "specialHours",
     build: (valor) => ({ specialHours: valor }),
+    coluna: "horario_especial",
   },
 };
-
-type JsonRecordLike = Record<string, unknown>;
 
 Deno.serve(withCors(async (req) => {
   if (req.method !== "POST" && req.method !== "PATCH") return jsonResponse({ error: "Method not allowed" }, 405);
@@ -63,7 +118,7 @@ Deno.serve(withCors(async (req) => {
 
     const { data: local, error: localError } = await supabase
       .from("integracao_google_locais")
-      .select("id,marca,location_id,integracao_id")
+      .select("id,marca,location_id,integracao_id,payload_bruto")
       .eq("id", localId)
       .maybeSingle();
 
@@ -81,29 +136,39 @@ Deno.serve(withCors(async (req) => {
     if (integracaoError) throw integracaoError;
     if (!integracao) return jsonResponse({ error: "Conta Google nao encontrada para este local." }, 404);
 
+    // Valida e normaliza tudo antes de chamar o Google (erro de formato nao gasta cota).
+    const valores: JsonRecordLike = {};
+    for (const chave of camposValidos) {
+      const definicao = CAMPOS_SUPORTADOS[chave];
+      valores[chave] = definicao.normalizar ? definicao.normalizar(campos[chave]) : campos[chave];
+    }
+
     const accessToken = await getValidAccessToken(integracao);
+    const atual = (local.payload_bruto || {}) as JsonRecordLike;
 
     let patchBody: JsonRecordLike = {};
     const updateMaskFields: string[] = [];
-
     for (const chave of camposValidos) {
       const definicao = CAMPOS_SUPORTADOS[chave];
-      patchBody = { ...patchBody, ...definicao.build(campos[chave]) };
+      patchBody = { ...patchBody, ...definicao.build(valores[chave], atual) };
       updateMaskFields.push(definicao.updateMaskField);
     }
 
-    const patchUrl = `${GOOGLE_BUSINESS_INFO_API}/${local.location_id}?updateMask=${updateMaskFields.join(",")}`;
+    const patchUrl = `${GOOGLE_BUSINESS_INFO_API}/${local.location_id}?updateMask=${encodeURIComponent(updateMaskFields.join(","))}`;
 
-    await googleFetch(patchUrl, accessToken, {
+    // O PATCH devolve o Location atualizado; guardamos para o drawer refletir o que o Google aceitou.
+    const atualizado = await googleFetch(patchUrl, accessToken, {
       method: "PATCH",
       body: JSON.stringify(patchBody),
-    });
+    }) as JsonRecordLike;
 
-    const atualizacaoLocal: JsonRecordLike = {};
-    if ("telefone" in campos) atualizacaoLocal.telefone = campos.telefone;
-    if ("descricao" in campos) atualizacaoLocal.descricao = campos.descricao;
-    if ("horario_funcionamento" in campos) atualizacaoLocal.horario_funcionamento = campos.horario_funcionamento;
-    if ("horario_especial" in campos) atualizacaoLocal.horario_especial = campos.horario_especial;
+    const atualizacaoLocal: JsonRecordLike = {
+      payload_bruto: { ...atual, ...patchBody, ...(atualizado || {}) },
+      atualizado_em: new Date().toISOString(),
+    };
+    for (const chave of camposValidos) {
+      atualizacaoLocal[CAMPOS_SUPORTADOS[chave].coluna] = valores[chave] === "" ? null : valores[chave];
+    }
 
     const { error: updateError } = await supabase
       .from("integracao_google_locais")
