@@ -304,11 +304,127 @@
       .modal-overlay.drawer { justify-content: flex-end; align-items: stretch; padding: 0; }
       .modal-overlay.drawer .modal-panel { max-width: 560px; height: 100%; max-height: 100vh; max-height: 100dvh; border-radius: 16px 0 0 16px; }
       .modal-overlay.drawer .modal-header { position: sticky; top: 0; background: #fff; z-index: 1; }
-      .gmn-row { cursor: pointer; }
-      .gmn-row:hover td { background: #f8fafc; }
-      .gmn-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-      .gmn-nota { white-space: nowrap; }
-      .gmn-kpi-nota { margin: -4px 0 0; font-size: 12px; }
+      /* Google Meu Negocio - pagina em grid 8/4. As cores saem da marca ativa (brandColors): o
+         paintGoogleBusiness define --gmn-brand/--gmn-ink/--gmn-soft/--gmn-line/--gmn-prev no .gmn. */
+      .gmn { --gmn-brand: var(--accent); --gmn-ink: #0f172a; --gmn-soft: #eef2f7; --gmn-line: #dbe3ee; --gmn-prev: #94a3b8; display: grid; gap: 18px; }
+      .gmn-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+      .gmn-head h2 { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -.02em; color: var(--gmn-ink); }
+      .gmn-head p { margin: 4px 0 0; }
+      .gmn > * { min-width: 0; }
+      .gmn { grid-template-columns: minmax(0, 1fr); min-width: 0; max-width: 100%; }
+      .gmn-head-side { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; min-width: 0; max-width: 100%; }
+      .gmn-head-side .pills { flex-wrap: wrap; justify-content: flex-end; }
+      .gmn-head-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+      .gmn-greet { font-weight: 700; color: var(--gmn-ink); font-size: 14px; }
+      .gmn-badge { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 10px; font-size: 12px; font-weight: 700; background: #ecfdf5; color: #047857; }
+      .gmn-badge.pendente { background: #fff7ed; color: #c2410c; }
+      .gmn-badge .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+      .gmn-icon-btn { display: inline-grid; place-items: center; width: 34px; height: 34px; padding: 0; border-radius: 10px; background: #fff; color: var(--gmn-ink); border: 1px solid var(--gmn-line); }
+      .gmn-icon-btn .material-symbols-outlined { font-size: 18px; }
+      .gmn-layout { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 18px; align-items: start; }
+      .gmn-main { grid-column: span 8; display: grid; gap: 18px; min-width: 0; }
+      .gmn-side { grid-column: span 4; display: grid; gap: 18px; min-width: 0; align-content: start; }
+      .gmn-card { background: var(--gmn-soft); border-radius: 20px; padding: 18px; min-width: 0; position: relative; }
+      .gmn-card h3 { margin: 0; font-size: 15px; font-weight: 700; color: var(--gmn-ink); }
+      .gmn-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+      .gmn-kpi { display: grid; gap: 10px; align-content: start; }
+      .gmn-kpi-top { display: flex; justify-content: space-between; align-items: center; }
+      .gmn-kpi-icon { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; border: 1.5px solid var(--gmn-ink); color: var(--gmn-ink); }
+      .gmn-kpi-icon .material-symbols-outlined { font-size: 20px; }
+      .gmn-kpi strong { font-size: 26px; font-weight: 800; letter-spacing: -.02em; color: var(--gmn-ink); line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .gmn-kpi small { color: #64748b; font-size: 12px; line-height: 1.35; }
+      .gmn-menu { position: relative; }
+      .gmn-menu > summary { list-style: none; cursor: pointer; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; color: var(--gmn-ink); }
+      .gmn-menu > summary::-webkit-details-marker { display: none; }
+      .gmn-menu > summary:hover, .gmn-menu[open] > summary { background: rgba(15,23,42,.08); }
+      .gmn-menu > summary:focus-visible { outline: 2px solid var(--gmn-brand); outline-offset: 1px; }
+      .gmn-menu-pop { position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; width: 240px; background: var(--gmn-ink); color: #e2e8f0; border-radius: 12px; padding: 10px 12px; font-size: 12px; line-height: 1.45; box-shadow: 0 12px 28px rgba(15,23,42,.28); }
+      .gmn-row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr); gap: 14px; }
+      .gmn-stack { display: grid; gap: 14px; }
+      .gmn-mini strong { display: inline-block; font-size: 40px; font-weight: 800; letter-spacing: -.03em; color: var(--gmn-ink); margin-top: 8px; line-height: 1; }
+      .gmn-mini .gmn-mini-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+      .gmn-delta { display: inline-flex; align-items: center; border-radius: 6px; padding: 2px 7px; font-size: 11px; font-weight: 700; }
+      .gmn-delta.up { background: #dcfce7; color: #15803d; }
+      .gmn-delta.down { background: #fee2e2; color: #b91c1c; }
+      .gmn-delta.alert { background: #fee2e2; color: #b91c1c; }
+      .gmn-delta.neutral { background: #e2e8f0; color: #475569; }
+      .gmn-chart-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+      .gmn-legend { display: flex; gap: 12px; font-size: 12px; color: #64748b; }
+      .gmn-legend span { display: inline-flex; align-items: center; gap: 6px; }
+      .gmn-legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+      .gmn-chart { position: relative; margin-top: 10px; }
+      .gmn-chart svg { display: block; width: 100%; height: 210px; overflow: visible; }
+      .gmn-chart .eixo { font-size: 10px; fill: #94a3b8; }
+      .gmn-tip { position: absolute; pointer-events: none; transform: translate(-50%, calc(-100% - 12px)); background: var(--gmn-ink); color: #fff; border-radius: 8px; padding: 6px 9px; font-size: 11px; line-height: 1.5; white-space: nowrap; box-shadow: 0 8px 20px rgba(15,23,42,.3); }
+      .gmn-tip i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; }
+      .gmn-empty { display: grid; place-items: center; text-align: center; gap: 6px; min-height: 210px; color: #64748b; font-size: 13px; }
+      .gmn-empty .material-symbols-outlined { font-size: 30px; color: var(--gmn-prev); }
+      .gmn-empty strong { color: var(--gmn-ink); }
+      .gmn-list-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+      .gmn-list-tools { display: flex; gap: 8px; flex-wrap: wrap; }
+      .gmn-list-tools input, .gmn-list-tools select { border: 1px solid var(--gmn-line); background: #fff; border-radius: 10px; padding: 8px 10px; font-size: 13px; min-width: 0; }
+      .gmn-list-tools input { width: 220px; }
+      .gmn-list { display: grid; }
+      .gmn-row { display: grid; grid-template-columns: 36px minmax(0, 1.2fr) minmax(0, 1.6fr) auto; align-items: center; gap: 14px; padding: 11px 8px; border-radius: 12px; cursor: pointer; }
+      .gmn-row + .gmn-row { border-top: 1px solid var(--gmn-line); }
+      .gmn-row:hover { background: rgba(255,255,255,.65); }
+      .gmn-row:focus-visible { outline: 2px solid var(--gmn-brand); outline-offset: -2px; }
+      .gmn-avatar { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 14px; }
+      .gmn-row-nome { font-weight: 700; color: var(--gmn-ink); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .gmn-row-sub { font-size: 11px; color: #64748b; }
+      .gmn-row-end { color: #64748b; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .gmn-row-dir { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+      .gmn-row-dir .status-pill { padding: 4px 9px; font-size: 11px; }
+      .gmn-row-dir .gmn-edit { padding: 6px 10px; font-size: 12px; }
+      .gmn-nota { white-space: nowrap; font-size: 12px; font-weight: 700; color: var(--gmn-ink); display: inline-flex; align-items: center; gap: 2px; }
+      .gmn-nota .material-symbols-outlined { font-size: 15px; color: #f59e0b; font-variation-settings: 'FILL' 1; }
+      .gmn-list-empty { padding: 28px 8px; text-align: center; color: #64748b; font-size: 13px; }
+      .gmn-dark { background: var(--gmn-ink); color: #f8fafc; border-radius: 20px; padding: 20px; }
+      .gmn-dark h3 { margin: 0; color: #fff; font-size: 17px; font-weight: 700; }
+      .gmn-dark p { margin: 4px 0 0; color: #cbd5e1; font-size: 12px; }
+      .gmn-progress { height: 12px; border-radius: 999px; background: rgba(255,255,255,.16); margin: 18px 0 10px; overflow: hidden; }
+      .gmn-progress > div { height: 100%; border-radius: inherit; background: #fff; transition: width .4s ease; }
+      .gmn-dark .gmn-progress-info { text-align: center; color: #fff; font-weight: 700; font-size: 13px; margin: 0; }
+      .gmn-dark .gmn-progress-info + p { text-align: center; }
+      .gmn-sync-btn { width: 100%; margin-top: 16px; background: #fff; color: var(--gmn-ink); border-radius: 10px; padding: 11px 14px; font-weight: 700; display: inline-flex; justify-content: center; align-items: center; gap: 8px; }
+      .gmn-sync-btn:disabled { opacity: .55; cursor: not-allowed; }
+      .gmn-todo { display: grid; gap: 14px; margin-top: 14px; }
+      .gmn-todo-item { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 12px; align-items: center; }
+      .gmn-todo-icon { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--gmn-ink); color: #fff; }
+      .gmn-todo-icon.ok { background: #16a34a; }
+      .gmn-todo-icon .material-symbols-outlined { font-size: 19px; }
+      .gmn-todo-item strong { display: block; font-size: 13px; color: var(--gmn-ink); }
+      .gmn-todo-item span.sub { font-size: 11px; color: #64748b; }
+      .gmn-rls { padding: 16px 18px; }
+      .gmn-rls h4 { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 14px; color: #fff; }
+      .gmn-rls h4 .dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,.25); }
+      .gmn-rls p { line-height: 1.5; }
+      .gmn-foot { margin: 0; font-size: 12px; }
+      @media (max-width: 1279.98px) {
+        .gmn-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      }
+      @media (max-width: 1100px) {
+        .gmn-main, .gmn-side { grid-column: 1 / -1; }
+        .gmn-side { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+      }
+      @media (max-width: 760px) {
+        .gmn-head-side { align-items: flex-start; }
+        .gmn-head-meta { justify-content: flex-start; }
+        .gmn-row2 { grid-template-columns: 1fr; }
+        .gmn-stack { grid-template-columns: 1fr 1fr; }
+        .gmn-head-side .pills { justify-content: flex-start; }
+        .gmn-row { grid-template-columns: 36px minmax(0, 1fr); row-gap: 6px; align-items: start; }
+        .gmn-row-end { grid-column: 2; white-space: normal; }
+        .gmn-row-dir { grid-column: 2; justify-content: flex-start; flex-wrap: wrap; }
+        .gmn-list-tools, .gmn-list-tools input { width: 100%; }
+        .gmn-list-tools input { flex: 1 1 160px; }
+      }
+      @media (max-width: 520px) {
+        .gmn-stack { grid-template-columns: 1fr; }
+        .gmn-kpi strong { font-size: 22px; }
+        .gmn-card { padding: 14px; border-radius: 16px; }
+        .gmn-head h2 { font-size: 24px; }
+      }
       .gmn-resumo { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
       .gmn-resumo > div { border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; align-content: start; justify-items: start; }
       .gmn-resumo span.muted { font-size: 11px; text-transform: uppercase; font-weight: 800; letter-spacing: .03em; }
@@ -7756,7 +7872,7 @@
       async function loadGoogleBI() {
         let contasQuery = supabase
           .from("vw_integracao_google_contas_publica")
-          .select("id,marca,ativo,conta_confirmada,ignorada");
+          .select("id,marca,ativo,conta_confirmada,ignorada,ultima_sincronizacao_em");
         if (state.marca !== "Todas") contasQuery = contasQuery.eq("marca", state.marca);
         const { data: contas, error: contasError } = await contasQuery;
         if (contasError) throw contasError;
@@ -7767,11 +7883,22 @@
 
         let locais = [];
         let metricas = [];
+        let metricasAnteriores = [];
+        let avaliacoes = null;
+
+        // Janela atual (KPIs, igual a antes) e janela anterior do mesmo tamanho, so para o grafico
+        // "Desempenho de Busca Local" comparar os periodos.
+        const desde = new Date();
+        desde.setDate(desde.getDate() - GOOGLE_METRICAS_DIAS);
+        const desdeIso = desde.toISOString().slice(0, 10);
+        const desdeAnterior = new Date(desde);
+        desdeAnterior.setDate(desdeAnterior.getDate() - GOOGLE_METRICAS_DIAS);
+        const desdeAnteriorIso = desdeAnterior.toISOString().slice(0, 10);
 
         if (confirmedIds.length) {
           locais = await fetchAllPages(() => supabase
             .from("integracao_google_locais")
-            .select("id,integracao_id,marca,location_id,nome_loja,endereco_completo,telefone,website,status,nota_media,total_avaliacoes")
+            .select("id,integracao_id,marca,location_id,nome_loja,endereco_completo,telefone,website,status,nota_media,total_avaliacoes,avaliacoes_sincronizadas_em")
             .in("integracao_id", confirmedIds)
             .order("marca")
             .order("nome_loja")
@@ -7779,14 +7906,15 @@
 
           const localIds = locais.map((l) => l.id);
           if (localIds.length) {
-            const desde = new Date();
-            desde.setDate(desde.getDate() - GOOGLE_METRICAS_DIAS);
-            metricas = await fetchAllPages(() => supabase
+            const todasMetricas = await fetchAllPages(() => supabase
               .from("integracao_google_metricas_diarias")
-              .select("id,local_id,solicitacoes_rota,chamadas_telefone,impressoes_busca,impressoes_descoberta")
+              .select("id,local_id,data_referencia,solicitacoes_rota,chamadas_telefone,impressoes_busca,impressoes_descoberta")
               .in("local_id", localIds)
-              .gte("data_referencia", desde.toISOString().slice(0, 10))
+              .gte("data_referencia", desdeAnteriorIso)
               .order("id"));
+            metricas = todasMetricas.filter((m) => m.data_referencia >= desdeIso);
+            metricasAnteriores = todasMetricas.filter((m) => m.data_referencia < desdeIso);
+            avaliacoes = await loadGoogleAvaliacoesResumo(confirmedIds, desde, desdeAnterior);
           }
         }
 
@@ -7799,12 +7927,66 @@
         const solicitacoesRota = metricas.reduce((s, m) => s + num(m.solicitacoes_rota), 0);
         const chamadasTelefone = metricas.reduce((s, m) => s + num(m.chamadas_telefone), 0);
 
+        const ultimaSincronizacao = (contas || [])
+          .filter((c) => confirmedIds.includes(c.id))
+          .map((c) => c.ultima_sincronizacao_em)
+          .filter(Boolean)
+          .sort()
+          .pop() || null;
+
         state.google = {
           ...(state.google || {}),
           locais,
           temMetricas: metricas.length > 0,
+          contasConfirmadas: confirmedIds.length,
+          ultimaSincronizacao,
+          avaliacoes,
+          serieBusca: googleSerieBusca(metricas, metricasAnteriores, desde, desdeAnterior),
           kpis: { totalUnidades: locais.length, avaliacaoMedia, totalAvaliacoes, lojasComNota: comNota.length, visualizacoes, solicitacoesRota, chamadasTelefone }
         };
+      }
+
+      // Contagens de avaliacoes (so head/count, sem trazer linhas). Falha aqui nao derruba a pagina:
+      // os cards "Novas Avaliacoes" e "Sem Resposta" mostram "—" e o resto continua.
+      async function loadGoogleAvaliacoesResumo(confirmedIds, desde, desdeAnterior) {
+        const contar = (aplicar) => aplicar(supabase
+          .from("integracao_google_avaliacoes")
+          .select("id", { count: "exact", head: true })
+          .in("integracao_id", confirmedIds));
+        try {
+          const [atual, anterior, pendentes] = await Promise.all([
+            contar((q) => q.gte("avaliado_em", desde.toISOString())),
+            contar((q) => q.gte("avaliado_em", desdeAnterior.toISOString()).lt("avaliado_em", desde.toISOString())),
+            contar((q) => q.eq("status_resposta", "pendente"))
+          ]);
+          const erro = atual.error || anterior.error || pendentes.error;
+          if (erro) throw erro;
+          return { novas: atual.count || 0, anteriores: anterior.count || 0, pendentes: pendentes.count || 0 };
+        } catch (error) {
+          console.warn("Resumo de avaliacoes do Google indisponivel:", error);
+          return null;
+        }
+      }
+
+      // Serie diaria de visualizacoes (busca + descoberta) dos dois periodos, alinhada por dia
+      // relativo (dia 1 do periodo atual x dia 1 do anterior). Dias sem linha contam como 0.
+      function googleSerieBusca(metricas, metricasAnteriores, desde, desdeAnterior) {
+        const somaPorDia = (linhas) => linhas.reduce((acc, m) => {
+          acc[m.data_referencia] = (acc[m.data_referencia] || 0) + num(m.impressoes_busca) + num(m.impressoes_descoberta);
+          return acc;
+        }, {});
+        const atual = somaPorDia(metricas);
+        const anterior = somaPorDia(metricasAnteriores);
+        const dia = (base, n) => {
+          const d = new Date(base);
+          d.setDate(d.getDate() + n);
+          return d.toISOString().slice(0, 10);
+        };
+        return Array.from({ length: GOOGLE_METRICAS_DIAS }, (_, i) => {
+          const data = dia(desde, i + 1);
+          const dataAnterior = dia(desdeAnterior, i + 1);
+          return { data, dataAnterior, atual: atual[data] || 0, anterior: anterior[dataAnterior] || 0 };
+        });
       }
 
       // paintGoogleBusiness monta HTML e liga os eventos dos botoes no mesmo passo (nao separa
@@ -7868,73 +8050,98 @@
         }
       }
 
-      // Pagina Google Meu Negocio: KPIs consolidados, filtro de marcas e Gerenciamento de Unidades.
-      // Clicar numa linha abre o drawer de detalhes; "Editar" abre o mesmo drawer ja no formulario.
-      // Conexao, vinculo conta->marca e sincronizacao ficam em Conexoes.
-      function paintGoogleBusiness(statusMessage = "") {
-        const content = document.querySelector("#content");
-        const g = state.google || {};
-        const locais = g.locais || [];
-        const kpis = g.kpis || { totalUnidades: 0, avaliacaoMedia: 0, visualizacoes: 0, solicitacoesRota: 0 };
-        const statusHtml = statusMessage ? `<div class="alert success">${escapeHtml(statusMessage)}</div>` : "";
+      // Pagina Google Meu Negocio (layout 8/4): KPIs, novas avaliacoes x sem resposta, grafico de busca
+      // local (periodo atual x anterior) e Gerenciamento de Unidades na coluna principal; status da
+      // sincronizacao, pendencias de reputacao e status RLS na lateral. Clicar numa linha abre o drawer
+      // de detalhes; "Editar" abre o mesmo drawer ja no formulario. Conexao e vinculo conta->marca
+      // continuam em Conexoes; "Atualizar Metricas Agora" chama a mesma syncGoogleBusiness de la.
+      let gmnFiltroLista = { busca: "", marca: "" };
+      let gmnChartObserver = null;
+      let gmnMenuListener = false;
+
+      function gmnTokens(marca) {
+        const base = brandColors[marca] || brandColors.Todas;
+        return `--gmn-brand:${base};--gmn-ink:${darken(base, 0.8)};--gmn-soft:${lighten(base, 0.93)};--gmn-line:${lighten(base, 0.8)};--gmn-prev:${lighten(base, 0.5)}`;
+      }
+
+      function gmnNormalizar(texto) {
+        return String(texto || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+      }
+
+      function gmnKpiHtml({ icone, valor, legenda, info, titulo }) {
+        return `
+          <article class="gmn-card gmn-kpi">
+            <div class="gmn-kpi-top">
+              <span class="gmn-kpi-icon" aria-hidden="true"><span class="material-symbols-outlined">${icone}</span></span>
+              <details class="gmn-menu">
+                <summary aria-label="Como é calculado: ${escapeHtml(titulo)}" title="Como é calculado"><span class="material-symbols-outlined">more_vert</span></summary>
+                <div class="gmn-menu-pop" role="note">${info}</div>
+              </details>
+            </div>
+            <strong title="${escapeHtml(titulo)}">${valor}</strong>
+            <small><b style="color:var(--gmn-ink)">${escapeHtml(titulo)}</b><br>${legenda}</small>
+          </article>`;
+      }
+
+      function gmnVariacao(atual, anterior) {
+        if (!anterior) return atual ? { texto: "Novo", classe: "up" } : { texto: "0%", classe: "neutral" };
+        const pct = ((atual - anterior) / anterior) * 100;
+        const texto = `${pct > 0 ? "+" : ""}${pct.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+        return { texto, classe: pct > 0 ? "up" : pct < 0 ? "down" : "neutral" };
+      }
+
+      function gmnLocalRowHtml(local, podeEditarLocal) {
+        const status = googleLocalStatus(local.status);
+        const total = num(local.total_avaliacoes);
+        const nota = num(local.nota_media);
+        const marca = local.marca || "";
+        const cor = brandColors[marca] || brandColors.Todas;
+        const sub = [marca, local.telefone].filter(Boolean).map(escapeHtml).join(" · ");
+        return `
+          <div class="gmn-row" role="button" tabindex="0" data-id="${escapeHtml(local.id)}" aria-label="Ver detalhes de ${escapeHtml(local.nome_loja || "unidade")}">
+            <span class="gmn-avatar" style="background:${cor}" aria-hidden="true">${escapeHtml((marca || local.nome_loja || "?").charAt(0).toUpperCase())}</span>
+            <div style="min-width:0"><div class="gmn-row-nome">${escapeHtml(local.nome_loja || "-")}</div><div class="gmn-row-sub">${sub || "-"}</div></div>
+            <div class="gmn-row-end" title="${escapeHtml(local.endereco_completo || "")}">${escapeHtml(local.endereco_completo || "Endereço não informado")}</div>
+            <div class="gmn-row-dir">
+              ${nota ? `<span class="gmn-nota" title="${fmt.format(total)} avaliações"><span class="material-symbols-outlined">grade</span>${nota.toFixed(1)}</span>` : ""}
+              <span class="status-pill ${status.className}">${status.label}</span>
+              ${podeEditarLocal ? `<button type="button" class="secondary gmn-edit" data-id="${escapeHtml(local.id)}">Editar</button>` : ""}
+            </div>
+          </div>`;
+      }
+
+      function wireGmnRow(row) {
+        row.onclick = (event) => {
+          if (event.target.closest("button, a")) return;
+          openGoogleLocalDrawer(row.dataset.id, { editar: false, origem: row });
+        };
+        row.onkeydown = (event) => {
+          if (event.target !== row || (event.key !== "Enter" && event.key !== " ")) return;
+          event.preventDefault();
+          openGoogleLocalDrawer(row.dataset.id, { editar: false, origem: row });
+        };
+        const editar = row.querySelector(".gmn-edit");
+        if (editar) editar.onclick = () => openGoogleLocalDrawer(editar.dataset.id, { editar: true, origem: editar });
+      }
+
+      // Repinta so a lista (busca/filtro locais), sem refazer a pagina - o campo de busca mantem o foco.
+      function paintGmnLista() {
+        const lista = document.querySelector("#gmnLista");
+        if (!lista) return;
+        const locais = state.google?.locais || [];
+        const termo = gmnNormalizar(gmnFiltroLista.busca);
+        const filtrados = locais.filter((l) =>
+          (!gmnFiltroLista.marca || l.marca === gmnFiltroLista.marca) &&
+          (!termo || gmnNormalizar(`${l.nome_loja} ${l.endereco_completo} ${l.telefone}`).includes(termo)));
         const podeEditarLocal = podeGerenciarGoogleLocais();
-        const mostrarMarca = state.marca === "Todas";
-        const colunas = mostrarMarca ? 7 : 6;
         const linkConexoes = state.perfil?.cargo === "Admin"
           ? ` Vincule e sincronize as contas em <a href="#" id="goConnectionsGoogle">Conexões</a>.`
           : " Peça a um administrador para vincular e sincronizar as contas em Conexões.";
-        const semMetricas = locais.length && !g.temMetricas;
-        const notaRodape = locais.length
-          ? `<p class="muted gmn-kpi-nota">${kpis.totalAvaliacoes
-              ? `Avaliação média ponderada por ${fmt.format(kpis.totalAvaliacoes)} avaliações em ${fmt.format(kpis.lojasComNota)} loja(s).`
-              : "Nenhuma avaliação sincronizada ainda."} Visualizações (buscas e Maps) e rotas somam os últimos ${GOOGLE_METRICAS_DIAS} dias${semMetricas ? "; ainda sem métricas sincronizadas" : ""}.</p>`
-          : "";
-
-        content.innerHTML = `
-          <div class="page-head">
-            <div><div class="eyebrow">Google Business Profile API</div><h2>Google Meu Negócio</h2><p class="muted">Unidades, avaliações e desempenho de busca local${mostrarMarca ? " somando todas as marcas" : ` da marca ${escapeHtml(state.marca)}`}.</p></div>
-            <div class="filters">
-              ${marcaPillsHtml(true)}
-              <button id="refreshGoogle" class="secondary">Atualizar</button>
-            </div>
-          </div>
-          ${statusHtml}
-          <div id="googleActionStatus"></div>
-          <div class="grid kpis">
-            ${kpi("Total de Unidades", locais.length ? fmt.format(kpis.totalUnidades) : "—", "storefront")}
-            ${kpi("Avaliação Média", kpis.avaliacaoMedia ? `${kpis.avaliacaoMedia.toFixed(1)} / 5.0` : "—", "grade")}
-            ${kpi("Visualizações Locais", g.temMetricas ? fmt.format(kpis.visualizacoes) : "—", "visibility")}
-            ${kpi("Solicitações de Rota", g.temMetricas ? fmt.format(kpis.solicitacoesRota) : "—", "directions_car")}
-          </div>
-          ${notaRodape}
-          <section class="card">
-            <h3>Gerenciamento de Unidades</h3>
-            <p class="muted">${locais.length ? `${fmt.format(locais.length)} loja(s) das contas confirmadas. Clique numa unidade para ver os detalhes.` : "Lojas sincronizadas das contas confirmadas."}</p>
-            <div class="table-wrap" style="margin-top:16px">
-              <table>
-                <thead><tr><th>Unidade</th>${mostrarMarca ? "<th>Marca</th>" : ""}<th>Endereço</th><th>Telefone</th><th>Status</th><th>Avaliação</th><th><span class="sr-only">Ações</span></th></tr></thead>
-                <tbody>${locais.map((local) => {
-                  const status = googleLocalStatus(local.status);
-                  const total = num(local.total_avaliacoes);
-                  const nota = num(local.nota_media);
-                  return `
-                  <tr class="gmn-row" tabindex="0" data-id="${escapeHtml(local.id)}" aria-label="Ver detalhes de ${escapeHtml(local.nome_loja || "unidade")}">
-                    <td><strong class="gmn-nome">${escapeHtml(local.nome_loja || "-")}</strong></td>
-                    ${mostrarMarca ? `<td>${escapeHtml(local.marca || "-")}</td>` : ""}
-                    <td>${escapeHtml(local.endereco_completo || "-")}</td>
-                    <td>${escapeHtml(local.telefone || "-")}</td>
-                    <td><span class="status-pill ${status.className}">${status.label}</span></td>
-                    <td class="gmn-nota">${nota ? `<span class="stars"><span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">grade</span></span> ${nota.toFixed(1)} <span class="muted">(${fmt.format(total)})</span>` : `<span class="muted">${total ? fmt.format(total) : "-"}</span>`}</td>
-                    <td>${podeEditarLocal ? `<button type="button" class="secondary gmn-edit" data-id="${escapeHtml(local.id)}">Editar</button>` : ""}</td>
-                  </tr>`;
-                }).join("") || `<tr><td colspan="${colunas}">Nenhuma unidade sincronizada ainda.${linkConexoes}</td></tr>`}</tbody>
-              </table>
-            </div>
-          </section>
-          <div id="gmnDrawer" class="modal-overlay drawer" hidden></div>`;
-
-        wireMarcaPills(renderGoogleBusiness);
-        document.querySelector("#refreshGoogle").onclick = () => runGoogleAction(() => renderGoogleBusiness("", { force: true }));
+        lista.innerHTML = filtrados.map((l) => gmnLocalRowHtml(l, podeEditarLocal)).join("")
+          || `<div class="gmn-list-empty">${locais.length ? "Nenhuma unidade corresponde à busca." : `Nenhuma unidade sincronizada ainda.${linkConexoes}`}</div>`;
+        const contador = document.querySelector("#gmnListaContador");
+        if (contador) contador.textContent = filtrados.length === locais.length ? "" : `${fmt.format(filtrados.length)} exibida(s)`;
+        lista.querySelectorAll(".gmn-row").forEach(wireGmnRow);
         const goConnections = document.querySelector("#goConnectionsGoogle");
         if (goConnections) {
           goConnections.onclick = (event) => {
@@ -7943,20 +8150,316 @@
             render();
           };
         }
-        document.querySelectorAll(".gmn-row").forEach((row) => {
-          row.onclick = (event) => {
-            if (event.target.closest("button, a")) return;
-            openGoogleLocalDrawer(row.dataset.id, { editar: false, origem: row });
-          };
-          row.onkeydown = (event) => {
-            if (event.target !== row || (event.key !== "Enter" && event.key !== " ")) return;
-            event.preventDefault();
-            openGoogleLocalDrawer(row.dataset.id, { editar: false, origem: row });
-          };
+      }
+
+      // Grafico de linhas suaves em SVG (sem lib): Catmull-Rom convertido em curvas Bezier cubicas.
+      function gmnCurva(pontos) {
+        if (!pontos.length) return "";
+        let d = `M${pontos[0][0].toFixed(1)},${pontos[0][1].toFixed(1)}`;
+        for (let i = 0; i < pontos.length - 1; i++) {
+          const p0 = pontos[i - 1] || pontos[i];
+          const p1 = pontos[i];
+          const p2 = pontos[i + 1];
+          const p3 = pontos[i + 2] || p2;
+          const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+          const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+          d += ` C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+        }
+        return d;
+      }
+
+      function paintGmnChart() {
+        const host = document.querySelector("#gmnChart");
+        const serie = state.google?.serieBusca || [];
+        if (!host || !serie.length) return;
+        const largura = Math.max(280, host.clientWidth);
+        const altura = 210;
+        const margem = { top: 12, right: 8, bottom: 24, left: 40 };
+        const w = largura - margem.left - margem.right;
+        const h = altura - margem.top - margem.bottom;
+        const maximo = Math.max(1, ...serie.map((p) => Math.max(p.atual, p.anterior)));
+        const passo = Math.pow(10, Math.floor(Math.log10(maximo)));
+        const teto = Math.ceil(maximo / passo) * passo;
+        const x = (i) => margem.left + (serie.length === 1 ? w / 2 : (i / (serie.length - 1)) * w);
+        const y = (v) => margem.top + h - (v / teto) * h;
+        const compacto = new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 });
+        const diaMes = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+        const atual = serie.map((p, i) => [x(i), y(p.atual)]);
+        const anterior = serie.map((p, i) => [x(i), y(p.anterior)]);
+        const grade = [0, 0.25, 0.5, 0.75, 1].map((f) => {
+          const v = teto * f;
+          return `<line x1="${margem.left}" x2="${largura - margem.right}" y1="${y(v)}" y2="${y(v)}" stroke="var(--gmn-line)" stroke-dasharray="${f ? "3 4" : ""}"/><text class="eixo" x="${margem.left - 8}" y="${y(v) + 3}" text-anchor="end">${compacto.format(v)}</text>`;
+        }).join("");
+        const passoX = Math.max(1, Math.ceil(serie.length / Math.max(2, Math.floor(w / 70))));
+        const eixoX = serie.map((p, i) => (i % passoX === 0 || i === serie.length - 1)
+          ? `<text class="eixo" x="${x(i)}" y="${altura - 6}" text-anchor="middle">${diaMes(p.data)}</text>` : "").join("");
+        const areaAtual = `${gmnCurva(atual)} L${x(serie.length - 1)},${y(0)} L${x(0)},${y(0)} Z`;
+
+        host.innerHTML = `
+          <svg viewBox="0 0 ${largura} ${altura}" role="img" aria-label="Visualizações diárias: últimos ${serie.length} dias comparados ao período anterior">
+            <defs><linearGradient id="gmnArea" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--gmn-ink)" stop-opacity=".12"/><stop offset="1" stop-color="var(--gmn-ink)" stop-opacity="0"/></linearGradient></defs>
+            ${grade}${eixoX}
+            <path d="${areaAtual}" fill="url(#gmnArea)"/>
+            <path d="${gmnCurva(anterior)}" fill="none" stroke="var(--gmn-prev)" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="${gmnCurva(atual)}" fill="none" stroke="var(--gmn-ink)" stroke-width="2.5" stroke-linecap="round"/>
+            <g id="gmnHover" style="display:none">
+              <line y1="${margem.top}" y2="${margem.top + h}" stroke="var(--gmn-ink)" stroke-opacity=".25" stroke-dasharray="3 3"/>
+              <circle r="5" fill="#fff" stroke="var(--gmn-prev)" stroke-width="2.5"/>
+              <circle r="5" fill="#fff" stroke="var(--gmn-ink)" stroke-width="2.5"/>
+            </g>
+            <rect x="${margem.left}" y="${margem.top}" width="${w}" height="${h}" fill="transparent" id="gmnHit"/>
+          </svg>
+          <div class="gmn-tip" id="gmnTip" hidden></div>`;
+
+        const hover = host.querySelector("#gmnHover");
+        const [linha, pontoAnterior, pontoAtual] = hover.children;
+        const tip = host.querySelector("#gmnTip");
+        const hit = host.querySelector("#gmnHit");
+        const svg = host.querySelector("svg");
+        hit.onpointermove = (event) => {
+          const caixa = svg.getBoundingClientRect();
+          const px = ((event.clientX - caixa.left) / caixa.width) * largura;
+          const i = Math.max(0, Math.min(serie.length - 1, Math.round(((px - margem.left) / w) * (serie.length - 1))));
+          const p = serie[i];
+          hover.style.display = "";
+          linha.setAttribute("x1", x(i)); linha.setAttribute("x2", x(i));
+          pontoAtual.setAttribute("cx", x(i)); pontoAtual.setAttribute("cy", y(p.atual));
+          pontoAnterior.setAttribute("cx", x(i)); pontoAnterior.setAttribute("cy", y(p.anterior));
+          tip.hidden = false;
+          tip.innerHTML = `<div><i style="background:#fff"></i>${diaMes(p.data)}: <b>${fmt.format(p.atual)}</b></div><div style="opacity:.75"><i style="background:var(--gmn-prev)"></i>${diaMes(p.dataAnterior)}: ${fmt.format(p.anterior)}</div>`;
+          tip.style.left = `${(x(i) / largura) * 100}%`;
+          tip.style.top = `${(Math.min(y(p.atual), y(p.anterior)) / altura) * caixa.height}px`;
+        };
+        hit.onpointerleave = () => { hover.style.display = "none"; tip.hidden = true; };
+      }
+
+      function gmnPendencias(g) {
+        const locais = g.locais || [];
+        const semSync = locais.filter((l) => !l.avaliacoes_sincronizadas_em).length;
+        const pendentes = g.avaliacoes?.pendentes;
+        const grupos = locais.reduce((acc, l) => {
+          const chave = `${l.marca}|${gmnNormalizar(l.nome_loja)}`;
+          (acc[chave] ||= []).push(l);
+          return acc;
+        }, {});
+        const duplicadas = Object.values(grupos).filter((grupo) => grupo.length > 1 && grupo[0].nome_loja);
+        const notaBaixa = locais.filter((l) => num(l.nota_media) > 0 && num(l.nota_media) < 3);
+        return [
+          semSync
+            ? { icone: "sync", titulo: `Sincronizar avaliações de ${fmt.format(semSync)} loja(s)`, sub: "Use “Atualizar Métricas Agora” acima." }
+            : { ok: true, titulo: "Avaliações de todas as lojas sincronizadas", sub: locais.length ? `${fmt.format(locais.length)} unidade(s) em dia.` : "Nenhuma unidade ainda." },
+          pendentes == null
+            ? { icone: "help", titulo: "Respostas pendentes indisponíveis", sub: "Não foi possível contar as avaliações agora." }
+            : pendentes
+              ? { icone: "rate_review", titulo: `Responder ${fmt.format(pendentes)} avaliação(ões)`, sub: `<button type="button" class="link-btn" id="gmnIrReputacao" style="font-size:11px">Abrir Hub de Reputação</button>` , subHtml: true }
+              : { ok: true, titulo: "Todas as avaliações respondidas", sub: "Nenhuma pendência de resposta." },
+          duplicadas.length
+            ? { icone: "content_copy", titulo: `Revisar ${fmt.format(duplicadas.length)} ficha(s) duplicada(s)`, sub: `Ex.: ${escapeHtml(duplicadas.slice(0, 2).map((grupo) => `“${grupo[0].nome_loja}” (${grupo.length}x)`).join(", "))}`, subHtml: true }
+            : { ok: true, titulo: "Nenhuma ficha duplicada", sub: "Nomes de unidade únicos por marca." },
+          notaBaixa.length
+            ? { icone: "notification_important", titulo: `${fmt.format(notaBaixa.length)} loja(s) com nota abaixo de 3`, sub: `Ex.: ${escapeHtml(notaBaixa.slice(0, 2).map((l) => `${l.nome_loja} (${num(l.nota_media).toFixed(1)})`).join(", "))}`, subHtml: true }
+            : { ok: true, titulo: "Nenhuma loja com nota abaixo de 3", sub: g.kpis?.lojasComNota ? "Monitorando as lojas com avaliações." : "Aguardando avaliações sincronizadas." }
+        ];
+      }
+
+      function paintGoogleBusiness(statusMessage = "") {
+        const content = document.querySelector("#content");
+        const g = state.google || {};
+        const locais = g.locais || [];
+        const kpis = g.kpis || { totalUnidades: 0, avaliacaoMedia: 0, visualizacoes: 0, solicitacoesRota: 0 };
+        const statusHtml = statusMessage ? `<div class="alert success">${escapeHtml(statusMessage)}</div>` : "";
+        const mostrarMarca = state.marca === "Todas";
+        const semMetricas = locais.length && !g.temMetricas;
+        const av = g.avaliacoes;
+        const abertas = locais.filter((l) => l.status === "OPEN").length;
+        const sincronizadas = locais.filter((l) => l.avaliacoes_sincronizadas_em).length;
+        const pctSync = locais.length ? Math.round((sincronizadas / locais.length) * 100) : 0;
+        const podeSincronizar = ["Admin", "Gestor"].includes(state.perfil?.cargo) && g.contasConfirmadas > 0;
+        const nome = primeiroNome(state.perfil?.nome);
+        const ultimaSync = g.ultimaSincronizacao ? formatDateTime(g.ultimaSincronizacao) : "";
+        const novas = av ? gmnVariacao(av.novas, av.anteriores) : null;
+        const marcasNaLista = [...new Set(locais.map((l) => l.marca).filter(Boolean))];
+        if (gmnFiltroLista.marca && !marcasNaLista.includes(gmnFiltroLista.marca)) gmnFiltroLista.marca = "";
+        const serie = g.serieBusca || [];
+        const temSerie = serie.some((p) => p.atual || p.anterior);
+        const totalAtual = serie.reduce((s, p) => s + p.atual, 0);
+        const totalAnterior = serie.reduce((s, p) => s + p.anterior, 0);
+        const variacaoBusca = gmnVariacao(totalAtual, totalAnterior);
+        const statusSync = !locais.length ? "Não iniciada" : pctSync >= 100 ? "Concluída" : sincronizadas ? "Em andamento" : "Pendente";
+
+        const infoAvaliacao = kpis.avaliacaoMedia
+          ? `Média ponderada pelo total de avaliações de cada loja: ${fmt.format(kpis.totalAvaliacoes)} avaliações em ${fmt.format(kpis.lojasComNota)} loja(s).`
+          : "Ainda não há avaliações sincronizadas no Supabase para as unidades desta seleção. O valor aparece após a primeira sincronização com o Google.";
+        const infoMetricas = semMetricas || !locais.length
+          ? `Ainda sem métricas sincronizadas. Quando a Business Profile Performance API devolver dados, este card soma os últimos ${GOOGLE_METRICAS_DIAS} dias.`
+          : `Soma dos últimos ${GOOGLE_METRICAS_DIAS} dias de todas as unidades das contas confirmadas.`;
+
+        content.innerHTML = `
+          <div class="gmn" style="${gmnTokens(state.marca)}">
+            <div class="gmn-head">
+              <div>
+                <h2>Google Meu Negócio</h2>
+                <p class="muted">Unidades, avaliações e desempenho de busca local${mostrarMarca ? " · todas as marcas" : ` · ${escapeHtml(state.marca)}`}</p>
+              </div>
+              <div class="gmn-head-side">
+                ${marcaPillsHtml(true)}
+                <div class="gmn-head-meta">
+                  ${g.ultimaSincronizacao
+                    ? `<span class="gmn-badge" title="Última sincronização: ${escapeHtml(ultimaSync)}"><span class="dot"></span>Dados Sincronizados</span>`
+                    : `<span class="gmn-badge pendente"><span class="dot"></span>Aguardando sincronização</span>`}
+                  <button id="refreshGoogle" type="button" class="gmn-icon-btn" title="Recarregar dados" aria-label="Recarregar dados"><span class="material-symbols-outlined">refresh</span></button>
+                  <span class="gmn-greet">${escapeHtml(saudacaoPorHorario())}${nome ? `, ${escapeHtml(nome)}` : ""}!</span>
+                </div>
+              </div>
+            </div>
+            ${statusHtml}
+            <div id="googleActionStatus"></div>
+
+            <div class="gmn-layout">
+              <div class="gmn-main">
+                <div class="gmn-kpis">
+                  ${gmnKpiHtml({ icone: "storefront", titulo: "Total de Unidades", valor: locais.length ? fmt.format(kpis.totalUnidades) : "—",
+                    legenda: locais.length ? `${fmt.format(abertas)} loja(s) ativa(s)` : "Lojas ativas",
+                    info: "Unidades das contas Google confirmadas e ativas. “Ativas” são as lojas com status Aberto no Google." })}
+                  ${gmnKpiHtml({ icone: "star", titulo: "Avaliação Média", valor: kpis.avaliacaoMedia ? `${kpis.avaliacaoMedia.toFixed(1)}<span style="font-size:14px;color:#64748b;font-weight:600"> / 5</span>` : "—",
+                    legenda: kpis.avaliacaoMedia ? `${fmt.format(kpis.totalAvaliacoes)} avaliações` : "Sem avaliações sincronizadas", info: infoAvaliacao })}
+                  ${gmnKpiHtml({ icone: "visibility", titulo: "Visualizações Locais", valor: g.temMetricas ? fmt.format(kpis.visualizacoes) : "—",
+                    legenda: `Busca e Maps (${GOOGLE_METRICAS_DIAS}d)`, info: infoMetricas })}
+                  ${gmnKpiHtml({ icone: "directions_car", titulo: "Solicitações de Rota", valor: g.temMetricas ? fmt.format(kpis.solicitacoesRota) : "—",
+                    legenda: `Cliques em rotas (${GOOGLE_METRICAS_DIAS}d)`, info: infoMetricas })}
+                </div>
+
+                <div class="gmn-row2">
+                  <div class="gmn-stack">
+                    <article class="gmn-card gmn-mini">
+                      <h3>Novas Avaliações</h3>
+                      <div class="gmn-mini-row">
+                        <strong>${av ? fmt.format(av.novas) : "—"}</strong>
+                        ${novas ? `<span class="gmn-delta ${novas.classe}" title="Comparado aos ${GOOGLE_METRICAS_DIAS} dias anteriores (${fmt.format(av.anteriores)})">${novas.texto}</span>` : ""}
+                      </div>
+                      <small class="muted">Últimos ${GOOGLE_METRICAS_DIAS} dias</small>
+                    </article>
+                    <article class="gmn-card gmn-mini">
+                      <h3>Sem Resposta</h3>
+                      <div class="gmn-mini-row">
+                        <strong>${av ? fmt.format(av.pendentes) : "—"}</strong>
+                        ${av ? (av.pendentes ? `<span class="gmn-delta alert">Pendentes</span>` : `<span class="gmn-delta up">Em dia</span>`) : ""}
+                      </div>
+                      <small class="muted">Avaliações aguardando resposta</small>
+                    </article>
+                  </div>
+
+                  <article class="gmn-card">
+                    <div class="gmn-chart-head">
+                      <div>
+                        <h3>Desempenho de Busca Local ${temSerie ? `<span class="gmn-delta ${variacaoBusca.classe}" style="margin-left:6px">${variacaoBusca.texto}</span>` : ""}</h3>
+                        <p class="muted" style="margin:2px 0 0">Últimos ${GOOGLE_METRICAS_DIAS} dias vs. período anterior</p>
+                      </div>
+                      ${temSerie ? `<div class="gmn-legend"><span><i style="background:var(--gmn-ink)"></i>Atual</span><span><i style="background:var(--gmn-prev)"></i>Anterior</span></div>` : ""}
+                    </div>
+                    ${temSerie
+                      ? `<div class="gmn-chart" id="gmnChart"></div>`
+                      : `<div class="gmn-empty"><span class="material-symbols-outlined">${locais.length ? "cloud_sync" : "storefront"}</span><strong>${locais.length ? "Métricas em sincronização" : "Nenhuma unidade sincronizada"}</strong><span>${locais.length
+                          ? "A Business Profile Performance API ainda não devolveu visualizações para este período. O gráfico aparece assim que os dados chegarem."
+                          : "Conecte e confirme as contas Google em Conexões para acompanhar a busca local."}</span></div>`}
+                  </article>
+                </div>
+
+                <section class="gmn-card">
+                  <div class="gmn-list-head">
+                    <div>
+                      <h3>Gerenciamento de Unidades (${fmt.format(locais.length)})</h3>
+                      <span class="muted" id="gmnListaContador"></span>
+                    </div>
+                    <div class="gmn-list-tools">
+                      <input id="gmnBusca" type="search" placeholder="Buscar unidade, endereço…" aria-label="Buscar unidade" value="${escapeHtml(gmnFiltroLista.busca)}">
+                      ${mostrarMarca && marcasNaLista.length > 1 ? `<select id="gmnMarcaFiltro" aria-label="Filtrar por marca"><option value="">Todas as marcas</option>${marcasNaLista.map((m) => `<option value="${escapeHtml(m)}" ${m === gmnFiltroLista.marca ? "selected" : ""}>${escapeHtml(m)}</option>`).join("")}</select>` : ""}
+                    </div>
+                  </div>
+                  <div class="gmn-list" id="gmnLista"></div>
+                </section>
+                ${locais.length ? `<p class="muted gmn-foot">Visualizações (buscas e Maps) e rotas somam os últimos ${GOOGLE_METRICAS_DIAS} dias${semMetricas ? "; ainda sem métricas sincronizadas" : ""}. Clique numa unidade para ver os detalhes.</p>` : ""}
+              </div>
+
+              <div class="gmn-side" role="complementary" aria-label="Status e pendências">
+                <section class="gmn-dark">
+                  <h3>Status da Sincronização</h3>
+                  <p>Google Business Profile API · ${statusSync}</p>
+                  <div class="gmn-progress" role="progressbar" aria-valuemin="0" aria-valuemax="${locais.length}" aria-valuenow="${sincronizadas}" aria-label="Unidades com avaliações sincronizadas"><div style="width:${pctSync}%"></div></div>
+                  <p class="gmn-progress-info">${fmt.format(sincronizadas)} de ${fmt.format(locais.length)} unidades sincronizadas</p>
+                  <p>${ultimaSync ? `Última sincronização: ${escapeHtml(ultimaSync)}` : "Nenhuma sincronização registrada"}</p>
+                  <button type="button" id="gmnSync" class="gmn-sync-btn" ${podeSincronizar ? "" : "disabled"}
+                    title="${podeSincronizar ? "Sincroniza unidades, avaliações e métricas das contas confirmadas" : (g.contasConfirmadas ? "Apenas Admin ou Gestor podem sincronizar" : "Nenhuma conta Google confirmada nesta seleção")}">
+                    <span class="material-symbols-outlined" style="font-size:18px">sync</span> Atualizar Métricas Agora
+                  </button>
+                </section>
+
+                <section class="gmn-card">
+                  <h3>Pendências de Reputação</h3>
+                  <div class="gmn-todo">
+                    ${gmnPendencias(g).map((item) => `
+                      <div class="gmn-todo-item">
+                        <span class="gmn-todo-icon ${item.ok ? "ok" : ""}" aria-hidden="true"><span class="material-symbols-outlined">${item.ok ? "check" : item.icone}</span></span>
+                        <div><strong>${escapeHtml(item.titulo)}</strong><span class="sub">${item.subHtml ? item.sub : escapeHtml(item.sub)}</span></div>
+                      </div>`).join("")}
+                  </div>
+                </section>
+
+                <section class="gmn-dark gmn-rls">
+                  <h4><span class="dot" aria-hidden="true"></span>Supabase RLS Ativo</h4>
+                  <p>Dados filtrados por marca no banco (gto_tem_acesso_marca). Exibindo ${mostrarMarca ? "todas as marcas autorizadas para você" : `apenas ${escapeHtml(state.marca)}`}.</p>
+                  <p>${fmt.format(g.contasConfirmadas || 0)} conta(s) Google confirmada(s) · ${ultimaSync ? `sync em ${escapeHtml(ultimaSync)}` : "sem sincronização"}</p>
+                </section>
+              </div>
+            </div>
+          </div>
+          <div id="gmnDrawer" class="modal-overlay drawer" hidden></div>`;
+
+        wireMarcaPills(renderGoogleBusiness);
+        document.querySelector("#refreshGoogle").onclick = () => runGoogleAction(() => renderGoogleBusiness("", { force: true }));
+        const syncButton = document.querySelector("#gmnSync");
+        if (syncButton && podeSincronizar) {
+          syncButton.onclick = () => runGoogleAction(() => syncGoogleBusiness(null, {
+            concluir: (mensagem) => (state.page === "google_business" ? renderGoogleBusiness(mensagem, { force: true }) : undefined)
+          }));
+        }
+        const irReputacao = document.querySelector("#gmnIrReputacao");
+        if (irReputacao) irReputacao.onclick = () => { state.page = "reputation"; render(); };
+
+        const busca = document.querySelector("#gmnBusca");
+        busca.oninput = () => { gmnFiltroLista.busca = busca.value; paintGmnLista(); };
+        const filtroMarca = document.querySelector("#gmnMarcaFiltro");
+        if (filtroMarca) filtroMarca.onchange = () => { gmnFiltroLista.marca = filtroMarca.value; paintGmnLista(); };
+        paintGmnLista();
+
+        // Menus "⋮" dos KPIs: um aberto por vez; clique fora fecha.
+        const menus = [...document.querySelectorAll(".gmn-menu")];
+        menus.forEach((menu) => {
+          menu.ontoggle = () => { if (menu.open) menus.forEach((outro) => { if (outro !== menu) outro.open = false; }); };
         });
-        document.querySelectorAll(".gmn-edit").forEach((button) => {
-          button.onclick = () => openGoogleLocalDrawer(button.dataset.id, { editar: true, origem: button });
-        });
+        if (!gmnMenuListener) {
+          gmnMenuListener = true;
+          document.addEventListener("click", (event) => {
+            document.querySelectorAll(".gmn-menu[open]").forEach((menu) => { if (!menu.contains(event.target)) menu.open = false; });
+          });
+        }
+
+        if (gmnChartObserver) gmnChartObserver.disconnect();
+        gmnChartObserver = null;
+        const chart = document.querySelector("#gmnChart");
+        if (chart) {
+          paintGmnChart();
+          if (window.ResizeObserver) {
+            let largura = chart.clientWidth;
+            gmnChartObserver = new ResizeObserver(() => {
+              if (!chart.isConnected) { gmnChartObserver?.disconnect(); return; }
+              if (Math.abs(chart.clientWidth - largura) < 4) return;
+              largura = chart.clientWidth;
+              paintGmnChart();
+            });
+            gmnChartObserver.observe(chart);
+          }
+        }
       }
 
       function googleLocalStatus(status) {
@@ -8248,14 +8751,18 @@
           const novo = atualizado || { ...local, ...campos };
           paintGoogleLocalDrawer(novo, avaliacoes, { editar: false, mensagem: "Cadastro enviado ao Google e salvo no GTO Insights." });
 
-          // Atualiza a linha da tabela sem recarregar a pagina inteira (o drawer continua aberto).
+          // Atualiza a linha da lista sem recarregar a pagina inteira (o drawer continua aberto).
           const g = state.google || {};
           g.locais = (g.locais || []).map((l) => (l.id === novo.id ? { ...l, ...novo } : l));
           const row = document.querySelector(`.gmn-row[data-id="${CSS.escape(novo.id)}"]`);
-          if (row) {
-            const celulas = row.querySelectorAll("td");
-            const indiceTelefone = state.marca === "Todas" ? 3 : 2;
-            if (celulas[indiceTelefone]) celulas[indiceTelefone].textContent = novo.telefone || "-";
+          const localAtualizado = g.locais.find((l) => l.id === novo.id);
+          if (row && localAtualizado) {
+            const molde = document.createElement("div");
+            molde.innerHTML = gmnLocalRowHtml(localAtualizado, podeGerenciarGoogleLocais()).trim();
+            const novaLinha = molde.firstElementChild;
+            row.replaceWith(novaLinha);
+            wireGmnRow(novaLinha);
+            if (gmnDrawerOrigem === row || row.contains(gmnDrawerOrigem)) gmnDrawerOrigem = novaLinha;
           }
         };
       }
@@ -8328,8 +8835,10 @@
         location.href = data.authorizeUrl;
       }
 
-      async function syncGoogleBusiness(integracaoId = null) {
-        const status = document.querySelector("#googleConnectionStatus") || document.querySelector("#content");
+      // "concluir" repinta a tela de origem com a mensagem final: Conexoes (padrao) ou a propria
+      // pagina Google Meu Negocio, que acompanha o progresso em #googleActionStatus.
+      async function syncGoogleBusiness(integracaoId = null, { concluir = renderConnections } = {}) {
+        const status = document.querySelector("#googleConnectionStatus") || document.querySelector("#googleActionStatus") || document.querySelector("#content");
         status.innerHTML = `<div class="alert">Sincronizando unidades, avaliações e métricas do Google Meu Negócio das contas confirmadas... Pode levar alguns minutos em redes grandes ou se o Google limitar as requisições. Não feche esta página.</div>`;
 
         const body = integracaoId ? { integracao_id: integracaoId } : { marca: state.marca };
@@ -8343,7 +8852,7 @@
         googleBusinessCache.clear();
         const results = data?.results || [];
         if (!results.length) {
-          await renderConnections(data?.message || "Nenhuma conta Google confirmada para sincronizar.");
+          await concluir(data?.message || "Nenhuma conta Google confirmada para sincronizar.");
           return;
         }
         const totalUnidades = results.reduce((sum, row) => sum + num(row.totalLocais), 0);
@@ -8357,13 +8866,13 @@
         if (teveCota) {
           const outrosErros = errors.filter((e) => !pareceErroDeCota(e));
           const detailsCota = outrosErros.length ? ` Erros: ${outrosErros.slice(0, 2).join(" | ")}` : "";
-          await renderConnections(`${GOOGLE_COTA_PENDENTE_MSG} (${resumo} antes de parar.)${detailsCota}`);
+          await concluir(`${GOOGLE_COTA_PENDENTE_MSG} (${resumo} antes de parar.)${detailsCota}`);
           return;
         }
 
         const details = errors.length ? ` Erros: ${errors.slice(0, 2).join(" | ")}` : "";
         const avisos = todosAvisos.length ? ` ${todosAvisos.length} aviso(s) da API do Google; veja os logs de integração.` : "";
-        await renderConnections(`Sincronização concluída: ${resumo}.${avisos}${details}`);
+        await concluir(`Sincronização concluída: ${resumo}.${avisos}${details}`);
       }
 
       // Hub de Reputacao e Sentimento: le a tabela comments_reputation (a IA roda na sincronizacao,
