@@ -22,7 +22,7 @@ const securityHeaders = {
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
   'Content-Security-Policy':
     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-    "font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://ysreenjwihmwzockyrls.supabase.co; " +
+    "font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://ysreenjwihmwzockyrls.supabase.co https://*.googleusercontent.com; " +
     "connect-src 'self' https://ysreenjwihmwzockyrls.supabase.co wss://ysreenjwihmwzockyrls.supabase.co; " +
     "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 };

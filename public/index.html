@@ -304,126 +304,197 @@
       .modal-overlay.drawer { justify-content: flex-end; align-items: stretch; padding: 0; }
       .modal-overlay.drawer .modal-panel { max-width: 560px; height: 100%; max-height: 100vh; max-height: 100dvh; border-radius: 16px 0 0 16px; }
       .modal-overlay.drawer .modal-header { position: sticky; top: 0; background: #fff; z-index: 1; }
-      /* Google Meu Negocio - pagina em grid 8/4. As cores saem da marca ativa (brandColors): o
-         paintGoogleBusiness define --gmn-brand/--gmn-ink/--gmn-soft/--gmn-line/--gmn-prev no .gmn. */
-      .gmn { --gmn-brand: var(--accent); --gmn-ink: #0f172a; --gmn-soft: #eef2f7; --gmn-line: #dbe3ee; --gmn-prev: #94a3b8; display: grid; gap: 18px; }
-      .gmn-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
-      .gmn-head h2 { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -.02em; color: var(--gmn-ink); }
-      .gmn-head p { margin: 4px 0 0; }
+      /* Google Meu Negocio - layout Stitch "Visao Geral" (stitch_source/.../google_meu_neg_cio_vis_o_geral).
+         A cor primaria e a da marca ativa: paintGoogleBusiness define --gmn-brand/--gmn-brand-ink/--gmn-tint/--gmn-soft. */
+      .gmn { --gmn-brand: var(--accent); --gmn-brand-ink: #1e3a8a; --gmn-tint: #dbe5fd; --gmn-soft: #f0f3ff; --gmn-line: #dfe3ec; --gmn-ink: #111c2d; --gmn-muted: #434655; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; min-width: 0; max-width: 100%; }
       .gmn > * { min-width: 0; }
-      .gmn { grid-template-columns: minmax(0, 1fr); min-width: 0; max-width: 100%; }
+      .gmn-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+      .gmn-head h2 { margin: 0; font-size: 36px; line-height: 44px; font-weight: 700; letter-spacing: -.02em; color: var(--gmn-ink); }
+      .gmn-head p { margin: 2px 0 0; font-size: 16px; line-height: 24px; color: var(--gmn-muted); }
       .gmn-head-side { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; min-width: 0; max-width: 100%; }
       .gmn-head-side .pills { flex-wrap: wrap; justify-content: flex-end; }
-      .gmn-head-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
-      .gmn-greet { font-weight: 700; color: var(--gmn-ink); font-size: 14px; }
+      .gmn-head-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
       .gmn-badge { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 10px; font-size: 12px; font-weight: 700; background: #ecfdf5; color: #047857; }
       .gmn-badge.pendente { background: #fff7ed; color: #c2410c; }
       .gmn-badge .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-      .gmn-icon-btn { display: inline-grid; place-items: center; width: 34px; height: 34px; padding: 0; border-radius: 10px; background: #fff; color: var(--gmn-ink); border: 1px solid var(--gmn-line); }
+      .gmn-icon-btn { display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0; border-radius: 8px; background: #fff; color: var(--gmn-muted); border: 1px solid var(--gmn-line); }
+      .gmn-icon-btn:hover { color: var(--gmn-brand); border-color: var(--gmn-brand); }
       .gmn-icon-btn .material-symbols-outlined { font-size: 18px; }
-      .gmn-layout { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 18px; align-items: start; }
-      .gmn-main { grid-column: span 8; display: grid; gap: 18px; min-width: 0; }
-      .gmn-side { grid-column: span 4; display: grid; gap: 18px; min-width: 0; align-content: start; }
-      .gmn-card { background: var(--gmn-soft); border-radius: 20px; padding: 18px; min-width: 0; position: relative; }
-      .gmn-card h3 { margin: 0; font-size: 15px; font-weight: 700; color: var(--gmn-ink); }
-      .gmn-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
-      .gmn-kpi { display: grid; gap: 10px; align-content: start; }
-      .gmn-kpi-top { display: flex; justify-content: space-between; align-items: center; }
-      .gmn-kpi-icon { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; border: 1.5px solid var(--gmn-ink); color: var(--gmn-ink); }
-      .gmn-kpi-icon .material-symbols-outlined { font-size: 20px; }
-      .gmn-kpi strong { font-size: 26px; font-weight: 800; letter-spacing: -.02em; color: var(--gmn-ink); line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .gmn-kpi small { color: #64748b; font-size: 12px; line-height: 1.35; }
-      .gmn-menu { position: relative; }
-      .gmn-menu > summary { list-style: none; cursor: pointer; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; color: var(--gmn-ink); }
-      .gmn-menu > summary::-webkit-details-marker { display: none; }
-      .gmn-menu > summary:hover, .gmn-menu[open] > summary { background: rgba(15,23,42,.08); }
-      .gmn-menu > summary:focus-visible { outline: 2px solid var(--gmn-brand); outline-offset: 1px; }
-      .gmn-menu-pop { position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; width: 240px; background: var(--gmn-ink); color: #e2e8f0; border-radius: 12px; padding: 10px 12px; font-size: 12px; line-height: 1.45; box-shadow: 0 12px 28px rgba(15,23,42,.28); }
-      .gmn-row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr); gap: 14px; }
-      .gmn-stack { display: grid; gap: 14px; }
-      .gmn-mini strong { display: inline-block; font-size: 40px; font-weight: 800; letter-spacing: -.03em; color: var(--gmn-ink); margin-top: 8px; line-height: 1; }
-      .gmn-mini .gmn-mini-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-      .gmn-delta { display: inline-flex; align-items: center; border-radius: 6px; padding: 2px 7px; font-size: 11px; font-weight: 700; }
-      .gmn-delta.up { background: #dcfce7; color: #15803d; }
-      .gmn-delta.down { background: #fee2e2; color: #b91c1c; }
-      .gmn-delta.alert { background: #fee2e2; color: #b91c1c; }
-      .gmn-delta.neutral { background: #e2e8f0; color: #475569; }
-      .gmn-chart-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
-      .gmn-legend { display: flex; gap: 12px; font-size: 12px; color: #64748b; }
-      .gmn-legend span { display: inline-flex; align-items: center; gap: 6px; }
-      .gmn-legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
-      .gmn-chart { position: relative; margin-top: 10px; }
-      .gmn-chart svg { display: block; width: 100%; height: 210px; overflow: visible; }
-      .gmn-chart .eixo { font-size: 10px; fill: #94a3b8; }
-      .gmn-tip { position: absolute; pointer-events: none; transform: translate(-50%, calc(-100% - 12px)); background: var(--gmn-ink); color: #fff; border-radius: 8px; padding: 6px 9px; font-size: 11px; line-height: 1.5; white-space: nowrap; box-shadow: 0 8px 20px rgba(15,23,42,.3); }
-      .gmn-tip i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; }
-      .gmn-empty { display: grid; place-items: center; text-align: center; gap: 6px; min-height: 210px; color: #64748b; font-size: 13px; }
-      .gmn-empty .material-symbols-outlined { font-size: 30px; color: var(--gmn-prev); }
-      .gmn-empty strong { color: var(--gmn-ink); }
-      .gmn-list-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
-      .gmn-list-tools { display: flex; gap: 8px; flex-wrap: wrap; }
-      .gmn-list-tools input, .gmn-list-tools select { border: 1px solid var(--gmn-line); background: #fff; border-radius: 10px; padding: 8px 10px; font-size: 13px; min-width: 0; }
-      .gmn-list-tools input { width: 220px; }
-      .gmn-list { display: grid; }
-      .gmn-row { display: grid; grid-template-columns: 36px minmax(0, 1.2fr) minmax(0, 1.6fr) auto; align-items: center; gap: 14px; padding: 11px 8px; border-radius: 12px; cursor: pointer; }
-      .gmn-row + .gmn-row { border-top: 1px solid var(--gmn-line); }
-      .gmn-row:hover { background: rgba(255,255,255,.65); }
+      .gmn-card { background: #fff; border: 1px solid var(--gmn-line); border-radius: 12px; box-shadow: 0 1px 2px rgba(15,23,42,.05); min-width: 0; }
+      .gmn-card-pad { padding: 24px; }
+      .gmn-card-head { padding: 20px 24px; border-bottom: 1px solid var(--gmn-line); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+      .gmn-card h4 { margin: 0; font-size: 18px; line-height: 28px; font-weight: 600; color: var(--gmn-ink); }
+      .gmn-card-sub { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: .02em; color: var(--gmn-muted); }
+      .gmn-link { background: none; border: 0; padding: 0; color: var(--gmn-brand); font-size: 12px; font-weight: 600; letter-spacing: .03em; cursor: pointer; text-decoration: none; }
+      .gmn-link:hover { text-decoration: underline; }
+      .gmn-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
+      .gmn-kpi { padding: 24px; transition: border-color .3s; }
+      .gmn-kpi:hover { border-color: var(--gmn-brand); }
+      .gmn-kpi-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; gap: 8px; }
+      .gmn-kpi-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 8px; }
+      .gmn-kpi-icon.brand { background: var(--gmn-tint); color: var(--gmn-brand); }
+      .gmn-kpi-icon.amber { background: #ffede6; color: #943700; }
+      .gmn-kpi-icon.green { background: #e3fbef; color: #006c49; }
+      .gmn-kpi-icon.red { background: #ffeceb; color: #ba1a1a; }
+      .gmn-selo { font-size: 10px; font-weight: 600; letter-spacing: .04em; border-radius: 999px; padding: 2px 8px; white-space: nowrap; background: #6cf8bb; color: #00513a; }
+      .gmn-selo.down { background: #ffdad6; color: #93000a; }
+      .gmn-selo.neutral { background: #e7eeff; color: #434655; }
+      .gmn-kpi-label { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: .05em; color: var(--gmn-muted); }
+      .gmn-kpi-valor { margin: 0; font-size: 24px; line-height: 32px; font-weight: 600; letter-spacing: -.01em; color: var(--gmn-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .gmn-kpi-valor small { font-size: 12px; font-weight: 400; color: var(--gmn-muted); }
+      .gmn-layout { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 20px; align-items: start; }
+      .gmn-main { grid-column: span 8; display: grid; gap: 20px; min-width: 0; }
+      .gmn-side { grid-column: span 4; display: grid; gap: 20px; min-width: 0; align-content: start; }
+      .gmn-tools { display: flex; gap: 8px; flex-wrap: wrap; }
+      .gmn-tools input, .gmn-tools select { border: 1px solid var(--gmn-line); background: #fff; border-radius: 8px; padding: 6px 10px; font-size: 13px; min-width: 0; }
+      .gmn-tools input { width: 210px; }
+      .gmn-tools input:focus, .gmn-tools select:focus { outline: 2px solid var(--gmn-brand); outline-offset: 0; }
+      .gmn-table-wrap { overflow-x: auto; }
+      .gmn-table { width: 100%; border-collapse: collapse; text-align: left; }
+      .gmn-table thead { background: var(--gmn-soft); }
+      .gmn-table th { padding: 14px 20px; background: transparent; text-transform: none; font-size: 12px; font-weight: 600; letter-spacing: .05em; color: var(--gmn-muted); white-space: nowrap; border: 0; }
+      .gmn-table td { padding: 16px 20px; vertical-align: middle; white-space: normal; border: 0; border-top: 1px solid var(--gmn-line); }
+      .gmn-table td.c-status, .gmn-table td.c-metrica { white-space: nowrap; }
+      .gmn-table td.c-acoes { width: 1%; }
+      .gmn-table th:last-child, .gmn-table td:last-child { text-align: right; }
+      .gmn-row { cursor: pointer; transition: background .15s; }
+      .gmn-row:hover td { background: var(--gmn-soft); }
       .gmn-row:focus-visible { outline: 2px solid var(--gmn-brand); outline-offset: -2px; }
-      .gmn-avatar { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 14px; }
-      .gmn-row-nome { font-weight: 700; color: var(--gmn-ink); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .gmn-row-sub { font-size: 11px; color: #64748b; }
-      .gmn-row-end { color: #64748b; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .gmn-row-dir { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
-      .gmn-row-dir .status-pill { padding: 4px 9px; font-size: 11px; }
-      .gmn-row-dir .gmn-edit { padding: 6px 10px; font-size: 12px; }
-      .gmn-nota { white-space: nowrap; font-size: 12px; font-weight: 700; color: var(--gmn-ink); display: inline-flex; align-items: center; gap: 2px; }
-      .gmn-nota .material-symbols-outlined { font-size: 15px; color: #f59e0b; font-variation-settings: 'FILL' 1; }
-      .gmn-list-empty { padding: 28px 8px; text-align: center; color: #64748b; font-size: 13px; }
-      .gmn-dark { background: var(--gmn-ink); color: #f8fafc; border-radius: 20px; padding: 20px; }
-      .gmn-dark h3 { margin: 0; color: #fff; font-size: 17px; font-weight: 700; }
-      .gmn-dark p { margin: 4px 0 0; color: #cbd5e1; font-size: 12px; }
-      .gmn-progress { height: 12px; border-radius: 999px; background: rgba(255,255,255,.16); margin: 18px 0 10px; overflow: hidden; }
-      .gmn-progress > div { height: 100%; border-radius: inherit; background: #fff; transition: width .4s ease; }
-      .gmn-dark .gmn-progress-info { text-align: center; color: #fff; font-weight: 700; font-size: 13px; margin: 0; }
-      .gmn-dark .gmn-progress-info + p { text-align: center; }
-      .gmn-sync-btn { width: 100%; margin-top: 16px; background: #fff; color: var(--gmn-ink); border-radius: 10px; padding: 11px 14px; font-weight: 700; display: inline-flex; justify-content: center; align-items: center; gap: 8px; }
-      .gmn-sync-btn:disabled { opacity: .55; cursor: not-allowed; }
-      .gmn-todo { display: grid; gap: 14px; margin-top: 14px; }
-      .gmn-todo-item { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 12px; align-items: center; }
-      .gmn-todo-icon { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--gmn-ink); color: #fff; }
-      .gmn-todo-icon.ok { background: #16a34a; }
-      .gmn-todo-icon .material-symbols-outlined { font-size: 19px; }
-      .gmn-todo-item strong { display: block; font-size: 13px; color: var(--gmn-ink); }
-      .gmn-todo-item span.sub { font-size: 11px; color: #64748b; }
-      .gmn-rls { padding: 16px 18px; }
-      .gmn-rls h4 { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 14px; color: #fff; }
-      .gmn-rls h4 .dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,.25); }
-      .gmn-rls p { line-height: 1.5; }
+      .gmn-unidade { display: flex; align-items: center; gap: 16px; min-width: 0; }
+      .gmn-unit-icon { flex: none; width: 40px; height: 40px; border-radius: 8px; display: grid; place-items: center; }
+      .gmn-unidade strong { display: block; font-size: 14px; color: var(--gmn-ink); }
+      .gmn-unidade small, .gmn-loc small { display: block; font-size: 12px; color: var(--gmn-muted); }
+      .gmn-loc { max-width: 260px; font-size: 13px; color: var(--gmn-muted); }
+      .gmn-loc span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+      .gmn-status { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; }
+      .gmn-status.active { background: #6ffbbe; color: #002113; }
+      .gmn-status.inactive { background: #ffdad6; color: #93000a; }
+      .gmn-status.neutral { background: #e7eeff; color: #434655; }
+      .gmn-metrica { display: inline-flex; align-items: center; gap: 6px; color: #943700; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 13px; font-weight: 500; white-space: nowrap; }
+      .gmn-metrica .material-symbols-outlined { font-size: 16px; font-variation-settings: 'FILL' 1; }
+      .gmn-menu { position: relative; display: inline-block; text-align: left; }
+      .gmn-menu > summary { list-style: none; cursor: pointer; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; color: var(--gmn-muted); }
+      .gmn-menu > summary::-webkit-details-marker { display: none; }
+      .gmn-menu > summary:hover, .gmn-menu[open] > summary { background: var(--gmn-soft); color: var(--gmn-brand); }
+      .gmn-menu > summary:focus-visible { outline: 2px solid var(--gmn-brand); }
+      .gmn-menu-pop { position: absolute; right: 0; top: calc(100% + 4px); z-index: 30; min-width: 170px; background: #fff; border: 1px solid var(--gmn-line); border-radius: 10px; box-shadow: 0 12px 28px rgba(15,23,42,.14); padding: 6px; display: grid; }
+      .gmn-menu-pop button, .gmn-menu-pop a { display: flex; align-items: center; gap: 8px; width: 100%; background: none; color: var(--gmn-ink); border: 0; border-radius: 6px; padding: 8px 10px; font-size: 13px; font-weight: 500; text-decoration: none; text-align: left; cursor: pointer; }
+      .gmn-menu-pop button:hover, .gmn-menu-pop a:hover { background: var(--gmn-soft); color: var(--gmn-brand); }
+      .gmn-menu-pop .material-symbols-outlined { font-size: 18px; }
+      .gmn-vazio { padding: 32px 24px; text-align: center; color: var(--gmn-muted); font-size: 13px; display: grid; gap: 6px; justify-items: center; }
+      .gmn-vazio .material-symbols-outlined { font-size: 28px; color: #9aa3b5; }
+      .gmn-reviews { padding: 24px; display: grid; gap: 24px; }
+      .gmn-review { padding: 16px; background: #f9f9ff; border: 1px solid rgba(195,198,215,.35); border-radius: 8px; }
+      .gmn-review-top { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+      .gmn-review-autor { display: flex; align-items: center; gap: 12px; min-width: 0; }
+      .gmn-av { flex: none; width: 32px; height: 32px; border-radius: 50%; object-fit: cover; display: grid; place-items: center; background: var(--gmn-tint); color: var(--gmn-brand); font-weight: 700; font-size: 13px; }
+      .gmn-review-autor strong { display: block; font-size: 14px; color: var(--gmn-ink); }
+      .gmn-stars { display: flex; color: #943700; }
+      .gmn-stars .material-symbols-outlined { font-size: 14px; }
+      .gmn-stars .on { font-variation-settings: 'FILL' 1; }
+      .gmn-review-quando { font-size: 12px; font-weight: 600; color: var(--gmn-muted); white-space: nowrap; text-align: right; }
+      .gmn-review-quando small { display: block; font-weight: 500; }
+      .gmn-review p.texto { margin: 0 0 16px; font-size: 14px; line-height: 20px; color: var(--gmn-ink); }
+      .gmn-review p.texto.sem { color: var(--gmn-muted); font-style: italic; }
+      .gmn-resposta { padding: 12px; background: var(--gmn-tint); border-left: 4px solid var(--gmn-brand); border-radius: 6px; }
+      .gmn-resposta b { display: block; font-size: 12px; font-weight: 600; letter-spacing: .03em; color: var(--gmn-brand-ink); margin-bottom: 4px; }
+      .gmn-resposta p { margin: 0; font-size: 14px; font-style: italic; color: var(--gmn-muted); }
+      .gmn-review-acoes { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+      .gmn-btn { border-radius: 6px; padding: 8px 16px; font-size: 12px; font-weight: 600; letter-spacing: .03em; background: var(--gmn-brand); color: #fff; }
+      .gmn-btn.ghost { background: transparent; color: var(--gmn-muted); }
+      .gmn-btn.ghost:hover { background: var(--gmn-soft); }
+      .gmn-btn.outline { width: 100%; background: #fff; color: var(--gmn-brand); border: 1px solid var(--gmn-brand); padding: 10px 16px; display: inline-flex; justify-content: center; align-items: center; gap: 6px; }
+      .gmn-btn.outline:hover:not(:disabled) { background: var(--gmn-soft); }
+      .gmn-btn:disabled { opacity: .5; cursor: not-allowed; }
+      .gmn-reply-form { display: grid; gap: 10px; }
+      .gmn-reply-form textarea { width: 100%; box-sizing: border-box; min-height: 84px; resize: vertical; border: 1px solid var(--gmn-line); border-radius: 8px; padding: 10px 12px; font: inherit; font-size: 14px; }
+      .gmn-reply-form textarea:focus { outline: 2px solid var(--gmn-brand); outline-offset: 0; }
+      .gmn-reply-erro { color: #ba1a1a; font-size: 12px; font-weight: 600; }
+      .gmn-presenca { display: grid; gap: 12px; margin-top: 20px; }
+      .gmn-presenca-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; background: var(--gmn-soft); border-radius: 8px; }
+      .gmn-presenca-item > div { display: flex; align-items: center; gap: 12px; min-width: 0; }
+      .gmn-presenca-item strong { display: block; font-size: 14px; color: var(--gmn-ink); }
+      .gmn-presenca-item small { display: block; font-size: 11px; color: var(--gmn-muted); }
+      .gmn-presenca-item .ic { flex: none; display: grid; place-items: center; width: 24px; color: var(--gmn-brand); }
+      .gmn-check { font-size: 22px; flex: none; }
+      .gmn-check.ok { color: #00714d; }
+      .gmn-check.parcial { color: #b45309; }
+      .gmn-check.nao { color: #ba1a1a; }
+      .gmn-sync-info { margin: 12px 0 0; font-size: 11px; color: var(--gmn-muted); text-align: center; }
+      .gmn-sync-bar { height: 6px; border-radius: 999px; background: var(--gmn-soft); margin-top: 16px; overflow: hidden; }
+      .gmn-sync-bar > div { height: 100%; background: var(--gmn-brand); border-radius: inherit; }
+      .gmn-galeria { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
+      .gmn-foto { position: relative; display: block; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: var(--gmn-soft); }
+      .gmn-foto img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s; }
+      .gmn-foto:hover img { transform: scale(1.08); }
+      .gmn-foto .veu { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,.4); color: #fff; opacity: 0; transition: opacity .2s; }
+      .gmn-foto:hover .veu, .gmn-foto:focus-visible .veu { opacity: 1; }
+      .gmn-foto .tag { position: absolute; left: 6px; bottom: 6px; background: rgba(17,28,45,.75); color: #fff; font-size: 10px; font-weight: 600; border-radius: 4px; padding: 2px 6px; }
+      .gmn-foto-mais { aspect-ratio: 1; border-radius: 8px; border: 2px dashed #c3c6d7; background: var(--gmn-soft); display: grid; place-items: center; align-content: center; gap: 2px; color: var(--gmn-muted); text-align: center; }
+      .gmn-foto-mais strong { font-size: 18px; color: var(--gmn-ink); }
+      .gmn-foto-mais span { font-size: 10px; font-weight: 700; }
+      .gmn-foto-mais .material-symbols-outlined { font-size: 26px; color: #737686; }
+      button.gmn-carregar:hover .material-symbols-outlined, button.gmn-carregar:focus-visible .material-symbols-outlined { color: var(--gmn-brand); }
+      button.gmn-carregar { width: 100%; padding: 0; font: inherit; color: var(--gmn-muted); cursor: pointer; transition: background .2s, border-color .2s, color .2s; }
+      button.gmn-carregar span:last-child { font-size: 11px; font-weight: 700; }
+      button.gmn-carregar:hover, button.gmn-carregar:focus-visible { background: var(--gmn-tint); border-color: var(--gmn-brand); color: var(--gmn-brand); outline: none; }
+      .gmn-up-form label { text-transform: none; font-size: 13px; color: #111c2d; }
+      .gmn-up-form select { border: 1px solid #c3c6d7; border-radius: 8px; padding: 9px 10px; font-size: 14px; font-weight: 400; background: #fff; }
+      .gmn-up-form select:focus { outline: 2px solid var(--gmn-brand); outline-offset: 0; }
+      .gmn-up-drop { position: relative; display: grid; place-items: center; min-height: 180px; border: 2px dashed #c3c6d7; border-radius: 12px; background: var(--gmn-soft); cursor: pointer; overflow: hidden; }
+      .gmn-up-drop:hover, .gmn-up-drop:focus-within { border-color: var(--gmn-brand); }
+      .gmn-up-drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+      .gmn-up-vazio { display: grid; justify-items: center; gap: 4px; color: #434655; text-align: center; padding: 16px; pointer-events: none; }
+      .gmn-up-vazio .material-symbols-outlined { font-size: 32px; color: var(--gmn-brand); }
+      .gmn-up-vazio b { font-size: 14px; color: #111c2d; }
+      .gmn-up-vazio small { font-size: 11px; font-weight: 500; }
+      .gmn-up-preview { width: 100%; max-height: 260px; object-fit: contain; pointer-events: none; }
+      .gmn-up-acoes { display: flex; justify-content: flex-end; gap: 8px; }
+      .gmn-foto-nota { margin: 16px 0 0; text-align: center; font-size: 12px; font-weight: 600; letter-spacing: .02em; color: var(--gmn-muted); }
+      .gmn-mapa { position: relative; overflow: hidden; min-height: 300px; padding: 16px; display: grid; align-content: start; gap: 12px;
+        background-color: var(--gmn-soft);
+        background-image: radial-gradient(circle at 70% 30%, color-mix(in srgb, var(--gmn-brand) 18%, transparent) 0 40px, transparent 41px), radial-gradient(circle at 30% 75%, color-mix(in srgb, var(--gmn-brand) 12%, transparent) 0 60px, transparent 61px), linear-gradient(rgba(115,118,134,.10) 1px, transparent 1px), linear-gradient(90deg, rgba(115,118,134,.10) 1px, transparent 1px);
+        background-size: auto, auto, 24px 24px, 24px 24px; }
+      .gmn-mapa-label { justify-self: start; background: rgba(255,255,255,.92); border: 1px solid var(--gmn-line); border-radius: 8px; padding: 10px 12px; box-shadow: 0 1px 2px rgba(15,23,42,.06); }
+      .gmn-mapa-label strong { display: block; font-size: 14px; color: var(--gmn-ink); }
+      .gmn-mapa-label small { font-size: 10px; color: var(--gmn-muted); }
+      .gmn-cidades { display: grid; gap: 8px; background: rgba(255,255,255,.92); border: 1px solid var(--gmn-line); border-radius: 8px; padding: 12px; }
+      .gmn-cidade { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; font-size: 12px; }
+      .gmn-cidade span { color: var(--gmn-ink); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .gmn-cidade b { color: var(--gmn-muted); font-weight: 600; font-family: "JetBrains Mono", ui-monospace, monospace; }
+      .gmn-cidade i { grid-column: 1 / -1; height: 4px; border-radius: 999px; background: var(--gmn-tint); overflow: hidden; }
+      .gmn-cidade i::after { content: ""; display: block; height: 100%; width: var(--w); background: var(--gmn-brand); border-radius: inherit; }
       .gmn-foot { margin: 0; font-size: 12px; }
       @media (max-width: 1279.98px) {
         .gmn-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       }
       @media (max-width: 1100px) {
         .gmn-main, .gmn-side { grid-column: 1 / -1; }
-        .gmn-side { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+        .gmn-side { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
       }
       @media (max-width: 760px) {
+        .gmn-head h2 { font-size: 28px; line-height: 36px; }
         .gmn-head-side { align-items: flex-start; }
-        .gmn-head-meta { justify-content: flex-start; }
-        .gmn-row2 { grid-template-columns: 1fr; }
-        .gmn-stack { grid-template-columns: 1fr 1fr; }
-        .gmn-head-side .pills { justify-content: flex-start; }
-        .gmn-row { grid-template-columns: 36px minmax(0, 1fr); row-gap: 6px; align-items: start; }
-        .gmn-row-end { grid-column: 2; white-space: normal; }
-        .gmn-row-dir { grid-column: 2; justify-content: flex-start; flex-wrap: wrap; }
-        .gmn-list-tools, .gmn-list-tools input { width: 100%; }
-        .gmn-list-tools input { flex: 1 1 160px; }
+        .gmn-head-side .pills, .gmn-head-meta { justify-content: flex-start; }
+        .gmn-tools, .gmn-tools input { width: 100%; }
+        .gmn-tools input { flex: 1 1 160px; }
+        .gmn-table thead { display: none; }
+        .gmn-table, .gmn-table tbody { display: block; }
+        .gmn-table tr.gmn-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; padding: 14px 16px; border-top: 1px solid var(--gmn-line); }
+        .gmn-table tr.gmn-row td { display: block; padding: 0; border: 0; background: none; }
+        .gmn-table td.c-unidade { grid-column: 1; }
+        .gmn-table td.c-acoes { grid-column: 2; grid-row: 1; }
+        .gmn-table td.c-loc { grid-column: 1 / -1; padding-left: 56px; }
+        .gmn-table td.c-status, .gmn-table td.c-metrica { grid-column: auto; padding-left: 56px; }
+        .gmn-table td.c-metrica { padding-left: 0; text-align: right; }
+        .gmn-loc { max-width: none; }
+        .gmn-card-pad, .gmn-kpi, .gmn-reviews { padding: 16px; }
+        .gmn-card-head { padding: 16px; }
       }
       @media (max-width: 520px) {
-        .gmn-stack { grid-template-columns: 1fr; }
-        .gmn-kpi strong { font-size: 22px; }
-        .gmn-card { padding: 14px; border-radius: 16px; }
-        .gmn-head h2 { font-size: 24px; }
+        .gmn-kpis { gap: 12px; }
+        .gmn-kpi-valor { font-size: 20px; }
+        .gmn-head h2 { font-size: 24px; line-height: 32px; }
       }
       .gmn-resumo { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
       .gmn-resumo > div { border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; align-content: start; justify-items: start; }
@@ -7898,7 +7969,7 @@
         if (confirmedIds.length) {
           locais = await fetchAllPages(() => supabase
             .from("integracao_google_locais")
-            .select("id,integracao_id,marca,location_id,nome_loja,endereco_completo,telefone,website,status,nota_media,total_avaliacoes,avaliacoes_sincronizadas_em")
+            .select("id,integracao_id,marca,location_id,nome_loja,endereco_completo,telefone,website,horario_funcionamento,status,nota_media,total_avaliacoes,avaliacoes_sincronizadas_em")
             .in("integracao_id", confirmedIds)
             .order("marca")
             .order("nome_loja")
@@ -7917,6 +7988,7 @@
             avaliacoes = await loadGoogleAvaliacoesResumo(confirmedIds, desde, desdeAnterior);
           }
         }
+        const extras = await loadGoogleExtras(confirmedIds, locais.map((l) => l.id));
 
         const comNota = locais.filter((l) => num(l.total_avaliacoes) > 0 && num(l.nota_media) > 0);
         const totalAvaliacoes = comNota.reduce((s, l) => s + num(l.total_avaliacoes), 0);
@@ -7941,7 +8013,12 @@
           contasConfirmadas: confirmedIds.length,
           ultimaSincronizacao,
           avaliacoes,
-          serieBusca: googleSerieBusca(metricas, metricasAnteriores, desde, desdeAnterior),
+          ...extras,
+          temMetricasAnteriores: metricasAnteriores.length > 0,
+          kpisAnteriores: {
+            visualizacoes: metricasAnteriores.reduce((s, m) => s + num(m.impressoes_busca) + num(m.impressoes_descoberta), 0),
+            solicitacoesRota: metricasAnteriores.reduce((s, m) => s + num(m.solicitacoes_rota), 0)
+          },
           kpis: { totalUnidades: locais.length, avaliacaoMedia, totalAvaliacoes, lojasComNota: comNota.length, visualizacoes, solicitacoesRota, chamadasTelefone }
         };
       }
@@ -7968,25 +8045,55 @@
         }
       }
 
-      // Serie diaria de visualizacoes (busca + descoberta) dos dois periodos, alinhada por dia
-      // relativo (dia 1 do periodo atual x dia 1 do anterior). Dias sem linha contam como 0.
-      function googleSerieBusca(metricas, metricasAnteriores, desde, desdeAnterior) {
-        const somaPorDia = (linhas) => linhas.reduce((acc, m) => {
-          acc[m.data_referencia] = (acc[m.data_referencia] || 0) + num(m.impressoes_busca) + num(m.impressoes_descoberta);
-          return acc;
-        }, {});
-        const atual = somaPorDia(metricas);
-        const anterior = somaPorDia(metricasAnteriores);
-        const dia = (base, n) => {
-          const d = new Date(base);
-          d.setDate(d.getDate() + n);
-          return d.toISOString().slice(0, 10);
+      // Blocos complementares da pagina (Avaliacoes Recentes, Galeria de Fotos e Presenca Digital).
+      // Cada um falha sozinho: o bloco vira null e a tela mostra o aviso dele, sem derrubar o resto.
+      const GMN_AVALIACOES_RECENTES = 5;
+      async function loadGoogleExtras(confirmedIds, localIds) {
+        const vazio = (valor) => Promise.resolve({ data: valor, count: 0, error: null });
+        const temLocais = confirmedIds.length && localIds.length;
+        let metaQuery = supabase
+          .from("vw_integracao_meta_contas_publica")
+          .select("marca,page_id,instagram_business_account_id,ativo,conta_confirmada,ignorada");
+        if (state.marca !== "Todas") metaQuery = metaQuery.eq("marca", state.marca);
+
+        const [recentes, fotos, fotosClientes, meta] = await Promise.allSettled([
+          temLocais ? supabase.from("integracao_google_avaliacoes")
+            .select("id,review_id,local_id,autor_nome,autor_foto_url,rating,comentario,avaliado_em,status_resposta,resposta_texto")
+            .in("integracao_id", confirmedIds)
+            .order("avaliado_em", { ascending: false, nullsFirst: false })
+            .limit(GMN_AVALIACOES_RECENTES) : vazio([]),
+          temLocais ? supabase.from("integracao_google_fotos")
+            .select("id,local_id,url,origem,categoria,criado_em_google", { count: "exact" })
+            .in("local_id", localIds)
+            .not("url", "is", null)
+            .order("criado_em_google", { ascending: false, nullsFirst: false })
+            .limit(4) : vazio([]),
+          temLocais ? supabase.from("integracao_google_fotos")
+            .select("id", { count: "exact", head: true })
+            .in("local_id", localIds)
+            .eq("origem", "cliente") : vazio(null),
+          metaQuery
+        ]);
+        const ler = (resultado) => {
+          if (resultado.status === "rejected" || resultado.value?.error) {
+            console.warn("Bloco do Google Meu Negocio indisponivel:", resultado.reason || resultado.value?.error);
+            return null;
+          }
+          return resultado.value;
         };
-        return Array.from({ length: GOOGLE_METRICAS_DIAS }, (_, i) => {
-          const data = dia(desde, i + 1);
-          const dataAnterior = dia(desdeAnterior, i + 1);
-          return { data, dataAnterior, atual: atual[data] || 0, anterior: anterior[dataAnterior] || 0 };
-        });
+        const r = ler(recentes);
+        const f = ler(fotos);
+        const fc = ler(fotosClientes);
+        const m = ler(meta);
+        const metaAtivas = m ? (m.data || []).filter((c) => c.ativo && c.conta_confirmada && !c.ignorada) : null;
+        return {
+          avaliacoesRecentes: r ? r.data || [] : null,
+          fotos: f ? { itens: f.data || [], total: f.count || 0, clientes: fc ? fc.count || 0 : null } : null,
+          presencaMeta: metaAtivas ? {
+            facebook: [...new Set(metaAtivas.filter((c) => c.page_id).map((c) => c.marca))],
+            instagram: [...new Set(metaAtivas.filter((c) => c.instagram_business_account_id).map((c) => c.marca))]
+          } : null
+        };
       }
 
       // paintGoogleBusiness monta HTML e liga os eventos dos botoes no mesmo passo (nao separa
@@ -8050,69 +8157,116 @@
         }
       }
 
-      // Pagina Google Meu Negocio (layout 8/4): KPIs, novas avaliacoes x sem resposta, grafico de busca
-      // local (periodo atual x anterior) e Gerenciamento de Unidades na coluna principal; status da
-      // sincronizacao, pendencias de reputacao e status RLS na lateral. Clicar numa linha abre o drawer
-      // de detalhes; "Editar" abre o mesmo drawer ja no formulario. Conexao e vinculo conta->marca
-      // continuam em Conexoes; "Atualizar Metricas Agora" chama a mesma syncGoogleBusiness de la.
+      // Pagina Google Meu Negocio - layout Stitch "Visao Geral" (stitch_source/.../google_meu_neg_cio_vis_o_geral):
+      // KPIs com selo, Gerenciamento de Unidades e Avaliacoes Recentes na coluna principal (8/12);
+      // Presenca Digital, Galeria de Fotos e Cobertura Regional na lateral (4/12). Pills de marca e
+      // cores por marca vem de marcaPillsHtml/brandColors. Clicar numa linha abre o drawer de detalhes;
+      // "Editar" (menu da linha) abre o mesmo drawer no formulario. Conexao e vinculo conta->marca
+      // continuam em Conexoes; "Sincronizar Todas" chama a mesma syncGoogleBusiness de la.
       let gmnFiltroLista = { busca: "", marca: "" };
-      let gmnChartObserver = null;
       let gmnMenuListener = false;
+      const GMN_CARGOS_RESPOSTA = ["Admin", "Gestor", "Coordenador", "Analista"];
+      const GMN_DIA_JS = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
+      const gmnCompacto = new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 });
 
       function gmnTokens(marca) {
         const base = brandColors[marca] || brandColors.Todas;
-        return `--gmn-brand:${base};--gmn-ink:${darken(base, 0.8)};--gmn-soft:${lighten(base, 0.93)};--gmn-line:${lighten(base, 0.8)};--gmn-prev:${lighten(base, 0.5)}`;
+        return `--gmn-brand:${base};--gmn-brand-ink:${darken(base, 0.35)};--gmn-tint:${lighten(base, 0.88)};--gmn-soft:${lighten(base, 0.95)}`;
       }
 
       function gmnNormalizar(texto) {
         return String(texto || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
       }
 
-      function gmnKpiHtml({ icone, valor, legenda, info, titulo }) {
+      function gmnVariacao(atual, anterior) {
+        if (!anterior) return atual ? { texto: "Novo", classe: "" } : { texto: "0%", classe: "neutral" };
+        const pct = ((atual - anterior) / anterior) * 100;
+        const texto = `${pct > 0 ? "+" : ""}${pct.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+        return { texto, classe: pct > 0 ? "" : pct < 0 ? "down" : "neutral" };
+      }
+
+      function gmnMapsUrl(local) {
+        const consulta = [local.nome_loja, local.endereco_completo].filter(Boolean).join(", ");
+        return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(consulta)}`;
+      }
+
+      // "Aberto ate 22:00" / "Fechado agora" a partir do horario do Google (regularHours) e da hora local.
+      function gmnStatusHoje(local) {
+        const base = googleLocalStatus(local.status);
+        if (local.status !== "OPEN") return { texto: base.label, classe: local.status ? "inactive" : "neutral" };
+        const porDia = gmnPeriodosPorDia(local.horario_funcionamento);
+        if (!Object.keys(porDia).length) return { texto: "Aberto", classe: "active" };
+        const agora = new Date();
+        const minutos = (hhmm) => { const [h, m] = hhmm.split(":").map(Number); return h * 60 + m; };
+        const atual = agora.getHours() * 60 + agora.getMinutes();
+        const hoje = porDia[GMN_DIA_JS[agora.getDay()]] || [];
+        const titulo = hoje.length ? `Hoje: ${hoje.map(([a, f]) => `${a}–${f}`).join(", ")}` : "Fechado hoje";
+        for (const [abre, fecha] of hoje) {
+          let fim = minutos(fecha);
+          if (fim <= minutos(abre)) fim += 24 * 60;
+          if (atual >= minutos(abre) && atual < fim) return { texto: `Aberto até ${fecha}`, classe: "active", titulo };
+        }
+        const proxima = hoje.find(([abre]) => minutos(abre) > atual);
+        return proxima
+          ? { texto: `Abre às ${proxima[0]}`, classe: "neutral", titulo }
+          : { texto: "Fechado agora", classe: "inactive", titulo };
+      }
+
+      // Cidade/UF do endereco formatado do Google ("..., Cascavel - PR, 85810-010").
+      function gmnCidade(endereco) {
+        const achados = [...String(endereco || "").matchAll(/([^,\-]+?)\s+-\s+([A-Z]{2})(?=,|\s*$)/g)];
+        const ultimo = achados.pop();
+        return ultimo ? `${ultimo[1].trim()} - ${ultimo[2]}` : null;
+      }
+
+      function gmnKpiHtml({ icone, tom, titulo, valor, selo, seloClasse = "", seloTitulo = "", valorTitulo = "" }) {
         return `
           <article class="gmn-card gmn-kpi">
             <div class="gmn-kpi-top">
-              <span class="gmn-kpi-icon" aria-hidden="true"><span class="material-symbols-outlined">${icone}</span></span>
-              <details class="gmn-menu">
-                <summary aria-label="Como é calculado: ${escapeHtml(titulo)}" title="Como é calculado"><span class="material-symbols-outlined">more_vert</span></summary>
-                <div class="gmn-menu-pop" role="note">${info}</div>
-              </details>
+              <span class="gmn-kpi-icon ${tom}" aria-hidden="true"><span class="material-symbols-outlined">${icone}</span></span>
+              ${selo ? `<span class="gmn-selo ${seloClasse}" ${seloTitulo ? `title="${escapeHtml(seloTitulo)}"` : ""}>${escapeHtml(selo)}</span>` : ""}
             </div>
-            <strong title="${escapeHtml(titulo)}">${valor}</strong>
-            <small><b style="color:var(--gmn-ink)">${escapeHtml(titulo)}</b><br>${legenda}</small>
+            <p class="gmn-kpi-label">${escapeHtml(titulo)}</p>
+            <h3 class="gmn-kpi-valor" ${valorTitulo ? `title="${escapeHtml(valorTitulo)}"` : ""}>${valor}</h3>
           </article>`;
       }
 
-      function gmnVariacao(atual, anterior) {
-        if (!anterior) return atual ? { texto: "Novo", classe: "up" } : { texto: "0%", classe: "neutral" };
-        const pct = ((atual - anterior) / anterior) * 100;
-        const texto = `${pct > 0 ? "+" : ""}${pct.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
-        return { texto, classe: pct > 0 ? "up" : pct < 0 ? "down" : "neutral" };
-      }
-
       function gmnLocalRowHtml(local, podeEditarLocal) {
-        const status = googleLocalStatus(local.status);
         const total = num(local.total_avaliacoes);
         const nota = num(local.nota_media);
         const marca = local.marca || "";
         const cor = brandColors[marca] || brandColors.Todas;
+        const status = gmnStatusHoje(local);
+        const id = escapeHtml(local.id);
         const sub = [marca, local.telefone].filter(Boolean).map(escapeHtml).join(" · ");
         return `
-          <div class="gmn-row" role="button" tabindex="0" data-id="${escapeHtml(local.id)}" aria-label="Ver detalhes de ${escapeHtml(local.nome_loja || "unidade")}">
-            <span class="gmn-avatar" style="background:${cor}" aria-hidden="true">${escapeHtml((marca || local.nome_loja || "?").charAt(0).toUpperCase())}</span>
-            <div style="min-width:0"><div class="gmn-row-nome">${escapeHtml(local.nome_loja || "-")}</div><div class="gmn-row-sub">${sub || "-"}</div></div>
-            <div class="gmn-row-end" title="${escapeHtml(local.endereco_completo || "")}">${escapeHtml(local.endereco_completo || "Endereço não informado")}</div>
-            <div class="gmn-row-dir">
-              ${nota ? `<span class="gmn-nota" title="${fmt.format(total)} avaliações"><span class="material-symbols-outlined">grade</span>${nota.toFixed(1)}</span>` : ""}
-              <span class="status-pill ${status.className}">${status.label}</span>
-              ${podeEditarLocal ? `<button type="button" class="secondary gmn-edit" data-id="${escapeHtml(local.id)}">Editar</button>` : ""}
-            </div>
-          </div>`;
+          <tr class="gmn-row" tabindex="0" data-id="${id}" aria-label="Ver detalhes de ${escapeHtml(local.nome_loja || "unidade")}">
+            <td class="c-unidade"><div class="gmn-unidade">
+              <span class="gmn-unit-icon" style="background:${lighten(cor, 0.88)};color:${cor}" title="${escapeHtml(marca)}" aria-hidden="true"><span class="material-symbols-outlined">store</span></span>
+              <div style="min-width:0"><strong>${escapeHtml(local.nome_loja || "-")}</strong><small>${sub || "-"}</small></div>
+            </div></td>
+            <td class="c-loc"><div class="gmn-loc"><span title="${escapeHtml(local.endereco_completo || "")}">${escapeHtml(local.endereco_completo || "Endereço não informado")}</span>
+              ${local.endereco_completo ? `<a class="gmn-link" href="${escapeHtml(gmnMapsUrl(local))}" target="_blank" rel="noopener noreferrer">Ver no mapa</a>` : ""}</div></td>
+            <td class="c-status"><span class="gmn-status ${status.classe}" ${status.titulo ? `title="${escapeHtml(status.titulo)}"` : ""}>${escapeHtml(status.texto)}</span></td>
+            <td class="c-metrica">${nota
+              ? `<span class="gmn-metrica" title="${fmt.format(total)} avaliações"><span class="material-symbols-outlined">grade</span>${nota.toFixed(1)} (${gmnCompacto.format(total)})</span>`
+              : `<span class="muted">Sem notas</span>`}</td>
+            <td class="c-acoes">
+              <details class="gmn-menu">
+                <summary aria-label="Ações de ${escapeHtml(local.nome_loja || "unidade")}"><span class="material-symbols-outlined">more_vert</span></summary>
+                <div class="gmn-menu-pop">
+                  <button type="button" class="gmn-ver" data-id="${id}"><span class="material-symbols-outlined">info</span>Ver detalhes</button>
+                  ${podeEditarLocal ? `<button type="button" class="gmn-edit" data-id="${id}"><span class="material-symbols-outlined">edit</span>Editar cadastro</button>` : ""}
+                  ${local.endereco_completo ? `<a href="${escapeHtml(gmnMapsUrl(local))}" target="_blank" rel="noopener noreferrer"><span class="material-symbols-outlined">map</span>Ver no mapa</a>` : ""}
+                </div>
+              </details>
+            </td>
+          </tr>`;
       }
 
       function wireGmnRow(row) {
         row.onclick = (event) => {
-          if (event.target.closest("button, a")) return;
+          if (event.target.closest("button, a, details")) return;
           openGoogleLocalDrawer(row.dataset.id, { editar: false, origem: row });
         };
         row.onkeydown = (event) => {
@@ -8120,14 +8274,23 @@
           event.preventDefault();
           openGoogleLocalDrawer(row.dataset.id, { editar: false, origem: row });
         };
+        const menu = row.querySelector(".gmn-menu");
+        const fecharMenu = () => { if (menu) menu.open = false; };
+        if (menu) {
+          menu.ontoggle = () => {
+            if (menu.open) document.querySelectorAll(".gmn-menu[open]").forEach((outro) => { if (outro !== menu) outro.open = false; });
+          };
+        }
+        const ver = row.querySelector(".gmn-ver");
+        if (ver) ver.onclick = () => { fecharMenu(); openGoogleLocalDrawer(ver.dataset.id, { editar: false, origem: row }); };
         const editar = row.querySelector(".gmn-edit");
-        if (editar) editar.onclick = () => openGoogleLocalDrawer(editar.dataset.id, { editar: true, origem: editar });
+        if (editar) editar.onclick = () => { fecharMenu(); openGoogleLocalDrawer(editar.dataset.id, { editar: true, origem: row }); };
       }
 
-      // Repinta so a lista (busca/filtro locais), sem refazer a pagina - o campo de busca mantem o foco.
+      // Repinta so o corpo da tabela (busca/filtro locais), sem refazer a pagina - a busca mantem o foco.
       function paintGmnLista() {
-        const lista = document.querySelector("#gmnLista");
-        if (!lista) return;
+        const corpo = document.querySelector("#gmnLista");
+        if (!corpo) return;
         const locais = state.google?.locais || [];
         const termo = gmnNormalizar(gmnFiltroLista.busca);
         const filtrados = locais.filter((l) =>
@@ -8137,11 +8300,11 @@
         const linkConexoes = state.perfil?.cargo === "Admin"
           ? ` Vincule e sincronize as contas em <a href="#" id="goConnectionsGoogle">Conexões</a>.`
           : " Peça a um administrador para vincular e sincronizar as contas em Conexões.";
-        lista.innerHTML = filtrados.map((l) => gmnLocalRowHtml(l, podeEditarLocal)).join("")
-          || `<div class="gmn-list-empty">${locais.length ? "Nenhuma unidade corresponde à busca." : `Nenhuma unidade sincronizada ainda.${linkConexoes}`}</div>`;
+        corpo.innerHTML = filtrados.map((l) => gmnLocalRowHtml(l, podeEditarLocal)).join("")
+          || `<tr><td colspan="5"><div class="gmn-vazio"><span class="material-symbols-outlined">${locais.length ? "search_off" : "storefront"}</span>${locais.length ? "Nenhuma unidade corresponde à busca." : `Nenhuma unidade sincronizada ainda.${linkConexoes}`}</div></td></tr>`;
         const contador = document.querySelector("#gmnListaContador");
-        if (contador) contador.textContent = filtrados.length === locais.length ? "" : `${fmt.format(filtrados.length)} exibida(s)`;
-        lista.querySelectorAll(".gmn-row").forEach(wireGmnRow);
+        if (contador) contador.textContent = filtrados.length === locais.length ? "" : `${fmt.format(filtrados.length)} de ${fmt.format(locais.length)} exibida(s)`;
+        corpo.querySelectorAll(".gmn-row").forEach(wireGmnRow);
         const goConnections = document.querySelector("#goConnectionsGoogle");
         if (goConnections) {
           goConnections.onclick = (event) => {
@@ -8152,114 +8315,373 @@
         }
       }
 
-      // Grafico de linhas suaves em SVG (sem lib): Catmull-Rom convertido em curvas Bezier cubicas.
-      function gmnCurva(pontos) {
-        if (!pontos.length) return "";
-        let d = `M${pontos[0][0].toFixed(1)},${pontos[0][1].toFixed(1)}`;
-        for (let i = 0; i < pontos.length - 1; i++) {
-          const p0 = pontos[i - 1] || pontos[i];
-          const p1 = pontos[i];
-          const p2 = pontos[i + 1];
-          const p3 = pontos[i + 2] || p2;
-          const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
-          const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
-          d += ` C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
-        }
-        return d;
+      function gmnTempoRelativo(iso) {
+        if (!iso) return "";
+        const data = new Date(iso);
+        if (Number.isNaN(data.getTime())) return "";
+        const min = Math.round((Date.now() - data.getTime()) / 60000);
+        if (min < 1) return "agora";
+        if (min < 60) return `há ${min} min`;
+        const horas = Math.round(min / 60);
+        if (horas < 24) return `há ${horas} hora${horas > 1 ? "s" : ""}`;
+        const dias = Math.round(horas / 24);
+        if (dias < 30) return `há ${dias} dia${dias > 1 ? "s" : ""}`;
+        return data.toLocaleDateString("pt-BR");
       }
 
-      function paintGmnChart() {
-        const host = document.querySelector("#gmnChart");
-        const serie = state.google?.serieBusca || [];
-        if (!host || !serie.length) return;
-        const largura = Math.max(280, host.clientWidth);
-        const altura = 210;
-        const margem = { top: 12, right: 8, bottom: 24, left: 40 };
-        const w = largura - margem.left - margem.right;
-        const h = altura - margem.top - margem.bottom;
-        const maximo = Math.max(1, ...serie.map((p) => Math.max(p.atual, p.anterior)));
-        const passo = Math.pow(10, Math.floor(Math.log10(maximo)));
-        const teto = Math.ceil(maximo / passo) * passo;
-        const x = (i) => margem.left + (serie.length === 1 ? w / 2 : (i / (serie.length - 1)) * w);
-        const y = (v) => margem.top + h - (v / teto) * h;
-        const compacto = new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 });
-        const diaMes = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
-        const atual = serie.map((p, i) => [x(i), y(p.atual)]);
-        const anterior = serie.map((p, i) => [x(i), y(p.anterior)]);
-        const grade = [0, 0.25, 0.5, 0.75, 1].map((f) => {
-          const v = teto * f;
-          return `<line x1="${margem.left}" x2="${largura - margem.right}" y1="${y(v)}" y2="${y(v)}" stroke="var(--gmn-line)" stroke-dasharray="${f ? "3 4" : ""}"/><text class="eixo" x="${margem.left - 8}" y="${y(v) + 3}" text-anchor="end">${compacto.format(v)}</text>`;
-        }).join("");
-        const passoX = Math.max(1, Math.ceil(serie.length / Math.max(2, Math.floor(w / 70))));
-        const eixoX = serie.map((p, i) => (i % passoX === 0 || i === serie.length - 1)
-          ? `<text class="eixo" x="${x(i)}" y="${altura - 6}" text-anchor="middle">${diaMes(p.data)}</text>` : "").join("");
-        const areaAtual = `${gmnCurva(atual)} L${x(serie.length - 1)},${y(0)} L${x(0)},${y(0)} Z`;
+      function gmnEstrelasHtml(nota) {
+        const n = Math.round(num(nota));
+        return `<span class="gmn-stars" role="img" aria-label="${n} de 5 estrelas">${[1, 2, 3, 4, 5].map((i) => `<span class="material-symbols-outlined ${i <= n ? "on" : ""}">grade</span>`).join("")}</span>`;
+      }
 
-        host.innerHTML = `
-          <svg viewBox="0 0 ${largura} ${altura}" role="img" aria-label="Visualizações diárias: últimos ${serie.length} dias comparados ao período anterior">
-            <defs><linearGradient id="gmnArea" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--gmn-ink)" stop-opacity=".12"/><stop offset="1" stop-color="var(--gmn-ink)" stop-opacity="0"/></linearGradient></defs>
-            ${grade}${eixoX}
-            <path d="${areaAtual}" fill="url(#gmnArea)"/>
-            <path d="${gmnCurva(anterior)}" fill="none" stroke="var(--gmn-prev)" stroke-width="2.5" stroke-linecap="round"/>
-            <path d="${gmnCurva(atual)}" fill="none" stroke="var(--gmn-ink)" stroke-width="2.5" stroke-linecap="round"/>
-            <g id="gmnHover" style="display:none">
-              <line y1="${margem.top}" y2="${margem.top + h}" stroke="var(--gmn-ink)" stroke-opacity=".25" stroke-dasharray="3 3"/>
-              <circle r="5" fill="#fff" stroke="var(--gmn-prev)" stroke-width="2.5"/>
-              <circle r="5" fill="#fff" stroke="var(--gmn-ink)" stroke-width="2.5"/>
-            </g>
-            <rect x="${margem.left}" y="${margem.top}" width="${w}" height="${h}" fill="transparent" id="gmnHit"/>
-          </svg>
-          <div class="gmn-tip" id="gmnTip" hidden></div>`;
+      function gmnReviewHtml(r, nomeLocal, podeResponder) {
+        const nome = r.autor_nome || "Cliente do Google";
+        const inicial = escapeHtml(nome.trim().charAt(0).toUpperCase() || "?");
+        const respondida = r.status_resposta === "respondida" && r.resposta_texto;
+        return `
+          <article class="gmn-review" data-review="${escapeHtml(r.review_id)}">
+            <div class="gmn-review-top">
+              <div class="gmn-review-autor">
+                ${r.autor_foto_url
+                  ? `<img class="gmn-av" src="${escapeHtml(r.autor_foto_url)}" alt="" referrerpolicy="no-referrer" loading="lazy" data-inicial="${inicial}">`
+                  : `<span class="gmn-av" aria-hidden="true">${inicial}</span>`}
+                <div style="min-width:0"><strong>${escapeHtml(nome)}</strong>${gmnEstrelasHtml(r.rating)}</div>
+              </div>
+              <div class="gmn-review-quando">${escapeHtml(gmnTempoRelativo(r.avaliado_em))}${nomeLocal ? `<small>${escapeHtml(nomeLocal)}</small>` : ""}</div>
+            </div>
+            ${r.comentario ? `<p class="texto">"${escapeHtml(r.comentario)}"</p>` : `<p class="texto sem">Avaliação sem comentário.</p>`}
+            ${respondida
+              ? `<div class="gmn-resposta"><b>Sua Resposta:</b><p>"${escapeHtml(r.resposta_texto)}"</p></div>`
+              : podeResponder
+                ? `<div class="gmn-review-acoes"><button type="button" class="gmn-btn gmn-responder">Responder</button><span class="muted">Aguardando resposta</span></div>`
+                : `<div class="gmn-review-acoes"><span class="muted">Aguardando resposta da loja</span></div>`}
+          </article>`;
+      }
 
-        const hover = host.querySelector("#gmnHover");
-        const [linha, pontoAnterior, pontoAtual] = hover.children;
-        const tip = host.querySelector("#gmnTip");
-        const hit = host.querySelector("#gmnHit");
-        const svg = host.querySelector("svg");
-        hit.onpointermove = (event) => {
-          const caixa = svg.getBoundingClientRect();
-          const px = ((event.clientX - caixa.left) / caixa.width) * largura;
-          const i = Math.max(0, Math.min(serie.length - 1, Math.round(((px - margem.left) / w) * (serie.length - 1))));
-          const p = serie[i];
-          hover.style.display = "";
-          linha.setAttribute("x1", x(i)); linha.setAttribute("x2", x(i));
-          pontoAtual.setAttribute("cx", x(i)); pontoAtual.setAttribute("cy", y(p.atual));
-          pontoAnterior.setAttribute("cx", x(i)); pontoAnterior.setAttribute("cy", y(p.anterior));
-          tip.hidden = false;
-          tip.innerHTML = `<div><i style="background:#fff"></i>${diaMes(p.data)}: <b>${fmt.format(p.atual)}</b></div><div style="opacity:.75"><i style="background:var(--gmn-prev)"></i>${diaMes(p.dataAnterior)}: ${fmt.format(p.anterior)}</div>`;
-          tip.style.left = `${(x(i) / largura) * 100}%`;
-          tip.style.top = `${(Math.min(y(p.atual), y(p.anterior)) / altura) * caixa.height}px`;
+      function paintGmnAvaliacoes() {
+        const alvo = document.querySelector("#gmnAvaliacoes");
+        if (!alvo) return;
+        const g = state.google || {};
+        const recentes = g.avaliacoesRecentes;
+        const nomes = Object.fromEntries((g.locais || []).map((l) => [l.id, l.nome_loja]));
+        const podeResponder = GMN_CARGOS_RESPOSTA.includes(state.perfil?.cargo);
+        alvo.innerHTML = recentes == null
+          ? `<div class="gmn-vazio"><span class="material-symbols-outlined">error</span>Não foi possível carregar as avaliações agora.</div>`
+          : recentes.length
+            ? recentes.map((r) => gmnReviewHtml(r, nomes[r.local_id], podeResponder)).join("")
+            : `<div class="gmn-vazio"><span class="material-symbols-outlined">reviews</span><strong>Nenhuma avaliação sincronizada ainda</strong>As avaliações aparecem aqui após a sincronização com o Google.</div>`;
+
+        alvo.querySelectorAll("img.gmn-av").forEach((img) => {
+          img.onerror = () => {
+            const span = document.createElement("span");
+            span.className = "gmn-av";
+            span.setAttribute("aria-hidden", "true");
+            span.textContent = img.dataset.inicial || "?";
+            img.replaceWith(span);
+          };
+        });
+        alvo.querySelectorAll(".gmn-responder").forEach((botao) => {
+          botao.onclick = () => abrirGmnResposta(botao.closest(".gmn-review"));
+        });
+      }
+
+      // Resposta publica no Google via Edge Function google-gbp-review-reply (o servidor revalida cargo,
+      // MFA e acesso a marca da avaliacao). Sucesso atualiza so o card e o contador de pendentes.
+      function abrirGmnResposta(card) {
+        const reviewId = card.dataset.review;
+        const acoes = card.querySelector(".gmn-review-acoes");
+        const autor = card.querySelector(".gmn-review-autor strong")?.textContent || "cliente";
+        acoes.outerHTML = `
+          <form class="gmn-reply-form">
+            <textarea maxlength="4000" required aria-label="Resposta para ${escapeHtml(autor)}" placeholder="Responda a ${escapeHtml(autor.split(" ")[0])}..."></textarea>
+            <div class="gmn-reply-erro" hidden></div>
+            <div class="gmn-review-acoes"><button type="submit" class="gmn-btn">Enviar resposta</button><button type="button" class="gmn-btn ghost gmn-cancelar">Cancelar</button></div>
+          </form>`;
+        const form = card.querySelector(".gmn-reply-form");
+        const campo = form.querySelector("textarea");
+        const erro = form.querySelector(".gmn-reply-erro");
+        campo.focus();
+        form.querySelector(".gmn-cancelar").onclick = () => paintGmnAvaliacoes();
+        form.onsubmit = async (event) => {
+          event.preventDefault();
+          const texto = campo.value.trim();
+          if (!texto) { campo.focus(); return; }
+          const botoes = form.querySelectorAll("button, textarea");
+          botoes.forEach((el) => { el.disabled = true; });
+          erro.hidden = true;
+          const { data, error } = await supabase.functions.invoke("google-gbp-review-reply", { body: { review_id: reviewId, texto } });
+          if (error || data?.error) {
+            botoes.forEach((el) => { el.disabled = false; });
+            erro.hidden = false;
+            erro.textContent = error ? safeErrorMessage(error, "Não foi possível publicar a resposta.") : String(data.error);
+            return;
+          }
+          const g = state.google || {};
+          const avaliacao = (g.avaliacoesRecentes || []).find((r) => r.review_id === reviewId);
+          if (avaliacao && avaliacao.status_resposta !== "respondida") {
+            if (g.avaliacoes?.pendentes) g.avaliacoes.pendentes -= 1;
+          }
+          if (avaliacao) Object.assign(avaliacao, { status_resposta: "respondida", resposta_texto: texto });
+          paintGmnAvaliacoes();
+          const contador = document.querySelector("#gmnPendentes");
+          if (contador && g.avaliacoes) contador.outerHTML = gmnPendentesHtml(g.avaliacoes);
         };
-        hit.onpointerleave = () => { hover.style.display = "none"; tip.hidden = true; };
       }
 
-      function gmnPendencias(g) {
-        const locais = g.locais || [];
-        const semSync = locais.filter((l) => !l.avaliacoes_sincronizadas_em).length;
-        const pendentes = g.avaliacoes?.pendentes;
-        const grupos = locais.reduce((acc, l) => {
-          const chave = `${l.marca}|${gmnNormalizar(l.nome_loja)}`;
-          (acc[chave] ||= []).push(l);
+      function gmnPendentesHtml(resumo) {
+        if (!resumo) return `<span id="gmnPendentes"></span>`;
+        return resumo.pendentes
+          ? `<span id="gmnPendentes" class="gmn-selo down">${fmt.format(resumo.pendentes)} sem resposta</span>`
+          : `<span id="gmnPendentes" class="gmn-selo">Tudo respondido</span>`;
+      }
+
+      function gmnPresencaHtml(g, locais) {
+        const comSite = locais.filter((l) => l.website).length;
+        const alvo = state.marca === "Todas"
+          ? [...new Set(locais.map((l) => l.marca).filter(Boolean))]
+          : [state.marca];
+        const marcasAlvo = alvo.length ? alvo : MARCAS_GOOGLE;
+        const meta = g.presencaMeta;
+        const estado = (feitos, total) => (!total ? "nao" : feitos >= total ? "ok" : feitos ? "parcial" : "nao");
+        const icone = { ok: "check_circle", parcial: "error", nao: "cancel" };
+        const rede = (lista, nome) => {
+          if (!meta) return { estado: "parcial", sub: "Status indisponível" };
+          const feitos = marcasAlvo.filter((m) => lista.includes(m)).length;
+          const st = estado(feitos, marcasAlvo.length);
+          return { estado: st, sub: marcasAlvo.length > 1 ? `${feitos} de ${marcasAlvo.length} marcas conectadas` : st === "ok" ? `${nome} conectado em Conexões` : "Não conectado em Conexões" };
+        };
+        const itens = [
+          { ic: `<span class="material-symbols-outlined">language</span>`, titulo: "Website Oficial", estado: locais.length ? estado(comSite, locais.length) : "nao",
+            sub: locais.length ? `${fmt.format(comSite)} de ${fmt.format(locais.length)} unidades com site` : "Sem unidades sincronizadas" },
+          { ic: facebookIcon(20), titulo: "Facebook", ...rede(meta?.facebook || [], "Facebook") },
+          { ic: instagramIcon(20), titulo: "Instagram", ...rede(meta?.instagram || [], "Instagram") }
+        ];
+        return itens.map((item) => `
+          <div class="gmn-presenca-item">
+            <div><span class="ic" aria-hidden="true">${item.ic}</span><div style="min-width:0"><strong>${item.titulo}</strong><small>${escapeHtml(item.sub)}</small></div></div>
+            <span class="material-symbols-outlined gmn-check ${item.estado}" role="img" aria-label="${item.estado === "ok" ? "Completo" : item.estado === "parcial" ? "Parcial" : "Pendente"}">${icone[item.estado]}</span>
+          </div>`).join("");
+      }
+
+      // Quem pode editar o cadastro da loja tambem pode publicar fotos (mesmos cargos da Edge Function).
+      function podePublicarFotoGoogle() {
+        return podeGerenciarGoogleLocais() && (state.google?.locais || []).length > 0;
+      }
+
+      function gmnGaleriaResumo(fotos) {
+        if (!fotos?.total) return "";
+        const partes = [`${fmt.format(fotos.total)} foto${fotos.total > 1 ? "s" : ""}`];
+        if (fotos.clientes) partes.push(`${fmt.format(fotos.clientes)} de clientes`);
+        return partes.join(" · ");
+      }
+
+      function gmnGaleriaHtml(fotos) {
+        const carregar = podePublicarFotoGoogle()
+          ? `<button type="button" class="gmn-foto-mais gmn-carregar" id="gmnCarregarFoto"><span class="material-symbols-outlined">add_a_photo</span><span>Carregar</span></button>`
+          : "";
+        if (fotos == null) return `<div class="gmn-vazio" style="padding:24px 0 0"><span class="material-symbols-outlined">error</span>Não foi possível carregar as fotos agora.</div>${carregar ? `<div class="gmn-galeria">${carregar}</div>` : ""}`;
+        if (!fotos.total) {
+          return `<div class="gmn-vazio" style="padding:24px 0 0"><span class="material-symbols-outlined">photo_library</span>Nenhuma foto sincronizada ainda.</div>
+            ${carregar ? `<div class="gmn-galeria">${carregar}</div><p class="gmn-foto-nota">Publique a primeira foto da unidade direto no Google.</p>` : ""}`;
+        }
+        const itens = fotos.itens.slice(0, carregar ? 3 : 4);
+        const restantes = Math.max(0, fotos.total - itens.length);
+        return `
+          <div class="gmn-galeria">
+            ${itens.map((f) => f.url ? `
+              <a class="gmn-foto" href="${escapeHtml(f.url)}" target="_blank" rel="noopener noreferrer" aria-label="Abrir foto${f.origem === "cliente" ? " enviada por cliente" : ""}">
+                <img src="${escapeHtml(f.url)}" alt="" loading="lazy" referrerpolicy="no-referrer">
+                <span class="veu"><span class="material-symbols-outlined">visibility</span></span>
+                ${f.origem === "cliente" ? `<span class="tag">Cliente</span>` : f.recente ? `<span class="tag">Publicada agora</span>` : ""}
+              </a>` : `
+              <div class="gmn-foto-mais" title="O Google ainda está processando esta foto"><span class="material-symbols-outlined">hourglass_top</span><span>Processando</span></div>`).join("")}
+            ${carregar || `<div class="gmn-foto-mais"><span class="material-symbols-outlined">photo_library</span><strong>${restantes ? `+${fmt.format(restantes)}` : fmt.format(fotos.total)}</strong><span>${restantes ? "outras fotos" : "fotos no total"}</span></div>`}
+          </div>
+          <p class="gmn-foto-nota">Verifique fotos enviadas por clientes para manter a qualidade da marca.</p>`;
+      }
+
+      function paintGmnGaleria() {
+        const alvo = document.querySelector("#gmnGaleria");
+        if (!alvo) return;
+        const fotos = state.google?.fotos;
+        alvo.innerHTML = gmnGaleriaHtml(fotos);
+        const resumo = document.querySelector("#gmnGaleriaResumo");
+        if (resumo) resumo.textContent = gmnGaleriaResumo(fotos);
+        const botao = document.querySelector("#gmnCarregarFoto");
+        if (botao) botao.onclick = () => abrirGmnUploadFoto(botao);
+      }
+
+      // ---- Publicar foto na ficha do Google (Edge Function google-gbp-media-upload) ----------------
+      const GMN_FOTO_CATEGORIAS = [
+        ["ADDITIONAL", "Geral"], ["EXTERIOR", "Fachada"], ["INTERIOR", "Interior"], ["PRODUCT", "Produto"],
+        ["AT_WORK", "Atendimento / equipe trabalhando"], ["TEAMS", "Equipe"], ["COMMON_AREA", "Área comum"],
+        ["COVER", "Capa da ficha"], ["LOGO", "Logo"]
+      ];
+      const GMN_FOTO_TIPOS = ["image/jpeg", "image/png"];
+      const GMN_FOTO_MIN_BYTES = 10 * 1024;
+      const GMN_FOTO_MAX_BYTES = 5 * 1024 * 1024;
+      const GMN_FOTO_MIN_PX = 250;
+
+      function gmnValidarFoto(arquivo) {
+        return new Promise((resolve) => {
+          if (!arquivo) return resolve("Selecione uma imagem.");
+          if (!GMN_FOTO_TIPOS.includes(arquivo.type)) return resolve("Formato não aceito pelo Google: use JPG ou PNG.");
+          if (arquivo.size < GMN_FOTO_MIN_BYTES) return resolve("A imagem é pequena demais (mínimo 10 KB).");
+          if (arquivo.size > GMN_FOTO_MAX_BYTES) return resolve("A imagem passa de 5 MB, o limite do Google.");
+          const url = URL.createObjectURL(arquivo);
+          const img = new Image();
+          img.onload = () => {
+            URL.revokeObjectURL(url);
+            resolve(img.naturalWidth < GMN_FOTO_MIN_PX || img.naturalHeight < GMN_FOTO_MIN_PX
+              ? `A imagem tem ${img.naturalWidth}×${img.naturalHeight} px; o Google exige ao menos ${GMN_FOTO_MIN_PX}×${GMN_FOTO_MIN_PX} px.`
+              : "");
+          };
+          img.onerror = () => { URL.revokeObjectURL(url); resolve("Não foi possível ler esta imagem."); };
+          img.src = url;
+        });
+      }
+
+      function abrirGmnUploadFoto(origem) {
+        const locais = state.google?.locais || [];
+        const porMarca = locais.reduce((acc, l) => { (acc[l.marca || "Sem marca"] ||= []).push(l); return acc; }, {});
+        const opcoes = Object.entries(porMarca).map(([marca, lista]) => `
+          <optgroup label="${escapeHtml(marca)}">${lista.map((l) => {
+            const cidade = gmnCidade(l.endereco_completo);
+            return `<option value="${escapeHtml(l.id)}">${escapeHtml(l.nome_loja || "Unidade")}${cidade ? ` — ${escapeHtml(cidade)}` : ""}</option>`;
+          }).join("")}</optgroup>`).join("");
+
+        document.querySelector("#gmnUploadModal")?.remove();
+        const modal = document.createElement("div");
+        modal.id = "gmnUploadModal";
+        modal.className = "modal-overlay";
+        modal.setAttribute("style", gmnTokens(state.marca));
+        modal.innerHTML = `
+          <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="gmnUploadTitulo">
+            <div class="modal-header">
+              <div><h3 id="gmnUploadTitulo" style="margin:0">Publicar foto no Google</h3><p class="muted" style="margin:4px 0 0">A foto vai direto para a ficha da unidade no Google Meu Negócio e fica pública para os clientes.</p></div>
+              <button type="button" class="modal-close" aria-label="Fechar"><span class="material-symbols-outlined">close</span></button>
+            </div>
+            <form class="modal-body gmn-up-form" novalidate>
+              <label>Unidade
+                <select name="local" required><option value="">Selecione a unidade…</option>${opcoes}</select>
+              </label>
+              <label>Categoria
+                <select name="categoria">${GMN_FOTO_CATEGORIAS.map(([v, t]) => `<option value="${v}">${t}</option>`).join("")}</select>
+              </label>
+              <label class="gmn-up-drop">
+                <input type="file" name="arquivo" accept="image/jpeg,image/png" required>
+                <span class="gmn-up-vazio"><span class="material-symbols-outlined">add_a_photo</span><b>Escolher imagem</b><small>JPG ou PNG · 10 KB a 5 MB · mínimo 250×250 px</small></span>
+                <img class="gmn-up-preview" alt="Pré-visualização da foto" hidden>
+              </label>
+              <div class="gmn-reply-erro" role="alert" hidden></div>
+              <div class="gmn-up-acoes">
+                <button type="button" class="gmn-btn ghost gmn-up-cancelar">Cancelar</button>
+                <button type="submit" class="gmn-btn"><span class="material-symbols-outlined" style="font-size:16px;vertical-align:-3px">cloud_upload</span> Publicar no Google</button>
+              </div>
+            </form>
+          </div>`;
+        document.body.appendChild(modal);
+
+        const form = modal.querySelector("form");
+        const campoLocal = form.elements.local;
+        const campoArquivo = form.elements.arquivo;
+        const preview = modal.querySelector(".gmn-up-preview");
+        const vazio = modal.querySelector(".gmn-up-vazio");
+        const erro = modal.querySelector(".gmn-reply-erro");
+        let previewUrl = "";
+        let enviando = false;
+        if (locais.length === 1) campoLocal.value = locais[0].id;
+
+        const mostrarErro = (texto) => { erro.textContent = texto; erro.hidden = !texto; };
+        const fechar = () => {
+          if (enviando) return;
+          if (previewUrl) URL.revokeObjectURL(previewUrl);
+          document.removeEventListener("keydown", teclado);
+          modal.remove();
+          if (origem?.isConnected) origem.focus();
+        };
+        const teclado = (event) => { if (event.key === "Escape") fechar(); };
+        document.addEventListener("keydown", teclado);
+        modal.onclick = (event) => { if (event.target === modal) fechar(); };
+        modal.querySelector(".modal-close").onclick = fechar;
+        modal.querySelector(".gmn-up-cancelar").onclick = fechar;
+        campoLocal.focus();
+
+        campoArquivo.onchange = async () => {
+          const arquivo = campoArquivo.files[0];
+          if (previewUrl) URL.revokeObjectURL(previewUrl);
+          previewUrl = "";
+          preview.hidden = true;
+          vazio.hidden = false;
+          if (!arquivo) return mostrarErro("");
+          const problema = await gmnValidarFoto(arquivo);
+          mostrarErro(problema);
+          if (problema) { campoArquivo.value = ""; return; }
+          previewUrl = URL.createObjectURL(arquivo);
+          preview.src = previewUrl;
+          preview.hidden = false;
+          vazio.hidden = true;
+        };
+
+        form.onsubmit = async (event) => {
+          event.preventDefault();
+          const arquivo = campoArquivo.files[0];
+          if (!campoLocal.value) { mostrarErro("Selecione a unidade que vai receber a foto."); campoLocal.focus(); return; }
+          const problema = await gmnValidarFoto(arquivo);
+          if (problema) { mostrarErro(problema); return; }
+          mostrarErro("");
+          enviando = true;
+          const controles = form.querySelectorAll("button, select, input");
+          controles.forEach((el) => { el.disabled = true; });
+          const enviar = form.querySelector("button[type=submit]");
+          enviar.innerHTML = `<span class="material-symbols-outlined" style="font-size:16px;vertical-align:-3px">progress_activity</span> Publicando…`;
+
+          const dados = new FormData();
+          dados.append("local_id", campoLocal.value);
+          dados.append("categoria", form.elements.categoria.value);
+          dados.append("arquivo", arquivo, arquivo.name);
+          const { data, error } = await supabase.functions.invoke("google-gbp-media-upload", { body: dados });
+          enviando = false;
+          if (error || data?.error) {
+            controles.forEach((el) => { el.disabled = false; });
+            enviar.innerHTML = `<span class="material-symbols-outlined" style="font-size:16px;vertical-align:-3px">cloud_upload</span> Publicar no Google`;
+            const mensagem = error ? safeErrorMessage(error, "Não foi possível publicar a foto.") : String(data.error);
+            mostrarErro(pareceErroDeCota(mensagem) ? GOOGLE_COTA_PENDENTE_MSG : mensagem);
+            return;
+          }
+
+          const g = state.google || {};
+          const local = (g.locais || []).find((l) => l.id === campoLocal.value);
+          const foto = { ...(data?.foto || {}), url: data?.foto?.url || null, origem: "proprietario", recente: true };
+          g.fotos = g.fotos || { itens: [], total: 0, clientes: 0 };
+          g.fotos.itens = [foto, ...g.fotos.itens].slice(0, 4);
+          g.fotos.total += 1;
+          fechar();
+          paintGmnGaleria();
+          const status = document.querySelector("#googleActionStatus");
+          if (status) status.innerHTML = `<div class="alert success">Foto publicada na ficha de ${escapeHtml(local?.nome_loja || "unidade")}. O Google pode levar alguns minutos para exibi-la.</div>`;
+        };
+      }
+
+      function gmnCoberturaHtml(locais) {
+        const porCidade = locais.reduce((acc, l) => {
+          const cidade = gmnCidade(l.endereco_completo) || "Cidade não identificada";
+          acc[cidade] = (acc[cidade] || 0) + 1;
           return acc;
         }, {});
-        const duplicadas = Object.values(grupos).filter((grupo) => grupo.length > 1 && grupo[0].nome_loja);
-        const notaBaixa = locais.filter((l) => num(l.nota_media) > 0 && num(l.nota_media) < 3);
-        return [
-          semSync
-            ? { icone: "sync", titulo: `Sincronizar avaliações de ${fmt.format(semSync)} loja(s)`, sub: "Use “Atualizar Métricas Agora” acima." }
-            : { ok: true, titulo: "Avaliações de todas as lojas sincronizadas", sub: locais.length ? `${fmt.format(locais.length)} unidade(s) em dia.` : "Nenhuma unidade ainda." },
-          pendentes == null
-            ? { icone: "help", titulo: "Respostas pendentes indisponíveis", sub: "Não foi possível contar as avaliações agora." }
-            : pendentes
-              ? { icone: "rate_review", titulo: `Responder ${fmt.format(pendentes)} avaliação(ões)`, sub: `<button type="button" class="link-btn" id="gmnIrReputacao" style="font-size:11px">Abrir Hub de Reputação</button>` , subHtml: true }
-              : { ok: true, titulo: "Todas as avaliações respondidas", sub: "Nenhuma pendência de resposta." },
-          duplicadas.length
-            ? { icone: "content_copy", titulo: `Revisar ${fmt.format(duplicadas.length)} ficha(s) duplicada(s)`, sub: `Ex.: ${escapeHtml(duplicadas.slice(0, 2).map((grupo) => `“${grupo[0].nome_loja}” (${grupo.length}x)`).join(", "))}`, subHtml: true }
-            : { ok: true, titulo: "Nenhuma ficha duplicada", sub: "Nomes de unidade únicos por marca." },
-          notaBaixa.length
-            ? { icone: "notification_important", titulo: `${fmt.format(notaBaixa.length)} loja(s) com nota abaixo de 3`, sub: `Ex.: ${escapeHtml(notaBaixa.slice(0, 2).map((l) => `${l.nome_loja} (${num(l.nota_media).toFixed(1)})`).join(", "))}`, subHtml: true }
-            : { ok: true, titulo: "Nenhuma loja com nota abaixo de 3", sub: g.kpis?.lojasComNota ? "Monitorando as lojas com avaliações." : "Aguardando avaliações sincronizadas." }
-        ];
+        const cidades = Object.entries(porCidade).sort((a, b) => b[1] - a[1]);
+        const topo = cidades.slice(0, 5);
+        const maior = topo[0]?.[1] || 1;
+        const ufs = [...new Set(cidades.map(([c]) => c.split(" - ")[1]).filter(Boolean))];
+        return `
+          <div class="gmn-mapa-label">
+            <strong>Cobertura Regional</strong>
+            <small>${locais.length ? `${fmt.format(cidades.length)} cidade(s) · ${fmt.format(locais.length)} unidade(s)${ufs.length ? ` · ${ufs.join(", ")}` : ""}` : "Sem unidades sincronizadas"}</small>
+          </div>
+          ${topo.length ? `<div class="gmn-cidades">
+            ${topo.map(([cidade, total]) => `<div class="gmn-cidade"><span title="${escapeHtml(cidade)}">${escapeHtml(cidade)}</span><b>${fmt.format(total)}</b><i style="--w:${Math.max(6, Math.round((total / maior) * 100))}%"></i></div>`).join("")}
+            ${cidades.length > topo.length ? `<span class="muted">+${fmt.format(cidades.length - topo.length)} outra(s) cidade(s)</span>` : ""}
+          </div>` : ""}`;
       }
 
       function paintGoogleBusiness(statusMessage = "") {
@@ -8267,39 +8689,30 @@
         const g = state.google || {};
         const locais = g.locais || [];
         const kpis = g.kpis || { totalUnidades: 0, avaliacaoMedia: 0, visualizacoes: 0, solicitacoesRota: 0 };
+        const anteriores = g.kpisAnteriores || {};
         const statusHtml = statusMessage ? `<div class="alert success">${escapeHtml(statusMessage)}</div>` : "";
         const mostrarMarca = state.marca === "Todas";
         const semMetricas = locais.length && !g.temMetricas;
-        const av = g.avaliacoes;
         const abertas = locais.filter((l) => l.status === "OPEN").length;
         const sincronizadas = locais.filter((l) => l.avaliacoes_sincronizadas_em).length;
         const pctSync = locais.length ? Math.round((sincronizadas / locais.length) * 100) : 0;
         const podeSincronizar = ["Admin", "Gestor"].includes(state.perfil?.cargo) && g.contasConfirmadas > 0;
-        const nome = primeiroNome(state.perfil?.nome);
         const ultimaSync = g.ultimaSincronizacao ? formatDateTime(g.ultimaSincronizacao) : "";
-        const novas = av ? gmnVariacao(av.novas, av.anteriores) : null;
         const marcasNaLista = [...new Set(locais.map((l) => l.marca).filter(Boolean))];
         if (gmnFiltroLista.marca && !marcasNaLista.includes(gmnFiltroLista.marca)) gmnFiltroLista.marca = "";
-        const serie = g.serieBusca || [];
-        const temSerie = serie.some((p) => p.atual || p.anterior);
-        const totalAtual = serie.reduce((s, p) => s + p.atual, 0);
-        const totalAnterior = serie.reduce((s, p) => s + p.anterior, 0);
-        const variacaoBusca = gmnVariacao(totalAtual, totalAnterior);
-        const statusSync = !locais.length ? "Não iniciada" : pctSync >= 100 ? "Concluída" : sincronizadas ? "Em andamento" : "Pendente";
-
-        const infoAvaliacao = kpis.avaliacaoMedia
-          ? `Média ponderada pelo total de avaliações de cada loja: ${fmt.format(kpis.totalAvaliacoes)} avaliações em ${fmt.format(kpis.lojasComNota)} loja(s).`
-          : "Ainda não há avaliações sincronizadas no Supabase para as unidades desta seleção. O valor aparece após a primeira sincronização com o Google.";
-        const infoMetricas = semMetricas || !locais.length
-          ? `Ainda sem métricas sincronizadas. Quando a Business Profile Performance API devolver dados, este card soma os últimos ${GOOGLE_METRICAS_DIAS} dias.`
-          : `Soma dos últimos ${GOOGLE_METRICAS_DIAS} dias de todas as unidades das contas confirmadas.`;
+        const comparar = g.temMetricas && g.temMetricasAnteriores;
+        const varViews = comparar ? gmnVariacao(kpis.visualizacoes, anteriores.visualizacoes) : null;
+        const varRotas = comparar ? gmnVariacao(kpis.solicitacoesRota, anteriores.solicitacoesRota) : null;
+        const nota = kpis.avaliacaoMedia;
+        const classificacao = !nota ? null : nota >= 4.5 ? "Excelente" : nota >= 4 ? "Muito bom" : nota >= 3 ? "Regular" : "Atenção";
+        const tituloComparacao = `Últimos ${GOOGLE_METRICAS_DIAS} dias vs. os ${GOOGLE_METRICAS_DIAS} anteriores`;
 
         content.innerHTML = `
           <div class="gmn" style="${gmnTokens(state.marca)}">
             <div class="gmn-head">
               <div>
                 <h2>Google Meu Negócio</h2>
-                <p class="muted">Unidades, avaliações e desempenho de busca local${mostrarMarca ? " · todas as marcas" : ` · ${escapeHtml(state.marca)}`}</p>
+                <p>Visão geral do ecossistema de busca e presença local${mostrarMarca ? "" : ` · ${escapeHtml(state.marca)}`}.</p>
               </div>
               <div class="gmn-head-side">
                 ${marcaPillsHtml(true)}
@@ -8308,107 +8721,86 @@
                     ? `<span class="gmn-badge" title="Última sincronização: ${escapeHtml(ultimaSync)}"><span class="dot"></span>Dados Sincronizados</span>`
                     : `<span class="gmn-badge pendente"><span class="dot"></span>Aguardando sincronização</span>`}
                   <button id="refreshGoogle" type="button" class="gmn-icon-btn" title="Recarregar dados" aria-label="Recarregar dados"><span class="material-symbols-outlined">refresh</span></button>
-                  <span class="gmn-greet">${escapeHtml(saudacaoPorHorario())}${nome ? `, ${escapeHtml(nome)}` : ""}!</span>
                 </div>
               </div>
             </div>
             ${statusHtml}
             <div id="googleActionStatus"></div>
 
+            <div class="gmn-kpis">
+              ${gmnKpiHtml({ icone: "storefront", tom: "brand", titulo: "Total de Unidades", valor: locais.length ? fmt.format(kpis.totalUnidades) : "—",
+                selo: locais.length ? `${fmt.format(abertas)} abertas` : "", seloTitulo: "Unidades com status Aberto no Google" })}
+              ${gmnKpiHtml({ icone: "grade", tom: "amber", titulo: "Avaliação Média",
+                valor: nota ? `${nota.toFixed(1)} <small>/ 5.0</small>` : "—",
+                valorTitulo: nota ? `Média ponderada de ${fmt.format(kpis.totalAvaliacoes)} avaliações em ${fmt.format(kpis.lojasComNota)} loja(s)` : "Ainda não há avaliações sincronizadas no Supabase para esta seleção",
+                selo: classificacao || (locais.length ? "Sem avaliações" : ""), seloClasse: !nota ? "neutral" : nota < 3 ? "down" : "" })}
+              ${gmnKpiHtml({ icone: "visibility", tom: "green", titulo: "Visualizações Locais", valor: g.temMetricas ? gmnCompacto.format(kpis.visualizacoes) : "—",
+                valorTitulo: g.temMetricas ? `${fmt.format(kpis.visualizacoes)} visualizações (Busca e Maps, ${GOOGLE_METRICAS_DIAS}d)` : "Ainda sem métricas sincronizadas",
+                selo: varViews ? varViews.texto : `${GOOGLE_METRICAS_DIAS} dias`, seloClasse: varViews ? varViews.classe : "neutral", seloTitulo: varViews ? tituloComparacao : "Busca e Maps" })}
+              ${gmnKpiHtml({ icone: "directions_car", tom: "red", titulo: "Solicitações de Rota", valor: g.temMetricas ? gmnCompacto.format(kpis.solicitacoesRota) : "—",
+                valorTitulo: g.temMetricas ? `${fmt.format(kpis.solicitacoesRota)} cliques em rotas (${GOOGLE_METRICAS_DIAS}d)` : "Ainda sem métricas sincronizadas",
+                selo: varRotas ? varRotas.texto : `${GOOGLE_METRICAS_DIAS} dias`, seloClasse: varRotas ? varRotas.classe : "neutral", seloTitulo: varRotas ? tituloComparacao : "Cliques em rotas" })}
+            </div>
+
             <div class="gmn-layout">
               <div class="gmn-main">
-                <div class="gmn-kpis">
-                  ${gmnKpiHtml({ icone: "storefront", titulo: "Total de Unidades", valor: locais.length ? fmt.format(kpis.totalUnidades) : "—",
-                    legenda: locais.length ? `${fmt.format(abertas)} loja(s) ativa(s)` : "Lojas ativas",
-                    info: "Unidades das contas Google confirmadas e ativas. “Ativas” são as lojas com status Aberto no Google." })}
-                  ${gmnKpiHtml({ icone: "star", titulo: "Avaliação Média", valor: kpis.avaliacaoMedia ? `${kpis.avaliacaoMedia.toFixed(1)}<span style="font-size:14px;color:#64748b;font-weight:600"> / 5</span>` : "—",
-                    legenda: kpis.avaliacaoMedia ? `${fmt.format(kpis.totalAvaliacoes)} avaliações` : "Sem avaliações sincronizadas", info: infoAvaliacao })}
-                  ${gmnKpiHtml({ icone: "visibility", titulo: "Visualizações Locais", valor: g.temMetricas ? fmt.format(kpis.visualizacoes) : "—",
-                    legenda: `Busca e Maps (${GOOGLE_METRICAS_DIAS}d)`, info: infoMetricas })}
-                  ${gmnKpiHtml({ icone: "directions_car", titulo: "Solicitações de Rota", valor: g.temMetricas ? fmt.format(kpis.solicitacoesRota) : "—",
-                    legenda: `Cliques em rotas (${GOOGLE_METRICAS_DIAS}d)`, info: infoMetricas })}
-                </div>
-
-                <div class="gmn-row2">
-                  <div class="gmn-stack">
-                    <article class="gmn-card gmn-mini">
-                      <h3>Novas Avaliações</h3>
-                      <div class="gmn-mini-row">
-                        <strong>${av ? fmt.format(av.novas) : "—"}</strong>
-                        ${novas ? `<span class="gmn-delta ${novas.classe}" title="Comparado aos ${GOOGLE_METRICAS_DIAS} dias anteriores (${fmt.format(av.anteriores)})">${novas.texto}</span>` : ""}
-                      </div>
-                      <small class="muted">Últimos ${GOOGLE_METRICAS_DIAS} dias</small>
-                    </article>
-                    <article class="gmn-card gmn-mini">
-                      <h3>Sem Resposta</h3>
-                      <div class="gmn-mini-row">
-                        <strong>${av ? fmt.format(av.pendentes) : "—"}</strong>
-                        ${av ? (av.pendentes ? `<span class="gmn-delta alert">Pendentes</span>` : `<span class="gmn-delta up">Em dia</span>`) : ""}
-                      </div>
-                      <small class="muted">Avaliações aguardando resposta</small>
-                    </article>
-                  </div>
-
-                  <article class="gmn-card">
-                    <div class="gmn-chart-head">
-                      <div>
-                        <h3>Desempenho de Busca Local ${temSerie ? `<span class="gmn-delta ${variacaoBusca.classe}" style="margin-left:6px">${variacaoBusca.texto}</span>` : ""}</h3>
-                        <p class="muted" style="margin:2px 0 0">Últimos ${GOOGLE_METRICAS_DIAS} dias vs. período anterior</p>
-                      </div>
-                      ${temSerie ? `<div class="gmn-legend"><span><i style="background:var(--gmn-ink)"></i>Atual</span><span><i style="background:var(--gmn-prev)"></i>Anterior</span></div>` : ""}
-                    </div>
-                    ${temSerie
-                      ? `<div class="gmn-chart" id="gmnChart"></div>`
-                      : `<div class="gmn-empty"><span class="material-symbols-outlined">${locais.length ? "cloud_sync" : "storefront"}</span><strong>${locais.length ? "Métricas em sincronização" : "Nenhuma unidade sincronizada"}</strong><span>${locais.length
-                          ? "A Business Profile Performance API ainda não devolveu visualizações para este período. O gráfico aparece assim que os dados chegarem."
-                          : "Conecte e confirme as contas Google em Conexões para acompanhar a busca local."}</span></div>`}
-                  </article>
-                </div>
-
-                <section class="gmn-card">
-                  <div class="gmn-list-head">
+                <section class="gmn-card" style="overflow:visible">
+                  <div class="gmn-card-head">
                     <div>
-                      <h3>Gerenciamento de Unidades (${fmt.format(locais.length)})</h3>
-                      <span class="muted" id="gmnListaContador"></span>
+                      <h4>Gerenciamento de Unidades${locais.length ? ` (${fmt.format(locais.length)})` : ""}</h4>
+                      <span class="gmn-card-sub" id="gmnListaContador"></span>
                     </div>
-                    <div class="gmn-list-tools">
-                      <input id="gmnBusca" type="search" placeholder="Buscar unidade, endereço…" aria-label="Buscar unidade" value="${escapeHtml(gmnFiltroLista.busca)}">
+                    <div class="gmn-tools">
+                      <input id="gmnBusca" type="search" placeholder="Buscar unidade ou cidade..." aria-label="Buscar unidade ou cidade" value="${escapeHtml(gmnFiltroLista.busca)}">
                       ${mostrarMarca && marcasNaLista.length > 1 ? `<select id="gmnMarcaFiltro" aria-label="Filtrar por marca"><option value="">Todas as marcas</option>${marcasNaLista.map((m) => `<option value="${escapeHtml(m)}" ${m === gmnFiltroLista.marca ? "selected" : ""}>${escapeHtml(m)}</option>`).join("")}</select>` : ""}
                     </div>
                   </div>
-                  <div class="gmn-list" id="gmnLista"></div>
+                  <div class="gmn-table-wrap">
+                    <table class="gmn-table">
+                      <thead><tr><th>Unidade</th><th>Localização</th><th>Status</th><th>Métricas</th><th>Ações</th></tr></thead>
+                      <tbody id="gmnLista"></tbody>
+                    </table>
+                  </div>
+                </section>
+
+                <section class="gmn-card">
+                  <div class="gmn-card-head">
+                    <div>
+                      <h4>Avaliações Recentes</h4>
+                      <p class="gmn-card-sub">Responda aos clientes para melhorar seu SEO local.</p>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:12px">
+                      ${gmnPendentesHtml(g.avaliacoesRecentes?.length ? g.avaliacoes : null)}
+                      <button type="button" class="gmn-link" id="gmnVerTodas">Ver todas</button>
+                    </div>
+                  </div>
+                  <div class="gmn-reviews" id="gmnAvaliacoes"></div>
                 </section>
                 ${locais.length ? `<p class="muted gmn-foot">Visualizações (buscas e Maps) e rotas somam os últimos ${GOOGLE_METRICAS_DIAS} dias${semMetricas ? "; ainda sem métricas sincronizadas" : ""}. Clique numa unidade para ver os detalhes.</p>` : ""}
               </div>
 
-              <div class="gmn-side" role="complementary" aria-label="Status e pendências">
-                <section class="gmn-dark">
-                  <h3>Status da Sincronização</h3>
-                  <p>Google Business Profile API · ${statusSync}</p>
-                  <div class="gmn-progress" role="progressbar" aria-valuemin="0" aria-valuemax="${locais.length}" aria-valuenow="${sincronizadas}" aria-label="Unidades com avaliações sincronizadas"><div style="width:${pctSync}%"></div></div>
-                  <p class="gmn-progress-info">${fmt.format(sincronizadas)} de ${fmt.format(locais.length)} unidades sincronizadas</p>
-                  <p>${ultimaSync ? `Última sincronização: ${escapeHtml(ultimaSync)}` : "Nenhuma sincronização registrada"}</p>
-                  <button type="button" id="gmnSync" class="gmn-sync-btn" ${podeSincronizar ? "" : "disabled"}
-                    title="${podeSincronizar ? "Sincroniza unidades, avaliações e métricas das contas confirmadas" : (g.contasConfirmadas ? "Apenas Admin ou Gestor podem sincronizar" : "Nenhuma conta Google confirmada nesta seleção")}">
-                    <span class="material-symbols-outlined" style="font-size:18px">sync</span> Atualizar Métricas Agora
+              <div class="gmn-side" role="complementary" aria-label="Presença, fotos e cobertura">
+                <section class="gmn-card gmn-card-pad">
+                  <h4>Presença Digital</h4>
+                  <div class="gmn-presenca">${gmnPresencaHtml(g, locais)}</div>
+                  <div class="gmn-sync-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${locais.length}" aria-valuenow="${sincronizadas}" aria-label="Unidades com avaliações sincronizadas"><div style="width:${pctSync}%"></div></div>
+                  <p class="gmn-sync-info">${fmt.format(sincronizadas)} de ${fmt.format(locais.length)} unidades sincronizadas · ${ultimaSync ? `última em ${escapeHtml(ultimaSync)}` : "nenhuma sincronização registrada"}</p>
+                  <button type="button" id="gmnSync" class="gmn-btn outline" style="margin-top:16px" ${podeSincronizar ? "" : "disabled"}
+                    title="${podeSincronizar ? "Sincroniza unidades, avaliações, métricas e fotos das contas confirmadas" : (g.contasConfirmadas ? "Apenas Admin ou Gestor podem sincronizar" : "Nenhuma conta Google confirmada nesta seleção")}">
+                    <span class="material-symbols-outlined" style="font-size:18px">sync</span> Sincronizar Todas
                   </button>
                 </section>
 
-                <section class="gmn-card">
-                  <h3>Pendências de Reputação</h3>
-                  <div class="gmn-todo">
-                    ${gmnPendencias(g).map((item) => `
-                      <div class="gmn-todo-item">
-                        <span class="gmn-todo-icon ${item.ok ? "ok" : ""}" aria-hidden="true"><span class="material-symbols-outlined">${item.ok ? "check" : item.icone}</span></span>
-                        <div><strong>${escapeHtml(item.titulo)}</strong><span class="sub">${item.subHtml ? item.sub : escapeHtml(item.sub)}</span></div>
-                      </div>`).join("")}
+                <section class="gmn-card gmn-card-pad">
+                  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+                    <h4>Galeria de Fotos</h4>
+                    <span class="gmn-link" style="cursor:default" id="gmnGaleriaResumo" title="Fotos na ficha do Google; as de clientes merecem revisão">${gmnGaleriaResumo(g.fotos)}</span>
                   </div>
+                  <div id="gmnGaleria"></div>
                 </section>
 
-                <section class="gmn-dark gmn-rls">
-                  <h4><span class="dot" aria-hidden="true"></span>Supabase RLS Ativo</h4>
-                  <p>Dados filtrados por marca no banco (gto_tem_acesso_marca). Exibindo ${mostrarMarca ? "todas as marcas autorizadas para você" : `apenas ${escapeHtml(state.marca)}`}.</p>
-                  <p>${fmt.format(g.contasConfirmadas || 0)} conta(s) Google confirmada(s) · ${ultimaSync ? `sync em ${escapeHtml(ultimaSync)}` : "sem sincronização"}</p>
+                <section class="gmn-card gmn-mapa" aria-label="Cobertura regional">
+                  ${gmnCoberturaHtml(locais)}
                 </section>
               </div>
             </div>
@@ -8423,42 +8815,26 @@
             concluir: (mensagem) => (state.page === "google_business" ? renderGoogleBusiness(mensagem, { force: true }) : undefined)
           }));
         }
-        const irReputacao = document.querySelector("#gmnIrReputacao");
-        if (irReputacao) irReputacao.onclick = () => { state.page = "reputation"; render(); };
+        document.querySelector("#gmnVerTodas").onclick = () => { state.page = "reputation"; render(); };
 
         const busca = document.querySelector("#gmnBusca");
         busca.oninput = () => { gmnFiltroLista.busca = busca.value; paintGmnLista(); };
         const filtroMarca = document.querySelector("#gmnMarcaFiltro");
         if (filtroMarca) filtroMarca.onchange = () => { gmnFiltroLista.marca = filtroMarca.value; paintGmnLista(); };
         paintGmnLista();
+        paintGmnAvaliacoes();
+        paintGmnGaleria();
 
-        // Menus "⋮" dos KPIs: um aberto por vez; clique fora fecha.
-        const menus = [...document.querySelectorAll(".gmn-menu")];
-        menus.forEach((menu) => {
-          menu.ontoggle = () => { if (menu.open) menus.forEach((outro) => { if (outro !== menu) outro.open = false; }); };
-        });
+        // Menus "⋮" das linhas: um aberto por vez (wireGmnRow); clique fora ou Esc fecha.
         if (!gmnMenuListener) {
           gmnMenuListener = true;
           document.addEventListener("click", (event) => {
             document.querySelectorAll(".gmn-menu[open]").forEach((menu) => { if (!menu.contains(event.target)) menu.open = false; });
           });
-        }
-
-        if (gmnChartObserver) gmnChartObserver.disconnect();
-        gmnChartObserver = null;
-        const chart = document.querySelector("#gmnChart");
-        if (chart) {
-          paintGmnChart();
-          if (window.ResizeObserver) {
-            let largura = chart.clientWidth;
-            gmnChartObserver = new ResizeObserver(() => {
-              if (!chart.isConnected) { gmnChartObserver?.disconnect(); return; }
-              if (Math.abs(chart.clientWidth - largura) < 4) return;
-              largura = chart.clientWidth;
-              paintGmnChart();
-            });
-            gmnChartObserver.observe(chart);
-          }
+          document.addEventListener("keydown", (event) => {
+            if (event.key !== "Escape") return;
+            document.querySelectorAll(".gmn-menu[open]").forEach((menu) => { menu.open = false; menu.querySelector("summary")?.focus(); });
+          });
         }
       }
 
@@ -8757,7 +9133,7 @@
           const row = document.querySelector(`.gmn-row[data-id="${CSS.escape(novo.id)}"]`);
           const localAtualizado = g.locais.find((l) => l.id === novo.id);
           if (row && localAtualizado) {
-            const molde = document.createElement("div");
+            const molde = document.createElement("tbody");
             molde.innerHTML = gmnLocalRowHtml(localAtualizado, podeGerenciarGoogleLocais()).trim();
             const novaLinha = molde.firstElementChild;
             row.replaceWith(novaLinha);
